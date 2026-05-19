@@ -1,0 +1,47 @@
+[
+  {
+    "title": "便携蓝牙音箱 A100",
+    "description": "10W 立体声，IPX7 防水，12h 续航，适合宿舍和户外",
+    "price": 199,
+    "category": "数码/音箱",
+    "brand": "SoundPro",
+    "image_urls": ["https://via.placeholder.com/300?text=A100"],
+    "tags": ["便携", "防水", "低音"]
+  },
+  {
+    "title": "降噪蓝牙耳机 B200",
+    "description": "ANC 主动降噪，40h 续航，低延迟游戏模式",
+    "price": 349,
+    "category": "数码/耳机",
+    "brand": "AudioMax",
+    "image_urls": ["https://via.placeholder.com/300?text=B200"],
+    "tags": ["降噪", "长续航", "游戏"]
+  },
+  {
+    "title": "智能手环 C300",
+    "description": "1.47英寸 AMOLED，血氧/心率/睡眠监测，14天续航",
+    "price": 159,
+    "category": "数码/穿戴",
+    "brand": "FitLife",
+    "image_urls": ["https://via.placeholder.com/300?text=C300"],
+    "tags": ["健康", "运动", "长续航"]
+  },
+  {
+    "title": "平板电脑 D400",
+    "description": "10.4英寸 2K 屏，8核处理器，8+128GB，适合网课和追剧",
+    "price": 1299,
+    "category": "数码/平板",
+    "brand": "TechPad",
+    "image_urls": ["https://via.placeholder.com/300?text=D400"],
+    "tags": ["学习", "影音", "大屏"]
+  },
+  {
+    "title": "无线鼠标 E500",
+    "description": "人体工学设计，静音按键，双模蓝牙/2.4G，1节AA电池用1年",
+    "price": 79,
+    "category": "数码/配件",
+    "brand": "ErgoClick",
+    "image_urls": ["https://via.placeholder.com/300?text=E500"],
+    "tags": ["办公", "静音", "便携"]
+  }
+]

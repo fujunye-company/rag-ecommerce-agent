@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
+
+# Claude Code
+.claude/sessions/
+.claude/shell-snapshots/
+.claude/telemetry/
+.claude/backups/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.apk
+*.aab
+
+# Docker
+docker-data/
+
+# Large files
+*.pdf
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+*.pt
+!papers/*.pdf
+
+# Logs
+*.log
+
+# Alembic
+alembic/versions/*.pyc

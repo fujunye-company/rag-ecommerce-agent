@@ -17,7 +17,7 @@
 ## 项目结构
 
 ```
-02-项目代码/
+02-source-code/
 ├── backend/          Python FastAPI 后端
 │   ├── app/
 │   │   ├── main.py          FastAPI 入口, lifespan, /health, CORS
@@ -44,22 +44,13 @@
 docker compose up -d
 
 # 启动后端
-cd 02-项目代码/backend && uvicorn app.main:app --reload --port 8000
+cd 02-source-code/backend && uvicorn app.main:app --reload --port 8000
 
 # 安装依赖
-cd 02-项目代码/backend && uv pip install -r requirements.txt
+cd 02-source-code/backend && uv pip install -r requirements.txt
 
 # 数据库迁移
-cd 02-项目代码/backend && alembic upgrade head
-
-# PostgreSQL 连接
-PGPASSWORD=shopping123 psql -h localhost -U shopping -d shopping_agent
-
-# Qdrant 健康检查
-curl http://localhost:6333/health
-
-# 后端健康检查
-curl http://localhost:8000/health
+cd 02-source-code/backend && alembic upgrade head
 ```
 
 ## API 接口
@@ -83,38 +74,6 @@ product_cards → {"type": "product_cards", "products": [...]}
 done          → {"type": "done"}
 error         → {"type": "error", "message": "...", "code": "..."}
 ```
-
-## API 通用规范
-
-- JSON 响应包裹: `{"code": 0, "data": {...}, "message": "ok"}`
-- 错误响应: `{"code": 4xxx/5xxx, "data": null, "message": "描述"}`
-- 列表分页: `?page=1&size=20`
-- SSE 流式不适用包裹格式，逐事件 JSON
-
-## 代码规范
-
-### 后端
-- api/ 只处理请求/响应，不写复杂业务逻辑
-- services/ 承载 Agent/RAG/LLM 业务逻辑
-- schemas/ 定义 Pydantic 请求/响应模型
-- 所有外部调用（LLM API、向量库）必须设 timeout
-- 异常统一通过 FastAPI exception_handler 处理
-- 环境变量用 .env + pydantic-settings，禁止硬编码
-- 函数单一职责，不超过 50 行
-- Commit: `feat(backend): 描述` / `fix(android): 描述`
-
-### Android
-- UI 层不直接网络请求 → 通过 ViewModel
-- ViewModel 管理状态用 StateFlow
-- data 层封装 API 请求和 DTO 转换
-- 商品卡片字段必须与后端 schemas 对齐
-- SSE 事件解析按 type 字段分发，预留未知 type
-- 覆盖加载/空/错误三种 UI 状态
-
-### 通用
-- 无硬编码配置值
-- 无 console.log / print 残留
-- 无未使用 import
 
 ## Hermes ↔ Claude Code 协作模式
 

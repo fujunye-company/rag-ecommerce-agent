@@ -25,7 +25,7 @@ Desktop/Hermes/
 ├── 01-数模校内赛/                      (归档，CLAUDE.md 可选)
 ├── 02-设计大赛/                        (可新增项目级 CLAUDE.md)
 ├── 03-SRP/                            ← ★ 已通过跨项目测试
-├── 04-AI全栈挑战赛/                    (已有 CLAUDE.md，优先于根级)
+├── 04-rag-ecommerce/                    (已有 CLAUDE.md，优先于根级)
 ├── 05-AIGC赛道/                        (可新增项目级 CLAUDE.md)
 └── A1-音频转录管道/                    (可新增项目级 CLAUDE.md)
 ```
@@ -55,7 +55,7 @@ bash ~/Desktop/Hermes/hermes_cc.sh "在 03-SRP/ 下创建 README.md" --max-turns
 bash ~/Desktop/Hermes/hermes_cc.sh "搜索并总结..." --web --max-turns 15
 
 # 指定项目目录
-cd ~/Desktop/Hermes/04-AI全栈挑战赛 && \
+cd ~/Desktop/Hermes/04-rag-ecommerce && \
   claude -p "任务" --allowedTools "Read,Write,Edit,Bash" --max-turns 12
 ```
 

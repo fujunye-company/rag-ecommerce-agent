@@ -1,7 +1,7 @@
 # TASK-FIX-001: Claude Code 只读分析报告
 
 > 执行时间：2026-05-19
-> 分析范围：`02-项目代码/backend/app/main.py`
+> 分析范围：`02-source-code/backend/app/main.py`
 
 ## 1. 任务结论
 

@@ -4,7 +4,7 @@
 
 - 任务 ID：TASK-FIX-002
 - 任务名称：修复 `main.py` 7 个问题（Claude Code 只读分析发现）
-- 修复文件：`02-项目代码/backend/app/main.py`
+- 修复文件：`02-source-code/backend/app/main.py`
 
 ## 2. Claude Code 分析采纳情况
 

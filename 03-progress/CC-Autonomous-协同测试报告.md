@@ -11,10 +11,10 @@
 | 项目 | 值 |
 |------|-----|
 | Claude Code 版本 | v2.1.144 |
-| 项目根目录 | `04-AI全栈挑战赛/` |
+| 项目根目录 | `04-rag-ecommerce/` |
 | CLAUDE.md | ✅ 存在，124 行，覆盖技术栈/项目结构/命令/API/规范 |
 | .claude/settings.local.json | ✅ 已配置 Read/Write/Edit/Bash/WebSearch 权限 |
-| 工作流文档 | `00-工作流/Hermes_ClaudeCode_Autonomous协同工作流.md` (v3.0) |
+| 工作流文档 | `00-workflow/Hermes_ClaudeCode_Autonomous协同工作流.md` (v3.0) |
 
 ---
 

@@ -15,7 +15,7 @@
 ## 项目结构
 
 ```
-02-项目代码/
+02-source-code/
 ├── backend/          # FastAPI后端
 │   ├── app/
 │   │   ├── main.py          # 应用入口

@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Environment (keep .env.example templates)
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Claude
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Android
+*.apk
+*.aab
+*.keystore
+local.properties
+apps/android/.gradle/
+apps/android/build/
+apps/android/app/build/
+
+# Runtime data
+data/hf_home/
+data/qdrant_storage/
+*.parquet
+*.arrow

@@ -1,0 +1,7 @@
+{
+  "test_cases": [
+    {"id": "c001", "query": "推荐一款300元以内的耳机", "expected_intent": "recommend", "expected_category": "数码/耳机"},
+    {"id": "c002", "query": "这个音箱适合户外用吗", "expected_intent": "consult"},
+    {"id": "c003", "query": "学生党预算500买什么平板", "expected_intent": "recommend", "expected_category": "数码/平板"}
+  ]
+}

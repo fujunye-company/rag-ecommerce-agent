@@ -1,0 +1,37 @@
+name: CI — Backend Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths: ['apps/backend/**']
+  pull_request:
+    branches: [main]
+    paths: ['apps/backend/**']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: shopping
+          POSTGRES_PASSWORD: shopping123
+          POSTGRES_DB: shopping_agent
+        ports: [5432:5432]
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports: [6333:6333]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: cd apps/backend && pip install -r requirements.txt
+      - run: cd apps/backend && python -m pytest tests/ -v
+        env:
+          DATABASE_URL: postgresql+asyncpg://shopping:shopping123@localhost:5432/shopping_agent
+          QDRANT_URL: http://localhost:6333
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}

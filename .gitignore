@@ -38,3 +38,4 @@ apps/backend/data/hf_home/
 apps/backend/data/qdrant_storage/
 *.parquet
 *.arrow
+/.vs

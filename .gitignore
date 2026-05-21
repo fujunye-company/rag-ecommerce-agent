@@ -16,6 +16,7 @@ venv/
 .idea/
 .vscode/
 *.swp
+/.vs
 
 # Claude
 .claude/
@@ -38,4 +39,4 @@ apps/backend/data/hf_home/
 apps/backend/data/qdrant_storage/
 *.parquet
 *.arrow
-/.vs
+

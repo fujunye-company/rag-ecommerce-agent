@@ -8,6 +8,9 @@ class Base(DeclarativeBase):
     pass
 
 
+# 必须在 engine 创建前导入所有模型，确保 Base.metadata 包含全部表
+import app.models  # noqa: E402, F401 — 触发所有 ORM 模型注册
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,

@@ -1,5 +1,6 @@
 package com.shopping.agent.ui.chat
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,6 +10,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.shopping.agent.data.model.ChatMessage
 import com.shopping.agent.ui.components.ProductCard
@@ -115,7 +119,7 @@ fun ChatScreen(
 }
 
 /**
- * 消息气泡
+ * 消息气泡 — 用户/AI 对齐 + 流式光标 + 商品卡片
  */
 @Composable
 fun MessageBubble(message: ChatMessage) {
@@ -124,6 +128,18 @@ fun MessageBubble(message: ChatMessage) {
         MaterialTheme.colorScheme.primaryContainer
     else
         MaterialTheme.colorScheme.surfaceVariant
+
+    // 闪烁光标动画
+    val infiniteTransition = rememberInfiniteTransition(label = "cursor")
+    val cursorAlpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(500),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "cursor_alpha"
+    )
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -138,8 +154,16 @@ fun MessageBubble(message: ChatMessage) {
             ),
             modifier = Modifier.widthIn(max = 320.dp)
         ) {
+            val content = buildAnnotatedString {
+                append(message.content.ifEmpty { "..." })
+                if (message.isStreaming) {
+                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary.copy(alpha = cursorAlpha))) {
+                        append(" ▌")
+                    }
+                }
+            }
             Text(
-                text = message.content.ifEmpty { "..." },
+                text = content,
                 modifier = Modifier.padding(12.dp),
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -152,7 +176,9 @@ fun MessageBubble(message: ChatMessage) {
                 name = product.name,
                 price = product.price,
                 imageUrl = product.imageUrl,
-                reason = product.reason
+                reason = product.reason,
+                rating = product.rating,
+                matchScore = product.matchScore
             )
         }
     }

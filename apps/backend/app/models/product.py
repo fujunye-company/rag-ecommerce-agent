@@ -3,7 +3,7 @@
 """
 import uuid
 from sqlalchemy import String, Float, Integer, Text, ARRAY
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
@@ -16,9 +16,12 @@ class Product(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     price: Mapped[float] = mapped_column(Float, nullable=False)
     category: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
-    brand: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    brand: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     rating: Mapped[float] = mapped_column(Float, default=0)
     image_urls: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=list)
     stock: Mapped[int] = mapped_column(Integer, default=0)
     sales: Mapped[int] = mapped_column(Integer, default=0)
     tags: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=list)
+    attributes: Mapped[dict | None] = mapped_column(JSONB, nullable=True, comment="结构化属性 (e.g. {颜色:黑, 续航:30h})")
+    highlights: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True, comment="核心卖点")
+    scenarios: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True, comment="适用场景")

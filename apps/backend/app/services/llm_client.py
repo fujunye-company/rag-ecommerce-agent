@@ -1,7 +1,8 @@
 """
-LLM 调用封装 — DeepSeek OpenAI-compatible
+LLM 调用封装 — Doubao (豆包) OpenAI-compatible，DeepSeek 降级回退
 遵循开发规约 v2.0 §3.3.3: 大模型调用统一封装
 
+优先级: Doubao (比赛指定) → DeepSeek (降级)
 可测试性: create_llm_client() 接受参数注入，测试时可传 mock client。
 """
 import time
@@ -17,10 +18,12 @@ def create_llm_client(
     base_url: str = "",
     timeout: float = 30.0,
 ) -> AsyncOpenAI:
-    """工厂函数 — 可注入参数用于测试"""
+    """工厂函数 — 优先 Doubao，回退 DeepSeek"""
+    key = api_key or settings.DOUBAO_API_KEY or settings.DEEPSEEK_API_KEY
+    url = base_url or settings.DOUBAO_BASE_URL or settings.DEEPSEEK_BASE_URL
     return AsyncOpenAI(
-        api_key=api_key or settings.DEEPSEEK_API_KEY,
-        base_url=base_url or settings.DEEPSEEK_BASE_URL,
+        api_key=key,
+        base_url=url,
         timeout=timeout,
     )
 

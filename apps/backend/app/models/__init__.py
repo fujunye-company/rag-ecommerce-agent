@@ -4,5 +4,6 @@ from app.models.session import Session
 from app.models.message import Message
 from app.models.feedback import Feedback
 from app.models.knowledge import KnowledgeVersion
+from app.models.cart import CartItem
 
-__all__ = ["Product", "Session", "Message", "Feedback", "KnowledgeVersion"]
+__all__ = ["Product", "Session", "Message", "Feedback", "KnowledgeVersion", "CartItem"]

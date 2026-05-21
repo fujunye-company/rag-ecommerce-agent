@@ -1,28 +1,111 @@
 """
-多轮状态管理 — 预算/偏好/已比较商品/反悔修改
+多轮状态管理 — 数据库持久化 + 内存缓存
 """
 import logging
-from collections import defaultdict
+import uuid
+from datetime import datetime
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import AsyncSessionLocal
+from app.models.session import Session
 
 logger = logging.getLogger("state_manager")
 
-# MVP: 内存字典 (全量: Redis/数据库持久化)
-_session_store: dict[str, dict] = defaultdict(dict)
+# 内存缓存 (减少 DB 查询)
+_cache: dict[str, dict] = {}
 
 
-def get_state(session_id: str) -> dict:
-    """获取会话状态"""
-    return _session_store[session_id]
+async def get_or_create_session(session_id: str | None = None) -> tuple[str, dict]:
+    """获取或创建会话，返回 (session_id, state)"""
+    # 验证 session_id 是否为有效 UUID
+    valid_uuid = None
+    if session_id:
+        try:
+            valid_uuid = uuid.UUID(session_id)
+        except (ValueError, AttributeError):
+            valid_uuid = None
+
+    if valid_uuid:
+        session_str = str(valid_uuid)
+        # 尝试从缓存获取
+        if session_str in _cache:
+            return session_str, _cache[session_str]
+
+        # 从数据库获取
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(select(Session).where(Session.id == valid_uuid))
+            session = result.scalar_one_or_none()
+            if session:
+                state = session.state_json or {}
+                _cache[str(session.id)] = state
+                return str(session.id), state
+
+    # 创建新会话
+    new_id = uuid.uuid4()
+    async with AsyncSessionLocal() as db:
+        session = Session(id=new_id, state_json={}, message_count=0)
+        db.add(session)
+        await db.commit()
+    _cache[str(new_id)] = {}
+    logger.info("Created session: %s", str(new_id)[:8])
+    return str(new_id), {}
 
 
-def update_state(session_id: str, **kwargs) -> dict:
-    """更新会话状态 (合并写入)"""
-    state = _session_store[session_id]
+async def update_state(session_id: str, **kwargs) -> dict:
+    """更新会话状态 (合并写入，自动持久化)"""
+    state = _cache.get(session_id, {})
     state.update(kwargs)
-    logger.debug("Session %s state updated: %s", session_id[:8], list(kwargs.keys()))
+
+    # 缓存更新
+    _cache[session_id] = state
+
+    # 异步持久化
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                update(Session)
+                .where(Session.id == session_id)
+                .values(
+                    state_json=state,
+                    updated_at=datetime.utcnow(),
+                )
+            )
+            await db.commit()
+    except Exception as e:
+        logger.warning("Failed to persist state for %s: %s", session_id[:8], e)
+
+    logger.debug("Session %s state: %s", session_id[:8], list(kwargs.keys()))
     return state
 
 
-def clear_state(session_id: str) -> None:
+async def increment_message_count(session_id: str):
+    """增加消息计数"""
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                update(Session)
+                .where(Session.id == session_id)
+                .values(message_count=Session.message_count + 1)
+            )
+            await db.commit()
+    except Exception as e:
+        logger.warning("Failed to increment msg count: %s", e)
+
+
+async def get_state(session_id: str) -> dict:
+    """获取会话状态（优先缓存）"""
+    if session_id in _cache:
+        return _cache[session_id]
+    _, state = await get_or_create_session(session_id)
+    return state
+
+
+async def clear_state(session_id: str) -> None:
     """清除会话状态"""
-    _session_store.pop(session_id, None)
+    _cache.pop(session_id, None)
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(update(Session).where(Session.id == session_id).values(is_active=False))
+            await db.commit()
+    except Exception as e:
+        logger.warning("Failed to deactivate session: %s", e)

@@ -14,8 +14,8 @@ class FeedbackCreate(BaseModel):
 
 class FeedbackRead(BaseModel):
     id: UUID
-    session_id: str
-    product_id: str | None = None
+    session_id: UUID
+    product_id: UUID | None = None
     rating: int
     reason: str | None = None
 

@@ -27,9 +27,16 @@ class Settings(BaseSettings):
     QDRANT_COLLECTION: str = "products"
 
     # ── LLM (必填) ──
+    # Doubao (豆包) — 比赛指定，优先使用
+    DOUBAO_API_KEY: str = ""
+    DOUBAO_BASE_URL: str = "https://ark.cn-beijing.volces.com/api/v3/"
+    LLM_MODEL: str = "ep-20260514111645-Imgt2"
+    # DeepSeek — 降级回退
     DEEPSEEK_API_KEY: str = ""
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com/v1"
-    LLM_MODEL: str = "deepseek-chat"
+    DEEPSEEK_MODEL: str = "deepseek-chat"
+
+    # ── Embedding ──
     EMBEDDING_MODEL: str = "BAAI/bge-large-zh-v1.5"
 
     # ── 服务 ──

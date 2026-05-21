@@ -1,9 +1,10 @@
 """
 混合检索 — 向量检索 + 关键词检索 + 元数据过滤
 """
+import time
 import logging
 from qdrant_client import AsyncQdrantClient
-from qdrant_client.models import Filter, FieldCondition, MatchValue
+from qdrant_client.models import Filter, FieldCondition, MatchValue, MatchAny, Range
 from app.core.config import settings
 
 logger = logging.getLogger("retriever")
@@ -17,31 +18,79 @@ async def hybrid_search(
     category: str | None = None,
     price_min: float | None = None,
     price_max: float | None = None,
-    top_k: int = 5,
-) -> list[dict]:
+    exclude_brands: list[str] | None = None,
+    exclude_categories: list[str] | None = None,
+    exclude_attributes: dict[str, str] | None = None,
+    top_k: int = 10,
+) -> tuple[list[dict], float]:
     """
     混合检索:
     1. 向量语义检索 (dense)
-    2. 元数据过滤 (category/price)
-    返回: [{id, score, payload}, ...]
+    2. 元数据过滤 (category / price range)
+    3. 否定排除过滤 (场景4: 排除品牌/品类/属性)
+    返回: (结果列表, 检索耗时ms)
     """
+    t0 = time.monotonic()
+
     must_filters = []
+    must_not_filters = []
+
     if category:
         must_filters.append(
             FieldCondition(key="category", match=MatchValue(value=category))
         )
+    if price_min is not None or price_max is not None:
+        price_range = {}
+        if price_min is not None:
+            price_range["gte"] = price_min
+        if price_max is not None:
+            price_range["lte"] = price_max
+        must_filters.append(
+            FieldCondition(key="price", range=Range(**price_range))
+        )
 
-    qdrant_filter = Filter(must=must_filters) if must_filters else None
+    # 否定排除过滤 (场景4: 反选/排除)
+    if exclude_brands:
+        must_not_filters.append(
+            FieldCondition(key="brand", match=MatchAny(any=exclude_brands))
+        )
+    if exclude_categories:
+        must_not_filters.append(
+            FieldCondition(key="category", match=MatchAny(any=exclude_categories))
+        )
+    if exclude_attributes:
+        for attr_key, attr_val in exclude_attributes.items():
+            # JSONB 属性排除 — 使用 payload 字段匹配
+            must_not_filters.append(
+                FieldCondition(key=f"attributes.{attr_key}", match=MatchValue(value=attr_val))
+            )
 
-    results = await _qdrant.search(
+    qdrant_filter = None
+    if must_filters or must_not_filters:
+        qdrant_filter = Filter(
+            must=must_filters if must_filters else None,
+            must_not=must_not_filters if must_not_filters else None,
+        )
+
+    results = await _qdrant.query_points(
         collection_name=settings.QDRANT_COLLECTION,
-        query_vector=query_vector,
+        query=query_vector,
         limit=top_k,
         query_filter=qdrant_filter,
         with_payload=True,
     )
 
-    return [
+    elapsed_ms = (time.monotonic() - t0) * 1000
+    items = [
         {"id": hit.id, "score": hit.score, "payload": hit.payload}
-        for hit in results
+        for hit in results.points
     ]
+
+    logger.info(
+        "Retrieve: query='%s' → %d results in %.0fms (category=%s, price=%s-%s, exclude_br=%s)",
+        query_text[:50], len(items), elapsed_ms,
+        category or "*", price_min or "*", price_max or "*",
+        exclude_brands or [],
+    )
+
+    return items, elapsed_ms

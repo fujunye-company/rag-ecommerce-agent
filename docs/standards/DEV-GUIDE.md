@@ -1,4 +1,4 @@
-# 电商AI导购Agent — 开发总纲 DEV-GUIDE v3.0
+# 电商AI导购Agent — 开发总纲 DEV-GUIDE v3.1
 
 > **最高优先级参考：`docs/background/REQS-竞赛核心需求.md`**  
 > 本文档 = PRD + 竞品分析 + 架构分析 + 创新调研 + UI设计 + 比赛需求 的压缩版  
@@ -14,7 +14,7 @@
 Android(Kotlin/Compose) ← SSE → FastAPI ← LangGraph → Qdrant/PostgreSQL → Doubao
 ```
 
-**7 级场景覆盖**：单轮推荐 → 多轮追问 → 对比决策 → 反选排除 → 场景化组合 → 购物车下单 → 拍照找货
+**9 级场景覆盖**：单轮推荐 → 条件筛选 → 多轮追问 → 对比决策 → 主动反问 → 反选排除 → 场景化组合 → 购物车下单 → 拍照找货
 
 ---
 
@@ -28,16 +28,15 @@ Android(Kotlin/Compose) ← SSE → FastAPI ← LangGraph → Qdrant/PostgreSQL 
 | RAG | LlamaIndex + Qdrant | |
 | 数据库 | PostgreSQL + pgvector | |
 | LLM | **Doubao-Seed-2.0-lite** ⚠️ 待切换 | 比赛提供 Key（当前仍为 DeepSeek） |
-| Embedding | BGE-large-zh-v1.5 | |
-| 向量库 | Qdrant | |
+| Embedding | BGE-large-zh-v1.5 | 比赛推荐 Doubao-embedding-vision，不强制 |
 
 ### Doubao API
 
 ```
 Base: https://ark.cn-beijing.volces.com/api/v3/
-Model: ep-20260514111645-Imgt2
-Key:  ark-2af51d30-ed70-4061-a2cd-74f454ccc4e8-2282e
-Limit: TPM 807K, RPM 700
+Model: ep-20260514111645-lmgt2
+Key:  见 apps/backend/.env (DOUBAO_API_KEY)
+Limit: TPM 800K, RPM 700
 ```
 
 ---
@@ -48,11 +47,11 @@ Limit: TPM 807K, RPM 700
 LangGraph StateGraph:
   START
     ↓
-  classify_intent   → 6类意图 + 否定条件检测
+  classify_intent   → 9类意图 (含 cart + image) + 否定条件 + 信息不足
     ↓
-  extract_slots     → 结构化槽位 (含否定属性)
+  extract_slots     → 结构化槽位 (price_range, 含否定属性 exclude_*)
     ↓  [missing_slots非空]
-  clarify           → 主动追问Chip
+  clarify           → 主动追问Chip (Q&A引导)
     ↓  [slots完整]
   retrieve          → Qdrant向量检索 + metadata过滤 + 否定条件排除
     ↓
@@ -71,16 +70,30 @@ LangGraph StateGraph:
 
 ## 四、代码级创新约束
 
-### 4.1 否定语义处理（比赛核心考察点）
+### 4.1 否定语义处理（场景6 — 比赛核心加分项）
 ```
 必须: intent 检测否定关键词: "不要"、"除了"、"非"、"不含"、"拒绝"
 必须: extract_slots 输出 exclude_attributes: ["含酒精", "日系品牌"]
 必须: retriever 排除命中 exclude_attributes 的商品
 ```
 
-### 4.2 购物车 CRUD（场景6 — 比赛加分项，非阻塞）
+### 4.2 Agent 主动反问（场景5 — 比赛进阶项）
+```
+必须: 信息不足时 (missing_slots非空) 主动追问
+必须: clarify 节点输出引导性问题 (如"拍照、续航还是性价比？")
+禁止: 信息不足时强行推荐
+```
 
-> ⚠️ 加分项目标，不影响场景 1-3 交付。
+### 4.3 条件筛选（场景2 — 比赛基础项）
+```
+必须: 结构化参数提取 (price_range, brand, category)
+必须: retriever metadata 范围过滤
+必须: 整合同类商品按条件排序
+```
+
+### 4.4 购物车 CRUD（场景8 — 比赛加分项，非阻塞）
+
+> ⚠️ 加分项目标，不影响场景 1-5 交付。
 
 ```
 加分项: 识别 cart_add/cart_remove/cart_modify/cart_checkout 意图
@@ -88,21 +101,21 @@ LangGraph StateGraph:
 加分项: 客户端实时展示购物车数量/状态
 ```
 
-### 4.3 agent.py → generate_node
+### 4.5 agent.py → generate_node
 ```
 禁止: "为您推荐以下几款：1. xxx 2. xxx 3. xxx"
 必须: 三段式理由 + 自信度 + 引用
 禁止: 编造不存在的优惠券/功能/价格（比赛红线）
 ```
 
-### 4.4 intent.py → classify_intent
+### 4.6 intent.py → classify_intent
 ```
-必须: LLM prompt-based 分类 (6类 + cart + image)
+必须: LLM prompt-based 分类 (9类: recommend/filter/multiturn/compare/clarify/anti_select/scenario/cart/image)
 必须: 否定条件检测 ("不要"/"除了"/"非")
-必须: 信息不足时主动追问
+必须: 信息不足时主动追问 (missing_slots → clarify)
 ```
 
-### 4.5 性能要求
+### 4.7 性能要求
 ```
 首 Token < 1s (Prompt压缩 + 流水线并行)
 SSE 流式速率 ≥ 20 tokens/s
@@ -115,20 +128,22 @@ SSE 流式速率 ≥ 20 tokens/s
 
 | 维度 | 权重 | 指标 |
 |------|:---:|------|
-| 基础功能完整性 | 35% | 7场景中至少场景1-3跑通 |
+| 基础功能完整性 | 35% | 9场景中至少场景1-5跑通 |
 | 工程质量 | 25% | 代码结构清晰、错误处理完善、文档齐全 |
 | 效果与可靠性 | 20% | 无幻觉、检索准确、流畅美观 |
 | 加分项深度 | 20% | 购物车/多模态/性能优化/否定语义 |
 
 ---
 
-## 六、绝对禁止（红线）
+## 六、绝对禁止
 
 ```
 ❌ 编造不存在的优惠券/功能/价格（比赛直接扣分）
 ❌ 用纯 Web/H5 客户端
-❌ 泄露 API Key
+❌ 泄露 API Key（GitHub 提交前检查 .gitignore）
 ❌ 忽略否定语义（"不要""除了""非"）
+❌ Demo 无法正常运行或需要大量手动配置
+❌ 代码完全依赖 AI 生成而无法解释原理（答辩红线）
 ❌ generate_node 输出纯列表
 ❌ intent 只用品类规则
 ❌ slots 不全时强行推荐
@@ -142,8 +157,8 @@ SSE 流式速率 ≥ 20 tokens/s
 | 模块 | 完成度 | M5 还需 |
 |------|:---:|------|
 | agent.py | 85% | 否定语义 + cart 意图分支 |
-| intent.py | 80% | 否定条件检测 + exclude_attributes |
-| retriever.py | 90% | 否定条件排除过滤 |
+| intent.py | 80% | 否定条件检测 + exclude_attributes + 主动反问 |
+| retriever.py | 90% | 否定条件排除过滤 + 条件筛选范围过滤 |
 | product_service.py | 100% | — |
 | state_manager.py | 100% | cart state 扩展 |
 | chat.py | 100% | — |

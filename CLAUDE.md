@@ -19,7 +19,7 @@
 ### Doubao API
 ```
 Base: https://ark.cn-beijing.volces.com/api/v3/
-Model: ep-20260514111645-Imgt2
+Model: ep-20260514111645-lmgt2
 Key:  见 apps/backend/.env (DOUBAO_API_KEY)
 ```
 

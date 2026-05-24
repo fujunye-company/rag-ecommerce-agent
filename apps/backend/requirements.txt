@@ -32,3 +32,9 @@ httpx>=0.28.0
 alembic>=1.14.0
 pytest>=8.0.0
 pytest-asyncio>=0.24.0
+
+# VLM 图像理解 (拍照找货)
+qwen-vl-utils>=0.0.9
+accelerate>=1.0.0
+ragas>=0.2.0
+torch>=2.4.0

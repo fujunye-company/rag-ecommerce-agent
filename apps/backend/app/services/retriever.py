@@ -9,7 +9,15 @@ from app.core.config import settings
 
 logger = logging.getLogger("retriever")
 
-_qdrant = AsyncQdrantClient(url=settings.QDRANT_URL)
+_qdrant = None
+
+
+def _get_qdrant():
+    """懒加载 Qdrant 客户端（避免模块导入时崩溃）"""
+    global _qdrant
+    if _qdrant is None:
+        _qdrant = AsyncQdrantClient(url=settings.QDRANT_URL)
+    return _qdrant
 
 
 async def hybrid_search(
@@ -72,13 +80,18 @@ async def hybrid_search(
             must_not=must_not_filters if must_not_filters else None,
         )
 
-    results = await _qdrant.query_points(
-        collection_name=settings.QDRANT_COLLECTION,
-        query=query_vector,
-        limit=top_k,
-        query_filter=qdrant_filter,
-        with_payload=True,
-    )
+    try:
+        results = await _get_qdrant().query_points(
+            collection_name=settings.QDRANT_COLLECTION,
+            query=query_vector,
+            limit=top_k,
+            query_filter=qdrant_filter,
+            with_payload=True,
+        )
+    except Exception as e:
+        logger.error("Qdrant query failed in hybrid_search: %s", e)
+        elapsed_ms = (time.monotonic() - t0) * 1000
+        return [], elapsed_ms
 
     elapsed_ms = (time.monotonic() - t0) * 1000
     items = [
@@ -94,3 +107,53 @@ async def hybrid_search(
     )
 
     return items, elapsed_ms
+
+
+async def search_similar_products(
+    query_text: str,
+    top_k: int = 8,
+) -> list[dict]:
+    """
+    拍照找货专用：文本查询 → Embedding → Qdrant 向量检索 → 结构化商品列表
+
+    Args:
+        query_text: 由 VLM 提取的商品描述文本
+        top_k: 返回数量
+
+    Returns:
+        [{"product_id":..., "title":..., "price":..., "rating":...,
+          "match_score":..., "highlights":..., "image_url":...}, ...]
+    """
+    from app.services.embedding import embed_text
+
+    query_vector = await embed_text(query_text)
+
+    try:
+        results = await _get_qdrant().query_points(
+            collection_name=settings.QDRANT_COLLECTION,
+            query=query_vector,
+            limit=top_k,
+            with_payload=True,
+        )
+    except Exception as e:
+        logger.error("Qdrant query failed in search_similar_products: %s", e)
+        return []
+
+    products = []
+    for hit in results.points:
+        p = hit.payload or {}
+        products.append({
+            "product_id": p.get("product_id", ""),
+            "title": p.get("title", ""),
+            "price": p.get("price", 0),
+            "rating": p.get("rating", 0),
+            "brand": p.get("brand", ""),
+            "category": p.get("category", ""),
+            "match_score": round(hit.score, 4) if hit.score else 0.0,
+            "score": round(hit.score, 4) if hit.score else 0.0,
+            "highlights": p.get("highlights", [])[:3],
+            "image_url": p.get("image_url"),
+        })
+
+    logger.info("Similar search: '%s' → %d products", query_text[:60], len(products))
+    return products

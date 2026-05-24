@@ -1,23 +1,41 @@
-"""评测接口 — 纯路由层 [全量预留]"""
-from fastapi import APIRouter
+"""评测接口 — 对接 evaluator 服务"""
+import logging
+from fastapi import APIRouter, BackgroundTasks
 from app.schemas.common import ApiResponse
+from app.services.evaluator import run_evaluation
 
+logger = logging.getLogger("evaluation_api")
 router = APIRouter()
 
 
 @router.post("/evaluation/run")
-async def run_evaluation():
-    """触发评测 (全量阶段实现)"""
-    return ApiResponse(
-        data={"eval_id": "eval-001", "status": "queued"},
-        message="评测任务已提交"
-    ).model_dump()
+async def run_eval(background_tasks: BackgroundTasks):
+    """触发评测任务（后台异步执行）"""
+    # 同步模式：直接执行并返回结果
+    try:
+        result = await run_evaluation()
+        return ApiResponse(data=result, message="评测完成").model_dump()
+    except Exception as e:
+        logger.exception("Evaluation failed")
+        return ApiResponse(
+            data={"error": str(e)},
+            message="评测执行失败"
+        ).model_dump()
 
 
-@router.get("/eval/report")
+@router.get("/evaluation/report")
 async def get_eval_report():
-    """获取评测报告 (全量阶段实现)"""
+    """获取最新评测报告"""
+    from pathlib import Path
+    import json
+
+    report_path = Path(__file__).resolve().parents[2] / "data" / "test_cases" / "eval_results.json"
+    if report_path.exists():
+        with open(report_path, encoding="utf-8") as f:
+            report = json.load(f)
+        return ApiResponse(data=report, message="评测报告").model_dump()
+
     return ApiResponse(
-        data={"status": "not_implemented"},
-        message="评测报告功能全量阶段开发"
+        data={"status": "no_report"},
+        message="暂无评测报告，请先执行 POST /evaluation/run"
     ).model_dump()

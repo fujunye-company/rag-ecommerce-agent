@@ -40,3 +40,7 @@ apps/backend/data/qdrant_storage/
 *.parquet
 *.arrow
 
+
+# Environment files with real keys (templates use .env.example)
+apps/backend/.env
+infrastructure/env/.env

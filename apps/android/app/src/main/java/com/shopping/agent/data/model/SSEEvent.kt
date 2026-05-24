@@ -2,11 +2,12 @@ package com.shopping.agent.data.model
 
 /**
  * SSE 事件密封类 — 所有 type 分支 + unknown 兜底
- * 后端发送格式: {"event":"text_delta","data":"{\"type\":\"text_delta\",\"content\":\"...\"}"}
+ * 后端发送格式: {"event":"product_cards","data":"{\"type\":\"product_cards\",\"product_id\":\"...\",\"title\":\"...\",...}"}
+ * ProductCardEvent 逐卡片单条下发，含 product_id/title/price/rating/match_score/highlights/image_url/index/total
  */
 sealed class SseEvent {
     data class TextDelta(val content: String) : SseEvent()
-    data class ProductCards(val products: List<Product>) : SseEvent()
+    data class ProductCard(val product: Product) : SseEvent()
     object Done : SseEvent()
     data class Error(val message: String, val code: String) : SseEvent()
     data class Unknown(val type: String, val raw: String) : SseEvent()
@@ -17,22 +18,23 @@ sealed class SseEvent {
             when (type) {
                 "text_delta" -> TextDelta(json.optString("content", ""))
                 "product_cards" -> {
-                    val arr = json.optJSONArray("products") ?: org.json.JSONArray()
-                    val products = (0 until arr.length()).map { i ->
-                        val obj = arr.getJSONObject(i)
-                        Product(
-                            id = obj.optString("id", ""),
-                            name = obj.optString("title", obj.optString("name", "")),
-                            price = obj.optDouble("price", 0.0),
-                            imageUrl = (obj.optJSONArray("image_urls")?.optString(0) ?: ""),
-                            reason = "",
-                            brand = obj.optString("brand", null),
-                            category = obj.optString("category", null),
-                            rating = obj.optDouble("rating", 0.0),
-                            matchScore = obj.optDouble("match_score", 0.0),
-                        )
-                    }
-                    ProductCards(products)
+                    // 逐卡片单条下发，字段在 data JSON 顶层
+                    val highlightsArr = json.optJSONArray("highlights") ?: org.json.JSONArray()
+                    val highlights = (0 until highlightsArr.length()).map { highlightsArr.optString(it, "") }
+                    val product = Product(
+                        id = json.optString("product_id", ""),
+                        name = json.optString("title", ""),
+                        price = json.optDouble("price", 0.0),
+                        imageUrl = json.optString("image_url", ""),
+                        highlights = highlights,
+                        matchScore = json.optDouble("match_score", 0.0),
+                        rating = json.optDouble("rating", 0.0),
+                        brand = json.optString("brand", null),
+                        category = json.optString("category", null),
+                        index = json.optInt("index", 0),
+                        total = json.optInt("total", 0),
+                    )
+                    ProductCard(product)
                 }
                 "done" -> Done
                 "error" -> Error(

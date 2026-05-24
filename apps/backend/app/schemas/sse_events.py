@@ -2,46 +2,74 @@
 SSE 事件类型统一维护
 遵循开发规约 v2.0 §7.3
 """
+import json
 from pydantic import BaseModel
 
 
+class SSEMixin:
+    """SSE 序列化混入 — 提供 to_sse() 方法"""
+
+    def to_sse(self) -> str:
+        """序列化为 SSE 格式: data: {json}\\n\\n"""
+        payload = self.model_dump() if hasattr(self, "model_dump") else self.dict()
+        return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+
 # ── MVP 事件 ──
-class TextDeltaEvent(BaseModel):
+class TextDeltaEvent(BaseModel, SSEMixin):
     type: str = "text_delta"
     content: str
 
 
-class ProductCardEvent(BaseModel):
+class ProductCardEvent(BaseModel, SSEMixin):
+    """单张商品卡片 — upload.py 逐条产出"""
     type: str = "product_cards"
-    products: list[dict]
+    product_id: str
+    title: str
+    price: float = 0
+    rating: float = 0
+    match_score: float = 0.5
+    highlights: list[str] = []
+    image_url: str | None = None
+    index: int = 0
+    total: int = 0
 
 
-class DoneEvent(BaseModel):
+class DoneEvent(BaseModel, SSEMixin):
     type: str = "done"
+    total_cards: int = 0
+    latency_ms: int = 0
+    message: str = ""
 
 
-class ErrorEvent(BaseModel):
+class ProgressEvent(BaseModel, SSEMixin):
+    """流水线进度推送 — 在意图分类/检索/排序各阶段完成后立即推送，提升感知速度"""
+    type: str = "progress"
+    message: str
+
+
+class ErrorEvent(BaseModel, SSEMixin):
     type: str = "error"
     message: str
     code: str
 
 
 # ── 全量扩展 (预留) ──
-class IntentEvent(BaseModel):
+class IntentEvent(BaseModel, SSEMixin):
     type: str = "intent"
     intent: str
     slots: dict = {}
 
 
-class RetrievalEvent(BaseModel):
+class RetrievalEvent(BaseModel, SSEMixin):
     type: str = "retrieval"
     chunks: list[dict] = []
 
 
-class CompareEvent(BaseModel):
+class CompareEvent(BaseModel, SSEMixin):
     type: str = "compare"
     dimensions: list[dict] = []
 
 
 # ── 联合类型 ──
-SSEEvent = TextDeltaEvent | ProductCardEvent | DoneEvent | ErrorEvent
+SSEEvent = TextDeltaEvent | ProductCardEvent | DoneEvent | ErrorEvent | ProgressEvent

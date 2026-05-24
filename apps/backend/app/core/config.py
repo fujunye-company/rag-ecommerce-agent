@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # Doubao (豆包) — 比赛指定，优先使用
     DOUBAO_API_KEY: str = ""
     DOUBAO_BASE_URL: str = "https://ark.cn-beijing.volces.com/api/v3/"
-    LLM_MODEL: str = "ep-20260514111645-Imgt2"
+    LLM_MODEL: str = "ep-20260514111645-lmgt2"
     # DeepSeek — 降级回退
     DEEPSEEK_API_KEY: str = ""
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com/v1"

@@ -3,10 +3,7 @@ package com.shopping.agent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
+import com.shopping.agent.ui.navigation.AppNavGraph
 import com.shopping.agent.ui.theme.ShoppingTheme
 
 /**
@@ -17,12 +14,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             ShoppingTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    // TODO: NavGraph 导航
-                }
+                AppNavGraph()
             }
         }
     }

@@ -40,6 +40,21 @@ async def retrieve(
         top_k=top_k,
     )
 
+    # 品类精确匹配无结果 → 回退为无品类过滤（LLM提取的品类名可能与数据库不一致）
+    if not chunks and category:
+        logger.info("RAG: category='%s' returned 0, retrying without category filter", category)
+        chunks, search_ms = await hybrid_search(
+            query_vector=vector,
+            query_text=query,
+            category=None,
+            price_min=price_min,
+            price_max=price_max,
+            exclude_brands=exclude_brands,
+            exclude_categories=exclude_categories,
+            exclude_attributes=exclude_attributes,
+            top_k=top_k,
+        )
+
     total_ms = (time.monotonic() - t0) * 1000
     logger.info(
         "RAG retrieve: '%s' → %d chunks (embed+search=%.0fms)",

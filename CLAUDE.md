@@ -1,4 +1,4 @@
-# RAG E-Commerce Agent — Claude Code 上下文 v3.0
+# RAG E-Commerce Agent — Claude Code 上下文 v4.0
 
 > 项目根: `04-rag-ecommerce/`  
 > GitHub: `git@github.com:fujunye-company/rag-ecommerce-agent.git`  
@@ -9,11 +9,11 @@
 | 层 | 技术 |
 |----|------|
 | 后端 | FastAPI + LangGraph + LlamaIndex |
-| 向量库 | Qdrant |
+| 向量库 | Qdrant (1024-dim, bge-large-v1.5) |
 | 数据库 | PostgreSQL + pgvector (async SQLAlchemy) |
-| LLM | **Doubao-Seed-2.0-lite** ⚠️ 待切换 (当前 DeepSeek) |
+| LLM | **Doubao-Seed-2.0-lite** ⚠️ Key待验证 (当前 DeepSeek 降级) |
 | Embedding | BGE-large-zh-v1.5 |
-| 前端 | Kotlin + Jetpack Compose (Android 原生) |
+| 前端 | Kotlin + Jetpack Compose (Android 原生, 33 kt) |
 | Python | 3.11 @ ~/.hermes-venv |
 
 ### Doubao API
@@ -28,25 +28,36 @@ Key:  见 apps/backend/.env (DOUBAO_API_KEY)
 ```bash
 cd apps/backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 docker compose -f infrastructure/docker-compose.yml up -d
-cd apps/backend && python -m pytest tests/ -v
-cd apps/backend && python scripts/seed_data.py
+cd apps/backend/data/qdrant && python ingest_to_qdrant.py
+cd apps/backend/data/qdrant && python retrieve_from_qdrant.py --test
 ```
 
 ## 当前里程碑
 
 ```
-M1 工程启动 ✅  M2 数据基础 ✅  M3 RAG检索 ✅  M4 对话闭环 ✅  M5 MVP验收 🔄
+M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ⚠️  M6 ✅  M7 ⚠️  M8 ⚠️  M9 ✅  M10 🔜
 ```
-**M5 重点**：LLM切换Doubao + 否定语义 + 数据14→50+ + 场景4/5/6(购物车加分)
+
+**M10 冲刺重点**：
+- P0: 豆包Key验证 → Android编译 → 前后端联调 (4.5h)
+- P1: clarify追问节点 → VLM拍照找货 → RAGAS评测 (5h)
+- P2: 答辩PPT → 演示视频 → 打包交付 (4.5h)
+
+## 场景完成度 (9场景 × 后端)
+
+| 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ⚠️ | ⚠️ | ❌ |
 
 ## 比赛评分权重
 
-| 维度 | 权重 |
-|------|:---:|
-| 基础功能完整性 | 35% |
-| 工程质量 | 25% |
-| 效果与可靠性 | 20% |
-| 加分项深度 | 20% |
+| 维度 | 权重 | 当前估计 |
+|------|:---:|:--:|
+| 基础功能完整性 | 35% | ~20% |
+| 工程质量 | 25% | ~18% |
+| 效果与可靠性 | 20% | ~5% |
+| 加分项深度 | 20% | ~10% |
+| **合计** | **100%** | **~53%** |
 
 ## 严禁项
 - 编造不存在的优惠券/功能/价格

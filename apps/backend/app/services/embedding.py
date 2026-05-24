@@ -12,11 +12,14 @@ _embedding_model: SentenceTransformer | None = None
 
 
 def get_embedding_model() -> SentenceTransformer:
-    """懒加载 embedding 模型 (单例)，warmup 首次调用"""
+    """懒加载 embedding 模型 (单例, CPU)，warmup 首次调用"""
     global _embedding_model
     if _embedding_model is None:
-        logger.info("Loading embedding model: %s", settings.EMBEDDING_MODEL)
-        _embedding_model = SentenceTransformer(settings.EMBEDDING_MODEL)
+        logger.info("Loading embedding model: %s (CPU, local)", settings.EMBEDDING_MODEL)
+        _embedding_model = SentenceTransformer(
+            settings.EMBEDDING_MODEL, device="cpu",
+            local_files_only=True,
+        )
         # warmup: encode a short text to avoid first-request latency
         _embedding_model.encode("warmup", normalize_embeddings=True)
         logger.info("Embedding model ready, dim=%d", _embedding_model.get_sentence_embedding_dimension())

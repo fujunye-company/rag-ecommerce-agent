@@ -27,7 +27,7 @@ Android(Kotlin/Compose) ← SSE → FastAPI ← LangGraph → Qdrant/PostgreSQL 
 | Agent | LangGraph StateGraph | |
 | RAG | LlamaIndex + Qdrant | |
 | 数据库 | PostgreSQL + pgvector | |
-| LLM | **Doubao-Seed-2.0-lite** ⚠️ 待切换 | 比赛提供 Key（当前仍为 DeepSeek） |
+| LLM | **Doubao-Seed-2.0-lite** ⚠️ Key待验证 | 比赛提供 Key（当前 DeepSeek 降级可用） |
 | Embedding | BGE-large-zh-v1.5 | 比赛推荐 Doubao-embedding-vision，不强制 |
 
 ### Doubao API
@@ -44,24 +44,23 @@ Limit: TPM 800K, RPM 700
 ## 三、架构设计
 
 ```
-LangGraph StateGraph:
+LangGraph StateGraph (当前 3 节点 → 目标 7 节点):
+
   START
     ↓
-  classify_intent   → 9类意图 (含 cart + image) + 否定条件 + 信息不足
+  classify_intent   → 9类意图 + 否定条件检测 (所有含否定词查询触发)
     ↓
-  extract_slots     → 结构化槽位 (price_range, 含否定属性 exclude_*)
-    ↓  [missing_slots非空]
-  clarify           → 主动追问Chip (Q&A引导)
-    ↓  [slots完整]
-  retrieve          → Qdrant向量检索 + metadata过滤 + 否定条件排除
+  [★ 待实现] clarify → 主动追问Chip (missing_slots非空时)
     ↓
-  rank              → 向量粗排 → LLM精排 → 动态权重
+  retrieve          → Qdrant向量检索 + metadata过滤 + 否定排除 + 文本级兜底过滤
     ↓
-  generate          → SSE stream: text_delta×N → product_cards → done
+  [★ 待实现] rank   → 向量粗排 → LLM精排 → 动态权重
+    ↓
+  generate          → SSE stream: text_delta×N → product_cards(with image_urls) → done
     ↓
   [cart 分支]       → 购物车CRUD (加购/删除/修改/下单)
     ↓
-  [image 分支]      → 图像理解 → 相似商品检索
+  [image 分支]      → 图像理解 → 相似商品检索 (★ VLM待接入)
     ↓
   END
 ```

@@ -1,20 +1,39 @@
 package com.shopping.agent.data.model
 
 /**
- * 商品 DTO — 对齐后端 ProductCardEvent schema
- * 后端字段: product_id, title, price, rating, match_score, highlights, image_url, index, total
+ * 统一商品模型 — 对齐 DATA-CONTRACT.md v1.0 §1.2
+ *
+ * 与后端 ProductRecord 一一映射。字段命名 camelCase (Kotlin 规范)。
  */
 data class Product(
-    val id: String,
-    val name: String,
-    val price: Double,
-    val imageUrl: String,
-    val highlights: List<String> = emptyList(),
-    val matchScore: Double = 0.0,
-    // 扩展字段
-    val brand: String? = null,
-    val category: String? = null,
-    val rating: Double = 0.0,
-    val index: Int = 0,
-    val total: Int = 0,
+    // 标识
+    val productId: String,              // → product_id
+
+    // 基本信息
+    val title: String,                  // → title
+    val brand: String?,                 // → brand
+    val category: String = "",          // → category
+
+    // 价格
+    val price: Double,                  // → price
+
+    // 评价
+    val rating: Float = 3.0f,           // → rating
+    val ratingCount: Int = 0,           // → rating_count
+
+    // 描述
+    val highlights: List<String> = emptyList(),  // → highlights
+    val attributes: Map<String, String> = emptyMap(), // → attributes
+    val scenarios: List<String> = emptyList(),  // → scenarios
+
+    // 多媒体
+    val imageUrl: String? = null,       // → image_url
+    val imageUrls: List<String> = emptyList(),  // → image_urls
+
+    // 来源
+    val source: String = "",            // → source
+
+    // 检索元数据
+    val matchScore: Double = 0.0,       // → match_score
+    val rankReason: String = "",        // → rank_reason
 )

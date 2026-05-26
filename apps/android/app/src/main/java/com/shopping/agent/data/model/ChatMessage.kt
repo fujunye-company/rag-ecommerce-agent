@@ -1,12 +1,15 @@
 package com.shopping.agent.data.model
 
-/**
- * 消息 DTO — role, content, products, timestamp
- */
 data class ChatMessage(
-    val role: String,        // "user" | "assistant"
+    val id: String,
+    val role: MessageRole,
     val content: String,
-    val products: List<Product> = emptyList(),
+    val productCards: List<Product> = emptyList(),
     val timestamp: Long = System.currentTimeMillis(),
-    val isStreaming: Boolean = false,
+    val status: MessageStatus = MessageStatus.Sent,
+    val errorMessage: String? = null,
 )
+
+enum class MessageRole { User, Assistant }
+
+enum class MessageStatus { Sending, Sent, Streaming, Error }

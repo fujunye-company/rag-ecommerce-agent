@@ -153,6 +153,7 @@ async def search_similar_products(
             "score": round(hit.score, 4) if hit.score else 0.0,
             "highlights": p.get("highlights", [])[:3],
             "image_url": p.get("image_url"),
+            "image_urls": p.get("image_urls", []),
         })
 
     logger.info("Similar search: '%s' → %d products", query_text[:60], len(products))

@@ -8,25 +8,36 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val LightColorScheme = lightColorScheme(
-    primary = Primary,
-    secondary = Secondary,
-    background = Background,
-    surface = Surface,
-    onPrimary = OnPrimary,
-    onSecondary = OnSecondary,
-    onBackground = OnBackground,
-    onSurface = OnSurface,
+    primary            = Primary,
+    onPrimary          = OnPrimary,
+    primaryContainer   = PrimaryLight,
+    secondary          = Secondary,
+    onSecondary        = OnPrimary,
+    tertiary           = Tertiary,
+    background         = Background,
+    onBackground       = OnBackground,
+    surface            = Surface,
+    onSurface          = OnSurface,
+    onSurfaceVariant   = OnSurfaceVariant,
+    error              = ErrorColor,
+    onError            = OnPrimary,
+    outline            = Outline,
+    outlineVariant     = OutlineVariant,
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = DarkPrimary,
-    secondary = DarkSecondary,
-    background = DarkBackground,
-    surface = DarkSurface,
-    onPrimary = OnPrimary,
-    onSecondary = OnSecondary,
-    onBackground = Color.White,
-    onSurface = Color.White,
+    primary            = DarkPrimary,
+    onPrimary          = OnPrimary,
+    primaryContainer   = PrimaryDark,
+    secondary          = Secondary,
+    onSecondary        = OnPrimary,
+    background         = DarkBackground,
+    onBackground       = Color.White,
+    surface            = DarkSurface,
+    onSurface          = Color.White,
+    onSurfaceVariant   = Neutral400,
+    error              = ErrorColor,
+    onError            = OnPrimary,
 )
 
 @Composable
@@ -36,7 +47,8 @@ fun ShoppingTheme(
 ) {
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
-        typography = AppTypography,
-        content = content
+        typography  = AppTypography,
+        shapes      = AppShapes,
+        content     = content,
     )
 }

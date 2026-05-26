@@ -22,7 +22,7 @@ class TextDeltaEvent(BaseModel, SSEMixin):
 
 
 class ProductCardEvent(BaseModel, SSEMixin):
-    """单张商品卡片 — upload.py 逐条产出"""
+    """单张商品卡片 — 对齐 DATA-CONTRACT.md v1.0 §2.2"""
     type: str = "product_cards"
     product_id: str
     title: str
@@ -31,6 +31,9 @@ class ProductCardEvent(BaseModel, SSEMixin):
     match_score: float = 0.5
     highlights: list[str] = []
     image_url: str | None = None
+    image_urls: list[str] = []
+    brand: str | None = None
+    category: str = ""
     index: int = 0
     total: int = 0
 

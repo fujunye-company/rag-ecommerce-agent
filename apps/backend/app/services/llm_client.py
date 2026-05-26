@@ -18,9 +18,9 @@ def create_llm_client(
     base_url: str = "",
     timeout: float = 30.0,
 ) -> AsyncOpenAI:
-    """工厂函数 — 优先 Doubao，回退 DeepSeek"""
-    key = api_key or settings.DEEPSEEK_API_KEY or settings.DOUBAO_API_KEY
-    url = base_url or settings.DEEPSEEK_BASE_URL or settings.DOUBAO_BASE_URL
+    """工厂函数 — 优先 Doubao（比赛主用），回退 DeepSeek"""
+    key = api_key or settings.DOUBAO_API_KEY or settings.DEEPSEEK_API_KEY
+    url = base_url or settings.DOUBAO_BASE_URL or settings.DEEPSEEK_BASE_URL
     return AsyncOpenAI(
         api_key=key,
         base_url=url,
@@ -106,6 +106,11 @@ async def chat_completion(
     """
     _c = client or get_client()
     _model = model or settings.LLM_MODEL
+    # 自动匹配模型名：DeepSeek 用 deepseek-chat，Doubao 用 LLM_MODEL
+    if not model:
+        _base = str(_c.base_url)
+        if "deepseek.com" in _base and _model.startswith("ep-"):
+            _model = settings.DEEPSEEK_MODEL or "deepseek-chat"
     start = time.time()
 
     # Doubao-Seed-2.0-lite 默认开启 Chain-of-Thought (reasoning_content)，

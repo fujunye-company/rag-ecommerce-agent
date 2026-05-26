@@ -22,7 +22,13 @@ async def chat_query(session, query):
                 if data.get("type") == "text_delta":
                     text_parts.append(data["content"])
                 elif data.get("type") == "product_cards":
-                    cards = data.get("products", [])
+                    # Per-card event: collect individual cards
+                    cards.append({
+                        "product_id": data.get("product_id"),
+                        "title": data.get("title"),
+                        "price": data.get("price"),
+                        "match_score": data.get("match_score"),
+                    })
                 elif data.get("type") == "done":
                     break
         return "".join(text_parts), cards

@@ -40,19 +40,27 @@ async def retrieve(
         top_k=top_k,
     )
 
-    # 品类精确匹配无结果 → 回退为无品类过滤（LLM提取的品类名可能与数据库不一致）
+    # 品类+价格 组合过滤无结果 → 分级回退
     if not chunks and category:
-        logger.info("RAG: category='%s' returned 0, retrying without category filter", category)
+        # 策略A: 先尝试只保留品类，放宽价格（保留上下文）
+        if price_min is not None or price_max is not None:
+            logger.info("RAG: category='%s' + price range returned 0, retry category-only", category)
+            chunks, search_ms = await hybrid_search(
+                query_vector=vector, query_text=query,
+                category=category, price_min=None, price_max=None,
+                exclude_brands=exclude_brands, exclude_categories=exclude_categories,
+                exclude_attributes=exclude_attributes, top_k=top_k,
+            )
+
+    if not chunks and category:
+        # 策略B: 品类名可能不匹配，回退到纯语义+价格（丢弃品类过滤）
+        logger.info("RAG: category='%s' returned 0 even without price, retry without category", category)
         chunks, search_ms = await hybrid_search(
-            query_vector=vector,
-            query_text=query,
+            query_vector=vector, query_text=query,
             category=None,
-            price_min=price_min,
-            price_max=price_max,
-            exclude_brands=exclude_brands,
-            exclude_categories=exclude_categories,
-            exclude_attributes=exclude_attributes,
-            top_k=top_k,
+            price_min=price_min, price_max=price_max,
+            exclude_brands=exclude_brands, exclude_categories=exclude_categories,
+            exclude_attributes=exclude_attributes, top_k=top_k,
         )
 
     total_ms = (time.monotonic() - t0) * 1000

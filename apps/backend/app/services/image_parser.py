@@ -27,7 +27,10 @@ _model_load_attempted = False
 def _get_local_model():
     """延迟加载本地 Qwen3-VL-2B 模型（优先 ModelScope 缓存）"""
     global _local_model, _local_processor, _model_load_attempted
+    if _local_model is not None:
+        return _local_model, _local_processor
     if _model_load_attempted:
+        # 上次加载失败且没经过重置，跳过重试
         return _local_model, _local_processor
     try:
         from transformers import AutoModelForImageTextToText, AutoProcessor
@@ -44,13 +47,13 @@ def _get_local_model():
             model_id, torch_dtype="auto", device_map="auto",
         )
         _local_processor = AutoProcessor.from_pretrained(model_id)
+        _model_load_attempted = True  # 加载成功，缓存状态
         logger.info("Local VLM loaded: %s", model_id)
     except Exception as e:
         logger.error("Local VLM unavailable: %s", e)
         _local_model = None
         _local_processor = None
-    finally:
-        _model_load_attempted = True
+        _model_load_attempted = False  # 允许下次重试（而非永久缓存失败状态）
     return _local_model, _local_processor
 
 

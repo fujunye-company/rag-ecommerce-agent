@@ -7,229 +7,414 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.HeadsetMic
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.shopping.agent.ui.theme.*
 import com.shopping.agent.data.mock.MockProfile
-import com.shopping.agent.ui.components.CartPreviewSection
-import com.shopping.agent.ui.components.GradientScreenBackground
-import com.shopping.agent.ui.theme.CardWhite
+
+// ===== ProfileHeader 渐变 =====
+private val ProfileGradient = Brush.horizontalGradient(
+    colorStops = arrayOf(
+        0.0f to Color(0xFFC5D9F0),
+        0.5f to Color(0xFFEDE7F0),
+        1.0f to Color(0xFFF5D5D8),
+    ),
+)
 
 /**
- * P05 我的页 — 用户信息 + 购物车预览 + 功能入口 + 退出登录
- *
- * 结构：
- * - 蓝粉渐变背景
- * - 顶部：圆形蓝色头像 + "fujunye" + "查看资料 >"
- * - 购物车预览区（白色卡片，横向滚动，空状态 "🛒 购物车是空的"）
- * - 功能入口列表（白色卡片）：我的订单 | 优惠券 | 收藏 | 浏览历史 | 设置
- * - 底部：退出登录（灰色文字按钮）
+ * 用户头部区域 — 蓝粉渐变 + 头像 + 用户名 fujunye + 官方客服 + 设置
+ * 设计规约参考: 拾物_我的页UI素材与页面设计说明书 §5.1
  */
 @Composable
-fun ProfileScreen(
-    onViewProfile: () -> Unit = {},
-    onViewCart: () -> Unit = {},
-    onViewOrders: () -> Unit = {},
-    onViewCoupons: () -> Unit = {},
-    onViewFavorites: () -> Unit = {},
-    onViewHistory: () -> Unit = {},
-    onSettings: () -> Unit = {},
-    onLogout: () -> Unit = {},
-) {
-    GradientScreenBackground {
-        Column(
+private fun ProfileHeader(onSettingsClick: () -> Unit = {}) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp)
+            .background(ProfileGradient),
+    ) {
+        // 右侧: 客服 + 设置
+        Row(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
+                .align(Alignment.TopEnd)
+                .padding(top = 12.dp, end = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // === 顶部用户信息 ===
-            ProfileHeader(onViewProfile = onViewProfile)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // === 购物车预览区（白色卡片）===
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                shape = MaterialTheme.shapes.large,
-                colors = CardDefaults.cardColors(containerColor = CardWhite),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            ) {
-                CartPreviewSection(
-                    cartItems = MockProfile.cartItems,
-                    onViewAll = onViewCart,
-                    modifier = Modifier.padding(vertical = 12.dp),
-                )
+            IconButton(onClick = {}, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Default.HeadsetMic, "官方客服", tint = Neutral700, modifier = Modifier.size(24.dp))
             }
+            IconButton(onClick = onSettingsClick, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Default.Settings, "设置", tint = Neutral700, modifier = Modifier.size(24.dp))
+            }
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // === 功能入口列表（白色卡片）===
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                shape = MaterialTheme.shapes.large,
-                colors = CardDefaults.cardColors(containerColor = CardWhite),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        // 左侧: 头像 + 用户名（水平排列）
+        Row(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // 圆形头像
+            Surface(
+                modifier = Modifier.size(56.dp),
+                shape = CircleShape,
+                color = Neutral100,
+                shadowElevation = 2.dp,
             ) {
-                Column {
-                    ProfileMenuItem(
-                        icon = Icons.Outlined.ReceiptLong,
-                        label = "我的订单",
-                        badge = "${MockProfile.orderCount}",
-                        onClick = onViewOrders,
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    ProfileMenuItem(
-                        icon = Icons.Outlined.ConfirmationNumber,
-                        label = "优惠券",
-                        badge = "${MockProfile.couponCount}张",
-                        onClick = onViewCoupons,
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    ProfileMenuItem(
-                        icon = Icons.Outlined.FavoriteBorder,
-                        label = "收藏",
-                        onClick = onViewFavorites,
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    ProfileMenuItem(
-                        icon = Icons.Outlined.History,
-                        label = "浏览历史",
-                        onClick = onViewHistory,
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    ProfileMenuItem(
-                        icon = Icons.Outlined.Settings,
-                        label = "设置",
-                        onClick = onSettings,
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "海",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Primary,
+                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // === 退出登录 ===
-            TextButton(
-                onClick = onLogout,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-            ) {
-                Text(
-                    text = "退出登录",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-        }
-    }
-}
-
-/**
- * 用户头像 + 用户名 + 查看资料
- */
-@Composable
-private fun ProfileHeader(
-    onViewProfile: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onViewProfile)
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        // 圆形蓝色头像占位
-        Box(
-            modifier = Modifier
-                .size(72.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
-            contentAlignment = Alignment.Center,
-        ) {
+            // 用户名
             Text(
-                text = "f",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onPrimary,
+                text = "fujunye",
+                style = MaterialTheme.typography.titleLarge,
+                color = Neutral900,
                 fontWeight = FontWeight.Bold,
             )
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = MockProfile.userName,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onPrimary,
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        Text(
-            text = "查看资料 >",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
-        )
     }
 }
 
 /**
- * 功能入口单项 — 图标 + 文字 + 箭头（可选 badge）
+ * 购物车预览模块 — 横向商品卡片列表
+ * 设计规约: §5.2 CartPreviewSection
  */
 @Composable
-private fun ProfileMenuItem(
-    icon: ImageVector,
-    label: String,
-    badge: String? = null,
-    onClick: () -> Unit,
+private fun CartPreviewSection(
+    onCartClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Card(
+        onClick = onCartClick,
+        shape = RadiusLg,
+        colors = CardDefaults.cardColors(containerColor = Neutral0),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = modifier.fillMaxWidth(),
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = MaterialTheme.colorScheme.onSurface,
-        )
+        Column(modifier = Modifier.padding(16.dp)) {
+            // 标题行
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "购物车",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Neutral900,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    "${MockProfile.cartCount}件商品",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Neutral500,
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            // 横向商品卡片列表
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                MockProfile.cartItems.forEach { item ->
+                    CartProductMiniCard(
+                        title = item.title,
+                        price = item.price,
+                        imagePlaceholder = Neutral100,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+    }
+}
 
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
-
-        if (badge != null) {
+@Composable
+private fun CartProductMiniCard(
+    title: String,
+    price: String,
+    imagePlaceholder: Color,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        shape = RadiusMd,
+        colors = CardDefaults.cardColors(containerColor = imagePlaceholder),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            // 商品图占位
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Neutral200),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("图", style = MaterialTheme.typography.bodySmall, color = Neutral500)
+            }
+            Spacer(Modifier.height(6.dp))
             Text(
-                text = badge,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                title,
+                style = MaterialTheme.typography.bodySmall,
+                color = Neutral700,
+                maxLines = 1,
+            )
+            Text(
+                price,
+                style = MaterialTheme.typography.labelMedium,
+                color = TextPrice,
+                fontWeight = FontWeight.Bold,
             )
         }
+    }
+}
 
-        Spacer(modifier = Modifier.width(4.dp))
+/**
+ * 订单状态模块 — 5个状态入口
+ * 设计规约: §5.3 OrderStatusSection
+ */
+@Composable
+private fun OrderStatusSection(modifier: Modifier = Modifier) {
+    Card(
+        shape = RadiusLg,
+        colors = CardDefaults.cardColors(containerColor = Neutral0),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    "我的订单",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Neutral900,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    "全部 >",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Primary,
+                    modifier = Modifier.clickable {},
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                MockProfile.orderStatuses.forEach { status ->
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            "${status.count}",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Neutral900,
+                            fontWeight = if (status.count != 0) FontWeight.Bold else FontWeight.Normal,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(status.label, style = MaterialTheme.typography.bodySmall, color = Neutral500)
+                    }
+                }
+            }
+        }
+    }
+}
 
-        Icon(
-            imageVector = Icons.Outlined.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(20.dp),
-        )
+/**
+ * 常用功能 2×3 网格 — 使用 Material Icons 替代 Emoji
+ * 设计规约: §5.4 ProfileFeatureGrid
+ */
+@Composable
+private fun ProfileFeatureGrid(modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        val features = MockProfile.features
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            FeatureItem(features[0].title, features[0].subtitle, Icons.Default.Settings, Modifier.weight(1f))
+            FeatureItem(features[1].title, features[1].subtitle, Icons.Default.Settings, Modifier.weight(1f))
+            FeatureItem(features[2].title, features[2].subtitle, Icons.Default.HeadsetMic, Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            FeatureItem(features[3].title, features[3].subtitle, Icons.Default.Settings, Modifier.weight(1f))
+            FeatureItem(features[4].title, features[4].subtitle, Icons.Default.Settings, Modifier.weight(1f))
+            FeatureItem(features[5].title, features[5].subtitle, Icons.Default.HeadsetMic, Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun FeatureItem(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        shape = RadiusLg,
+        colors = CardDefaults.cardColors(containerColor = Neutral0),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                icon,
+                contentDescription = title,
+                tint = Neutral700,
+                modifier = Modifier.size(28.dp),
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(title, style = MaterialTheme.typography.bodySmall, color = Neutral700)
+            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = Neutral400)
+        }
+    }
+}
+
+/**
+ * 领券中心 — 浅粉券面 + 红色金额
+ * 设计规约: §5.5 CouponCenterSection
+ */
+@Composable
+private fun CouponCenterSection(modifier: Modifier = Modifier) {
+    Card(
+        shape = RadiusLg,
+        colors = CardDefaults.cardColors(containerColor = Neutral0),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "领券中心",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Neutral900,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    "更多优惠 >",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Primary,
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                MockProfile.coupons.forEach { coupon ->
+                    CouponCard(coupon.amount, coupon.label, BrandPink.copy(alpha = 0.15f), Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CouponCard(
+    amount: String,
+    label: String,
+    bgColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier,
+        shape = RadiusMd,
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                amount,
+                style = MaterialTheme.typography.titleMedium,
+                color = TextPrice,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = Neutral600,
+            )
+        }
+    }
+}
+
+/**
+ * 我的 — 完整页面
+ * 设计规约: 拾物_我的页UI素材与页面设计说明书 完整版
+ */
+@Composable
+fun ProfileScreen(
+    onSettingsClick: () -> Unit = {},
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Neutral50),
+    ) {
+        // ===== A01: 用户头部 =====
+        ProfileHeader(onSettingsClick = onSettingsClick)
+
+        // ===== 内容区 =====
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            // ===== A02: 购物车预览 =====
+            CartPreviewSection(onCartClick = {})
+
+            // ===== A03: 我的订单 =====
+            OrderStatusSection()
+
+            // ===== A04: 常用功能 =====
+            ProfileFeatureGrid()
+
+            // ===== A05: 领券中心 =====
+            CouponCenterSection()
+
+            // 底部留白
+            Spacer(Modifier.height(24.dp))
+        }
     }
 }

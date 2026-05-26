@@ -1,50 +1,69 @@
 package com.shopping.agent.data.model
 
 /**
- * SSE 事件密封类 — 所有 type 分支 + unknown 兜底
- * 后端发送格式: {"event":"product_cards","data":"{\"type\":\"product_cards\",\"product_id\":\"...\",\"title\":\"...\",...}"}
- * ProductCardEvent 逐卡片单条下发，含 product_id/title/price/rating/match_score/highlights/image_url/index/total
+ * SSE 事件类型 — 与后端 /api/v1/chat SSE 协议对齐。
+ *
+ * 后端事件:
+ *   text_delta   → 流式文本增量（逐 token）
+ *   product_cards → 单张推荐商品卡片（逐张推送）
+ *   progress     → 流水线进度提示
+ *   done         → 流结束
+ *   error        → 错误
  */
-sealed class SseEvent {
-    data class TextDelta(val content: String) : SseEvent()
-    data class ProductCard(val product: Product) : SseEvent()
-    object Done : SseEvent()
-    data class Error(val message: String, val code: String) : SseEvent()
-    data class Unknown(val type: String, val raw: String) : SseEvent()
-
-    companion object {
-        fun fromJson(type: String, rawData: String): SseEvent = try {
-            val json = org.json.JSONObject(rawData)
-            when (type) {
-                "text_delta" -> TextDelta(json.optString("content", ""))
-                "product_cards" -> {
-                    // 逐卡片单条下发，字段在 data JSON 顶层
-                    val highlightsArr = json.optJSONArray("highlights") ?: org.json.JSONArray()
-                    val highlights = (0 until highlightsArr.length()).map { highlightsArr.optString(it, "") }
-                    val product = Product(
-                        id = json.optString("product_id", ""),
-                        name = json.optString("title", ""),
-                        price = json.optDouble("price", 0.0),
-                        imageUrl = json.optString("image_url", ""),
-                        highlights = highlights,
-                        matchScore = json.optDouble("match_score", 0.0),
-                        rating = json.optDouble("rating", 0.0),
-                        brand = json.optString("brand", null),
-                        category = json.optString("category", null),
-                        index = json.optInt("index", 0),
-                        total = json.optInt("total", 0),
-                    )
-                    ProductCard(product)
-                }
-                "done" -> Done
-                "error" -> Error(
-                    json.optString("message", "未知错误"),
-                    json.optString("code", "UNKNOWN")
-                )
-                else -> Unknown(type, rawData)
-            }
-        } catch (e: Exception) {
-            Error(e.message ?: "解析错误", "PARSE_ERROR")
-        }
-    }
+sealed class SSEEvent {
+    data class TextDelta(val delta: String, val content: String = "") : SSEEvent()
+    
+    data class ProductCard(
+        val productId: String,
+        val title: String,
+        val price: Double,
+        val rating: Double,
+        val matchScore: Double,
+        val highlights: List<String>,
+        val imageUrl: String?,
+        val imageUrls: List<String>,
+        val brand: String?,
+        val category: String,
+        val index: Int,
+        val total: Int
+    ) : SSEEvent()
+    
+    data class Progress(val message: String) : SSEEvent()
+    
+    data class Done(
+        val sessionId: String = "",
+        val totalCards: Int = 0,
+        val latencyMs: Int = 0
+    ) : SSEEvent()
+    
+    data class Error(val message: String) : SSEEvent()
 }
+
+// ── JSON payload 映射（仅 SseClient 内部解析用） ──
+
+data class TextDeltaPayload(val content: String)
+
+data class ProductCardPayload(
+    val product_id: String,
+    val title: String,
+    val price: Double,
+    val rating: Double,
+    val match_score: Double,
+    val highlights: List<String>?,
+    val image_url: String?,
+    val image_urls: List<String>?,
+    val brand: String?,
+    val category: String?,
+    val index: Int,
+    val total: Int
+)
+
+data class ProgressPayload(val message: String)
+
+data class DonePayload(
+    val total_cards: Int,
+    val latency_ms: Int,
+    val message: String?
+)
+
+data class ErrorPayload(val message: String, val code: String?)

@@ -1,224 +1,260 @@
 package com.shopping.agent.ui.components
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shopping.agent.data.mock.HistorySession
 import com.shopping.agent.data.mock.MockHistory
+import com.shopping.agent.ui.theme.*
 
 /**
- * 历史侧边栏 — ModalDrawerSheet 内容
+ * 挂画式历史侧边栏 — 白色大圆角面板从左侧覆盖，右侧保留主页面露出区
  *
- * 结构：
- * - 顶部：搜索框 + "新建对话" 按钮
- * - 中部：LazyColumn 按月份分组（每组标题 + 会话列表）
- * - 底部：用户信息 "fujunye" + "退出登录"
- *
- * 点击会话 → 关闭抽屉并导航到 chat
+ * 设计规约: 拾物_历史对话挂画式侧边栏UI素材与页面设计说明书
+ * - 左侧面板: 白色背景, 大圆角(右上32dp+右下32dp), 轻阴影
+ * - 面板宽度: 约 72-76% 屏幕宽
+ * - 右侧: 保留主页面露出 (MainContentPeekArea) 作为关闭热区
+ * - 顶部: 搜索框 + 新建对话按钮
+ * - 主体: 历史会话按月份分组
+ * - 底部: 用户头像 + fujunye + 更多
  */
 @Composable
 fun HistoryDrawer(
+    visible: Boolean,
+    onDismiss: () -> Unit,
     onSessionClick: (HistorySession) -> Unit,
     onNewChat: () -> Unit,
-    onLogout: () -> Unit,
 ) {
-    var searchQuery by remember { mutableStateOf("") }
+    if (!visible) return
 
-    val allGroups = MockHistory.sessions
-    val filteredGroups = if (searchQuery.isBlank()) {
-        allGroups
-    } else {
-        allGroups.mapNotNull { group ->
-            val filtered = group.sessions.filter {
-                it.title.contains(searchQuery, ignoreCase = true)
+    // 动画: drawer 从左侧滑入
+    val drawerOffsetX by animateDpAsState(
+        targetValue = if (visible) 0.dp else (-320).dp,
+        animationSpec = tween(300),
+        label = "drawer_slide",
+    )
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // ===== 遮罩层 (右侧主页面露出区 + 关闭热区) =====
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0x33000000))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismiss,
+                ),
+        )
+
+        // ===== 挂画式面板 =====
+        Surface(
+            modifier = Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(0.74f)  // 约 74% 屏幕宽
+                .offset(x = drawerOffsetX),
+            shape = RoundedCornerShape(
+                topStart = 0.dp,
+                topEnd = 32.dp,
+                bottomStart = 0.dp,
+                bottomEnd = 32.dp,
+            ),
+            color = Neutral0,
+            shadowElevation = 16.dp,
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // === 顶部: 搜索框 + 新建对话 ===
+                DrawerTopSection(
+                    onNewChat = {
+                        onNewChat()
+                        onDismiss()
+                    },
+                )
+
+                HorizontalDivider(color = Neutral100)
+
+                // === 主体: 历史会话列表 ===
+                DrawerSessionList(
+                    onSessionClick = { session ->
+                        onSessionClick(session)
+                        onDismiss()
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+
+                HorizontalDivider(color = Neutral100)
+
+                // === 底部: 用户信息 ===
+                DrawerUserFooter()
             }
-            if (filtered.isNotEmpty()) group.copy(sessions = filtered) else null
         }
     }
+}
 
-    ModalDrawerSheet(
-        modifier = Modifier.width(300.dp),
-    ) {
-        // === 顶部：搜索框 + 新建对话 ===
-        Column(
-            modifier = Modifier.padding(16.dp),
+@Composable
+private fun DrawerTopSection(onNewChat: () -> Unit) {
+    var searchQuery by remember { mutableStateOf("") }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        // 搜索框
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            placeholder = { Text("搜索历史会话", color = Neutral400) },
+            leadingIcon = {
+                Icon(Icons.Default.Search, "搜索", tint = Neutral500)
+            },
+            singleLine = true,
+            shape = RadiusMd,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Primary,
+                unfocusedBorderColor = Neutral200,
+                focusedContainerColor = Neutral50,
+                unfocusedContainerColor = Neutral50,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(Modifier.height(10.dp))
+
+        // 新建对话按钮
+        OutlinedButton(
+            onClick = onNewChat,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RadiusMd,
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = Neutral0,
+                contentColor = Primary,
+            ),
+            border = BorderStroke(1.dp, Neutral200),
         ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("搜索历史会话") },
-                leadingIcon = {
-                    Icon(Icons.Outlined.Search, contentDescription = "搜索")
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedButton(
-                onClick = onNewChat,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(Icons.Outlined.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("新建对话")
-            }
+            Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("新建对话", style = MaterialTheme.typography.bodyMedium)
         }
+    }
+}
 
-        HorizontalDivider()
+@Composable
+private fun DrawerSessionList(
+    onSessionClick: (HistorySession) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val groups = MockHistory.sessions
 
-        // === 中部：按月份分组的会话列表 ===
-        if (filteredGroups.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center,
-            ) {
+    LazyColumn(modifier = modifier) {
+        groups.forEach { group ->
+            // 月份标题
+            item(key = "month_${group.monthLabel}") {
                 Text(
-                    text = "未找到相关会话",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = group.monthLabel,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Neutral400,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 )
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-            ) {
-                filteredGroups.forEach { group ->
-                    // 月份标题
-                    item(key = "header_${group.monthLabel}") {
+
+            // 会话列表
+            items(group.sessions, key = { it.id }) { session ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSessionClick(session) }
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = group.monthLabel,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(
-                                horizontal = 16.dp,
-                                vertical = 10.dp,
-                            ),
+                            text = session.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Neutral800,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = session.time,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Neutral500,
                         )
                     }
-
-                    // 会话列表
-                    items(group.sessions, key = { it.id }) { session ->
-                        HistorySessionItem(
-                            session = session,
-                            onClick = { onSessionClick(session) },
-                        )
-                    }
-
-                    // 分组间分割线
-                    item(key = "divider_${group.monthLabel}") {
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    }
-                }
-            }
-        }
-
-        HorizontalDivider()
-
-        // === 底部：用户信息 + 退出登录 ===
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onLogout)
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // 用户头像 — 圆形蓝色占位
-            Surface(
-                modifier = Modifier.size(36.dp),
-                shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.primary,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "f",
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontWeight = FontWeight.Bold,
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        "恢复对话",
+                        tint = Neutral300,
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "fujunye",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                )
-                Text(
-                    text = "退出登录",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            // 分组间分割线
+            item(key = "div_${group.monthLabel}") {
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                    color = Neutral100,
                 )
             }
         }
     }
 }
 
-/**
- * 单条历史会话项
- * 标题 + 时间 + 标签 chip
- */
 @Composable
-private fun HistorySessionItem(
-    session: HistorySession,
-    onClick: () -> Unit,
-) {
-    Column(
+private fun DrawerUserFooter() {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .clickable {}
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 标题 + 时间
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        // 用户头像
+        Surface(
+            modifier = Modifier.size(40.dp),
+            shape = RoundedCornerShape(50),
+            color = Primary,
         ) {
-            Text(
-                text = session.title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = session.time,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // 标签 chips
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            session.tags.forEach { tag ->
-                SuggestionChip(
-                    onClick = {},
-                    label = {
-                        Text(
-                            text = tag,
-                            style = MaterialTheme.typography.labelSmall,
-                        )
-                    },
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    "f",
+                    color = OnPrimary,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "fujunye",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = Neutral900,
+            )
+            Text(
+                "退出登录",
+                style = MaterialTheme.typography.bodySmall,
+                color = Neutral400,
+            )
         }
     }
 }

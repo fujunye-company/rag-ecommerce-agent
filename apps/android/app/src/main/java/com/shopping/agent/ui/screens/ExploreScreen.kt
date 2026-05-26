@@ -1,128 +1,182 @@
 package com.shopping.agent.ui.screens
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.shopping.agent.data.mock.MockExploreProducts
-import com.shopping.agent.ui.components.ExploreProductNodeCard
-import com.shopping.agent.ui.components.GradientScreenBackground
-import com.shopping.agent.ui.components.UnifiedSearchBar
+import coil.compose.AsyncImage
+import com.shopping.agent.data.mock.MockExplorePosts
+import com.shopping.agent.ui.components.ChatInputBar
+import com.shopping.agent.ui.components.GradientTopBar
+import com.shopping.agent.ui.navigation.LocalOnMenuClick
+import com.shopping.agent.ui.theme.*
+import com.shopping.agent.viewmodel.ChatViewModel
+import kotlin.random.Random
 
-/**
- * P04 探索页（重写）
- *
- * - 蓝粉渐变背景
- * - 顶部标题："探索"
- * - UnifiedSearchBar
- * - 分类胶囊行（FilterChip）
- * - 主体：3 列错位网格 LazyVerticalStaggeredGrid
- * - 30 个探索节点 ExploreProductNodeCard
- */
+private val CARD = 110.dp
+private val GAP = 8.dp
+private val STEP = CARD + GAP
+private const val COLS = 12
+private val ROWS: Int get() = (100 + COLS - 1) / COLS  // ceil(100/12) = 9
+
+/** 随机不重叠布局数据 */
+data class CardPlacement(val row: Int, val col: Int, val postIndex: Int)
+
 @Composable
-fun ExploreScreen() {
-    val chips = MockExploreProducts.exploreChips
-    val allNodes = MockExploreProducts.nodes
+fun ExploreScreen(
+    chatViewModel: ChatViewModel,
+    onChatSend: () -> Unit,
+    onPostClick: (String) -> Unit = {},
+) {
+    // 使用固定种子生成可重复的随机布局
+    val placements = remember {
+        val rng = Random(42)
+        val grid = Array(ROWS) { BooleanArray(COLS) }
+        val result = mutableListOf<CardPlacement>()
 
-    var selectedChip by remember { mutableStateOf(chips.first()) }
+        // 随机打乱帖子索引
+        val indices = (0 until 100).toMutableList()
+        indices.shuffle(rng)
 
-    // 按分类筛选（"推荐"和"随机"显示全部）
-    val filteredNodes = remember(selectedChip) {
-        if (selectedChip == "推荐" || selectedChip == "随机") {
-            allNodes
-        } else {
-            allNodes.filter { it.product.category == selectedChip }
-        }
-    }
-
-    GradientScreenBackground {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // === 顶部标题 ===
-            Text(
-                text = "探索",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 20.dp, top = 16.dp, end = 20.dp),
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // === 搜索栏 ===
-            UnifiedSearchBar(
-                onClick = { /* TODO: 搜索跳转 */ },
-                modifier = Modifier.padding(top = 4.dp),
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // === 分类胶囊行 ===
-            ExploreChipRow(
-                chips = chips,
-                selectedChip = selectedChip,
-                onChipSelected = { selectedChip = it },
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // === 3 列错位网格 ===
-            LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(3),
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalItemSpacing = 8.dp,
-            ) {
-                items(filteredNodes, key = { it.product.id }) { node ->
-                    ExploreProductNodeCard(
-                        name = node.product.name,
-                        price = node.product.price,
-                        imageUrl = node.product.imageUrl,
-                    )
+        for (idx in indices.take(100)) {
+            // 随机尝试放置
+            var placed = false
+            val attempts = (ROWS * COLS * 2).coerceAtMost(500)
+            for (attempt in 0 until attempts) {
+                val r = rng.nextInt(ROWS)
+                val c = rng.nextInt(COLS)
+                if (!grid[r][c]) {
+                    grid[r][c] = true
+                    result.add(CardPlacement(r, c, idx))
+                    placed = true
+                    break
                 }
             }
         }
+        result
     }
-}
 
-/**
- * 探索页分类胶囊行 — 横向滚动 FilterChip
- */
-@Composable
-private fun ExploreChipRow(
-    chips: List<String>,
-    selectedChip: String,
-    onChipSelected: (String) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        chips.forEach { chip ->
-            val isSelected = chip == selectedChip
-            FilterChip(
-                selected = isSelected,
-                onClick = { onChipSelected(chip) },
-                label = {
-                    Text(
-                        text = chip,
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-            )
+    val sh = rememberScrollState()
+    val sv = rememberScrollState()
+    val d = LocalDensity.current
+
+    // 初始居中
+    LaunchedEffect(Unit) {
+        val gp = with(d) { STEP.roundToPx() }
+        val midC = COLS / 2
+        val midR = ROWS / 2
+        sh.scrollTo((midC * gp).coerceAtLeast(0))
+        sv.scrollTo((midR * gp).coerceAtLeast(0))
+    }
+
+    Column(Modifier.fillMaxSize().background(Neutral50)) {
+        GradientTopBar(icons = {
+            IconButton(onClick = LocalOnMenuClick.current, modifier = Modifier.size(34.dp)) {
+                Icon(Icons.Default.Menu, "菜单", tint = Neutral700, modifier = Modifier.size(26.dp))
+            }
+            Text("发布", modifier = Modifier.padding(end = 12.dp),
+                style = MaterialTheme.typography.titleMedium, color = Neutral700, fontWeight = FontWeight.Medium)
+        })
+
+        // 随机卡片网格
+        Box(
+            Modifier.weight(1f).horizontalScroll(sh).verticalScroll(sv)
+                .background(Color(0xFFF0F0F3))
+        ) {
+            val gridW = STEP * COLS
+            val gridH = STEP * ROWS
+            Box(Modifier.size(width = gridW, height = gridH)) {
+                // 虚线连接
+                Canvas(Modifier.fillMaxSize()) {
+                    // 简化：不画连接线，专注卡片展示
+                }
+
+                placements.forEach { p ->
+                    val post = MockExplorePosts.posts.getOrNull(p.postIndex) ?: return@forEach
+                    val x = STEP * p.col + 4.dp
+                    val y = STEP * p.row + 4.dp
+
+                    Box(Modifier.offset(x, y).size(CARD)) {
+                        Card(
+                            onClick = { onPostClick(post.postId) },
+                            shape = RadiusMd,
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                            colors = CardDefaults.cardColors(containerColor = Neutral0)
+                        ) {
+                            Column {
+                                // 商品图
+                                AsyncImage(
+                                    model = post.product.images.firstOrNull() ?: "",
+                                    contentDescription = post.product.title,
+                                    modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                                    contentScale = ContentScale.Crop,
+                                )
+                                // 底部信息
+                                Column(Modifier.padding(6.dp)) {
+                                    // 作者行
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Surface(
+                                            modifier = Modifier.size(16.dp),
+                                            shape = CircleShape,
+                                            color = PrimaryLight,
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text(
+                                                    post.author.name.take(1),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = Primary,
+                                                    fontWeight = FontWeight.Bold,
+                                                )
+                                            }
+                                        }
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(
+                                            post.author.name,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Neutral600,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        post.product.title.take(8),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Neutral800,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
+
+        // 底部搜索栏
+        ChatInputBar(
+            chatViewModel = chatViewModel,
+            onSendRequested = onChatSend,
+            placeholder = "搜索想探索的好物…",
+            showIcons = true,
+        )
     }
 }

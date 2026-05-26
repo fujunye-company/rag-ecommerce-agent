@@ -7,6 +7,7 @@ plugins {
 android {
     namespace = "com.shopping.agent"
     compileSdk = 35
+    buildToolsVersion = "36.1.0"
 
     defaultConfig {
         applicationId = "com.shopping.agent"
@@ -33,6 +34,9 @@ android {
 }
 
 dependencies {
+    // Android Material (View-based) — 提供 XML 主题如 Theme.Material3.DayNight.NoActionBar
+    implementation("com.google.android.material:material:1.12.0")
+
     // Compose BOM
     val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
     implementation(composeBom)

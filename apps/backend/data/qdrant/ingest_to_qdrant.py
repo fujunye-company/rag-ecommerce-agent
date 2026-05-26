@@ -92,7 +92,9 @@ def main():
             "attributes": prod.get("attributes", {}),
             "highlights": prod.get("highlights", []),
             "scenarios": prod.get("scenarios", []),
+            "image_url": prod.get("image_url") or (prod.get("image_urls", [None]) or [None])[0],
             "image_urls": prod.get("image_urls", []),
+            "source": prod.get("source", ""),
         })
 
     print(f"向量化 {len(texts)} 件商品 (batch_size={BATCH_SIZE}) ...")

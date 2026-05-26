@@ -40,8 +40,8 @@ async def get_or_create_session(session_id: str | None = None) -> tuple[str, dic
                 _cache[str(session.id)] = state
                 return str(session.id), state
 
-    # 创建新会话
-    new_id = uuid.uuid4()
+    # 创建新会话（优先使用传入的有效 UUID）
+    new_id = valid_uuid if valid_uuid else uuid.uuid4()
     async with AsyncSessionLocal() as db:
         session = Session(id=new_id, state_json={}, message_count=0)
         db.add(session)

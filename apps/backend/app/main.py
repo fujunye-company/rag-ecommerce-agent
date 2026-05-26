@@ -25,7 +25,7 @@ logger = logging.getLogger("main")
 # ── Lifespan ──────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期：启动时建表，关闭时断开数据库"""
+    """应用生命周期：启动时建表+预热模型，关闭时断开数据库"""
     # startup
     try:
         async with engine.begin() as conn:
@@ -34,6 +34,16 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.error("数据库初始化失败: %s", exc)
         raise
+
+    # 预热 Reranker 模型（同步，阻塞启动直到就绪）
+    try:
+        from app.services.reranker import _get_model
+        import asyncio as _asyncio
+        await _asyncio.to_thread(_get_model)
+        logger.info("Reranker model warmed up")
+    except Exception as e:
+        logger.warning("Reranker warmup skipped: %s", e)
+
     yield
     # shutdown
     try:

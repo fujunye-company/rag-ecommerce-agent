@@ -115,6 +115,9 @@ async def vision_search(file: UploadFile = File(...)):
                 match_score=product.get("match_score", product.get("score", 0.5)),
                 highlights=product.get("highlights", []),
                 image_url=product.get("image_url"),
+                image_urls=product.get("image_urls", []),
+                brand=product.get("brand"),
+                category=product.get("category", ""),
                 index=i + 1,
                 total=total,
             )

@@ -1,111 +1,90 @@
 package com.shopping.agent.ui.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.shopping.agent.data.model.Product
+import com.shopping.agent.ui.theme.*
 
-/**
- * 商品卡片 — MVP: 图片 + 名称 + 价格 + 评分 + 匹配度
- */
 @Composable
 fun ProductCard(
-    name: String,
-    price: Double,
-    imageUrl: String,
-    reason: String = "",
-    rating: Double = 0.0,
-    matchScore: Double = 0.0,
-    onClick: () -> Unit = {},
+    product: Product,
+    onTap: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = Modifier
-            .width(200.dp)
-            .padding(4.dp),
-        shape = RoundedCornerShape(12.dp),
+    Card(onClick = onTap, shape = RadiusLg,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        onClick = onClick
-    ) {
+        colors = CardDefaults.cardColors(containerColor = Neutral0),
+        modifier = modifier.fillMaxWidth()) {
         Column {
-            // 商品图片
-            if (imageUrl.isNotEmpty()) {
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = name,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp)
-                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
-                    contentScale = ContentScale.Crop
-                )
+            Box {
+                AsyncImage(model = product.imageUrl, contentDescription = product.title,
+                    modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                    contentScale = ContentScale.Crop)
+                Surface(Modifier.align(Alignment.BottomEnd).padding(8.dp),
+                    shape = CircleShape, color = Neutral0.copy(alpha = 0.9f)) {
+                    Icon(Icons.Default.ChevronRight, "详情",
+                        tint = Neutral500, modifier = Modifier.size(24.dp))
+                }
             }
-
-            Column(modifier = Modifier.padding(12.dp)) {
-                // 名称
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 2,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // 价格 + 评分
-                Row(
-                    verticalAlignment = Alignment.CenterBy,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "¥$price",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                    if (rating > 0) {
-                        Text(
-                            text = "★ $rating",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
+            Column(modifier = Modifier.padding(Dimens.cardPadding)) {
+                if (product.attributes.isNotEmpty()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        product.attributes.values.take(3).forEach { tag ->
+                            Surface(shape = RadiusSm, color = Neutral100) {
+                                Text(tag, Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.bodySmall, color = Neutral600)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(Dimens.space1))
+                }
+                Text(product.title, style = MaterialTheme.typography.titleMedium,
+                    color = Neutral900, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(Dimens.space1))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text("到手价", style = MaterialTheme.typography.bodySmall, color = Neutral500)
+                    Spacer(Modifier.width(4.dp))
+                    Text("¥${product.price}", style = PriceMedium.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrice)
+                    if (product.price != null && product.price > product.price) {
+                        Spacer(Modifier.width(8.dp))
+                        Text("¥${product.price}",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                textDecoration = TextDecoration.LineThrough),
+                            color = Neutral400)
                     }
                 }
-
-                // 匹配度
-                if (matchScore > 0) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    LinearProgressIndicator(
-                        progress = { (matchScore * 100).toInt().coerceIn(0, 100) / 100f },
-                        modifier = Modifier.fillMaxWidth().height(4.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    )
-                    Text(
-                        text = "匹配度 ${(matchScore * 100).toInt()}%",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
-
-                // 推荐理由
-                if (reason.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = reason,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 2,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Spacer(Modifier.height(Dimens.space1))
+                Row(verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Surface(shape = RadiusSm, color = Color(0xFFEBF3FC)) {
+                        Text(product.source, Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.bodySmall, color = Info)
+                    }
+                    if (product.ratingCount != null) {
+                        Text(formatSalesCount(product.ratingCount),
+                            style = MaterialTheme.typography.bodySmall, color = Neutral500)
+                    }
                 }
             }
         }
     }
+}
+
+fun formatSalesCount(count: Int): String = when {
+    count >= 10000 -> "${count / 10000}.${(count % 10000) / 1000}万人付款"
+    else -> "${count}人付款"
 }

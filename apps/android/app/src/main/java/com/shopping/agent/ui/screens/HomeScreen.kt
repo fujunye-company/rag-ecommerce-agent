@@ -1,102 +1,110 @@
 package com.shopping.agent.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import com.shopping.agent.data.mock.MockHomeProducts
-import com.shopping.agent.ui.components.GradientScreenBackground
-import com.shopping.agent.ui.components.ProductCard
-import com.shopping.agent.ui.components.UnifiedSearchBar
+import com.shopping.agent.ui.components.*
+import com.shopping.agent.ui.navigation.LocalOnMenuClick
+import com.shopping.agent.ui.theme.*
+import com.shopping.agent.viewmodel.ChatViewModel
+import com.shopping.agent.viewmodel.GuideUiState
 
-/**
- * P01 首页推荐页
- *
- * 结构：
- * - 蓝粉渐变背景
- * - 顶部：用户问候 + 副标题
- * - 中间：2×2 商品推荐卡片网格
- * - 底部：UnifiedSearchBar（相机 + 输入框 + 搜索）
- * - 点击卡片 → 跳转 ChatScreen
- * - 点击搜索栏 → 跳转 ChatScreen
- */
 @Composable
 fun HomeScreen(
-    navController: NavHostController? = null,
+    chatViewModel: ChatViewModel,
 ) {
-    val products = MockHomeProducts.products
+    val uiState by chatViewModel.uiState.collectAsState()
+    var initialized by remember { mutableStateOf(false) }
 
-    GradientScreenBackground {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            // === 顶部区域：用户问候 ===
-            HomeHeader()
+    // 模拟 Agent 发送问候 (仅首次)
+    LaunchedEffect(Unit) {
+        if (!initialized) {
+            initialized = true
+            chatViewModel.sendDailyGreeting()
+        }
+    }
 
-            // === 中间：2×2 商品推荐卡片网格 ===
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 12.dp),
-                contentPadding = PaddingValues(vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(products, key = { it.id }) { product ->
-                    ProductCard(
-                        name = product.name,
-                        price = product.price,
-                        imageUrl = product.imageUrl,
-                        reason = product.highlights.joinToString(" · "),
-                        rating = product.rating,
-                        matchScore = product.matchScore,
-                        onClick = {
-                            navController?.navigate("chat")
-                        },
-                    )
+    Column(modifier = Modifier.fillMaxSize().background(Neutral50)) {
+        // ===== 超薄渐变条: 仅状态栏+图标行 =====
+        GradientTopBar(icons = {
+            IconButton(onClick = LocalOnMenuClick.current, modifier = Modifier.size(34.dp)) {
+                Icon(Icons.Default.Menu, "菜单", tint = Neutral700, modifier = Modifier.size(26.dp))
+            }
+            Row {
+                IconButton(onClick = {}, modifier = Modifier.size(34.dp)) {
+                    Icon(Icons.Default.Call, "电话", tint = Neutral700, modifier = Modifier.size(26.dp))
+                }
+                IconButton(onClick = {}, modifier = Modifier.size(34.dp)) {
+                    Icon(Icons.Default.Notifications, "通知", tint = Neutral700, modifier = Modifier.size(26.dp))
                 }
             }
+        })
 
-            // === 底部：统一搜索栏 ===
-            UnifiedSearchBar(
-                onClick = {
-                    navController?.navigate("chat")
-                },
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
+        // ===== 消息/内容区 (占满剩余空间) =====
+        if (uiState.messages.isEmpty() && !uiState.isStreaming) {
+            // 空态
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                Text("输入商品需求，AI 为你精准推荐",
+                    style = MaterialTheme.typography.bodyLarge, color = Neutral500)
+            }
+        } else {
+            ChatMessageList(uiState = uiState, chatViewModel = chatViewModel,
+                modifier = Modifier.weight(1f))
         }
+
+        // ===== 底部输入栏 =====
+        ChatInputBar(
+            chatViewModel = chatViewModel,
+            placeholder = "输入商品需求…",
+            showIcons = true,
+        )
     }
 }
 
-/**
- * 首页顶部问候区域
- */
 @Composable
-private fun HomeHeader() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 8.dp),
-    ) {
-        Text(
-            text = "你好，fujunye",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onPrimary,
-            fontWeight = FontWeight.Bold,
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = "今天为你推荐",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
-        )
+private fun ChatMessageList(
+    uiState: GuideUiState,
+    chatViewModel: ChatViewModel,
+    modifier: Modifier = Modifier,
+) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(uiState.messages.size, uiState.streamingText) {
+        val c = listState.layoutInfo.totalItemsCount
+        if (c > 0) listState.animateScrollToItem(c - 1)
+    }
+    LazyColumn(state = listState, modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = Dimens.pageHorizontal, vertical = Dimens.space2),
+        verticalArrangement = Arrangement.spacedBy(Dimens.space3)) {
+        items(uiState.messages, key = { it.id }) { msg ->
+            MessageBubble(message = msg, onProductTap = {})
+        }
+        if (uiState.isStreaming) {
+            item(key = "streaming") {
+                StreamingBubble(text = uiState.streamingText, isActive = true,
+                    searchStatus = uiState.searchStatus,
+                    productCards = uiState.streamingCards, onProductTap = {})
+            }
+        }
+        if (uiState.clarifyChips.isNotEmpty()) {
+            item(key = "clarify") {
+                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.space2)) {
+                    uiState.clarifyChips.forEach { chip ->
+                        AssistChip(onClick = { chatViewModel.onClarifyChipClick(chip) },
+                            label = { Text(chip) }, shape = RadiusFull,
+                            colors = AssistChipDefaults.assistChipColors(
+                                containerColor = PrimaryLight, labelColor = Primary))
+                    }
+                }
+            }
+        }
     }
 }

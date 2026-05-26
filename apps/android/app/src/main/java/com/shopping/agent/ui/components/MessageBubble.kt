@@ -3,33 +3,57 @@ package com.shopping.agent.ui.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.shopping.agent.data.model.ChatMessage
+import com.shopping.agent.data.model.MessageRole
+import com.shopping.agent.data.model.MessageStatus
+import com.shopping.agent.data.model.Product
+import com.shopping.agent.ui.theme.*
 
-/**
- * 消息气泡 — 用户/AI, 流式拼接文本
- */
+// 用户气泡: 浅蓝白
+private val UserBubbleBg = Color(0xFFE3F0FD)
+
 @Composable
 fun MessageBubble(
-    role: String,
-    content: String,
-    isStreaming: Boolean = false,
+    message: ChatMessage,
+    onProductTap: (Product) -> Unit,
+    onRetry: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
+    val isUser = message.role == MessageRole.User
+
     Row(
-        modifier = Modifier.fillMaxWidth().padding(8.dp),
-        horizontalArrangement = if (role == "user") Arrangement.End else Arrangement.Start
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
     ) {
-        Surface(
-            color = if (role == "user")
-                MaterialTheme.colorScheme.primaryContainer
-            else
-                MaterialTheme.colorScheme.surfaceVariant,
-            shape = MaterialTheme.shapes.medium
+        Column(
+            modifier = Modifier.widthIn(max = if (isUser) 280.dp else Dimens.messageBubbleMaxWidth),
+            horizontalAlignment = if (isUser) Alignment.End else Alignment.Start,
         ) {
-            Text(
-                text = content + if (isStreaming) "▌" else "",
-                modifier = Modifier.padding(12.dp)
-            )
+            Surface(
+                shape = if (isUser) UserBubbleShape else AgentBubbleShape,
+                color = if (isUser) UserBubbleBg else Neutral0,
+                shadowElevation = if (isUser) 0.dp else 2.dp,
+            ) {
+                Column(modifier = Modifier.padding(Dimens.space3)) {
+                    Text(
+                        text = message.content,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (isUser) Neutral800 else Neutral900,
+                    )
+                    message.productCards.forEach { product ->
+                        Spacer(Modifier.height(Dimens.space2))
+                        ProductCardHorizontal(product = product, onTap = { onProductTap(product) })
+                    }
+                }
+            }
+            if (onRetry != null && message.status == MessageStatus.Error) {
+                Spacer(Modifier.height(Dimens.space1))
+                TextButton(onClick = onRetry) { Text("重试", color = ErrorColor) }
+            }
         }
     }
 }

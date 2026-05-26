@@ -72,13 +72,13 @@ async def node_classify_intent(state: AgentState) -> AgentState:
                 merged[key] = {**prev_val, **new_val}
             else:
                 merged[key] = new_val or prev_val
-        # 偏好类字段：本轮覆盖历史
+        # 偏好类字段：本轮覆盖历史（跳过 None，不覆盖历史有效值）
         for key in slots:
-            if key not in merged:
+            if key not in merged and slots[key] is not None:
                 merged[key] = slots[key]
-        # 保留本轮未涉及的历史偏好
+        # 保留本轮未涉及的历史偏好（跳过 None）
         for key in prev_slots:
-            if key not in merged:
+            if key not in merged and prev_slots[key] is not None:
                 merged[key] = prev_slots[key]
 
         state["slots"] = merged
@@ -203,14 +203,15 @@ async def node_retrieve(state: AgentState) -> AgentState:
             logger.info("Text filter: dropped %d chunks containing %s", dropped, text_terms)
         state["retrieved_chunks"] = filtered
 
-    # ── Reranker 精排 ──
-    if state["retrieved_chunks"] and state["intent"] != "chitchat":
+    # ── Reranker 精排（lifespan 已预加载模型，不再阻塞首请求） ──
+    if state["retrieved_chunks"] and state.get("intent") != "chitchat":
         try:
             query_text = state.get("rewritten_query") or state["query"]
+            n_before = len(state["retrieved_chunks"])
             state["retrieved_chunks"] = await rerank_async(
                 query_text, state["retrieved_chunks"], top_k=10
             )
-            logger.info("Reranker applied: %d chunks re-ranked", len(state["retrieved_chunks"]))
+            logger.info("Reranker applied: %d → %d chunks re-ranked", n_before, len(state["retrieved_chunks"]))
         except Exception as e:
             logger.warning("Reranker unavailable, using raw retrieval: %s", e)
 
@@ -244,6 +245,7 @@ async def node_generate(state: AgentState) -> AgentState:
     for chunk in chunks[:10]:
         p = chunk["payload"]
         raw_products.append({
+            "product_id": str(chunk.get("id") or p.get("product_id", "")),
             "title": p.get("title"),
             "price": p.get("price"),
             "rating": p.get("rating"),
@@ -256,6 +258,7 @@ async def node_generate(state: AgentState) -> AgentState:
         })
 
     # 构造用户偏好
+    slots = state.get("slots", {})
     user_prefs = {
         "price_min": slots.get("price_min"),
         "price_max": slots.get("price_max"),
@@ -756,6 +759,7 @@ async def generate_response(
         for chunk in chunks[:10]:
             p = chunk["payload"]
             raw_products.append({
+                "product_id": str(chunk.get("id") or p.get("product_id", "")),
                 "title": p.get("title"),
                 "price": p.get("price"),
                 "rating": p.get("rating"),
@@ -777,6 +781,7 @@ async def generate_response(
         }
 
         ranked = rank_products(raw_products, user_prefs, after_retrieve.get("intent", ""), top_k=5)
+        logger.info("Ranked: %d products, building %d cards...", len(ranked), min(len(ranked), 5))
 
         # ── Progress 4: 排序完成，即将进入 LLM 生成 ──
         yield {"event": "progress", "data": ProgressEvent(message="📊 正在生成推荐...").model_dump_json()}
@@ -784,13 +789,14 @@ async def generate_response(
         cards = []
         for r in ranked:
             cards.append({
-                "id": r.get("product_id"),
+                "product_id": r.get("product_id") or r.get("id") or "",
                 "title": r["title"],
                 "price": r.get("price"),
-                "category": r.get("category"),
+                "category": r.get("category", ""),
                 "brand": r.get("brand"),
                 "rating": r.get("rating"),
-                "image_urls": [r.get("image_url")] if r.get("image_url") else [],
+                "image_url": r.get("image_url") or (r.get("image_urls", [None]) or [None])[0],
+                "image_urls": r.get("image_urls", []) if r.get("image_urls") else ([r.get("image_url")] if r.get("image_url") else []),
                 "highlights": r.get("highlights", []),
                 "match_score": r.get("match_score", 0.5),
                 "rank_reason": r.get("rank_reason", ""),
@@ -813,6 +819,7 @@ async def generate_response(
 
 用户需求：{message}
 用户预算：{slots.get('price_min', '不限')}-{slots.get('price_max', '不限')}
+用户品类偏好：{slots.get('category', '未指定')}
 
 检索到的商品：
 {context}
@@ -824,7 +831,7 @@ async def generate_response(
 
 要求：
 - 每款商品附带综合匹配度（如"综合匹配度：92%"）
-- 如果用户有预算，说明商品是否在预算内
+- 如果用户有预算但所有商品均超出预算，必须诚实告知最低价
 - 如果商品有明显不足，诚实标注不推荐理由
 - 结尾可追问用户偏好以进一步筛选
 - 总字数控制在250字以内
@@ -862,17 +869,21 @@ async def generate_response(
         # 阶段 5: 发送商品卡片
         # ═══════════════════════════════════════════════════════
 
+        logger.info("Yielding %d product cards...", len(cards))
         if cards:
             total = len(cards)
             for i, card in enumerate(cards):
                 event = ProductCardEvent(
-                    product_id=card.get("product_id", card.get("id", "")),
+                    product_id=card.get("product_id") or card.get("id") or "",
                     title=card.get("title", ""),
                     price=card.get("price", 0),
                     rating=card.get("rating", 0),
                     match_score=card.get("match_score", card.get("score", 0.5)),
                     highlights=card.get("highlights", []),
                     image_url=card.get("image_url"),
+                    image_urls=card.get("image_urls", []),
+                    brand=card.get("brand"),
+                    category=card.get("category", ""),
                     index=i + 1,
                     total=total,
                 )

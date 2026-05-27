@@ -1,5 +1,5 @@
 """
-多轮状态管理 — 数据库持久化 + 内存缓存
+多轮状态管理 — 数据库持久化 + 内存缓存 (无数据库时纯内存模式)
 """
 import logging
 import uuid
@@ -13,6 +13,23 @@ logger = logging.getLogger("state_manager")
 
 # 内存缓存 (减少 DB 查询)
 _cache: dict[str, dict] = {}
+
+# 检测数据库是否可用
+_HAS_DB = AsyncSessionLocal is not None
+if not _HAS_DB:
+    logger.info("state_manager: 数据库不可用，使用纯内存模式")
+
+
+async def _get_db():
+    """获取数据库会话上下文管理器 (无DB时返回空上下文)"""
+    if _HAS_DB:
+        return AsyncSessionLocal()
+    else:
+        from contextlib import asynccontextmanager
+        @asynccontextmanager
+        async def _null():
+            yield None
+        return _null()
 
 
 async def get_or_create_session(session_id: str | None = None) -> tuple[str, dict]:
@@ -31,24 +48,29 @@ async def get_or_create_session(session_id: str | None = None) -> tuple[str, dic
         if session_str in _cache:
             return session_str, _cache[session_str]
 
-        # 从数据库获取
-        async with AsyncSessionLocal() as db:
-            result = await db.execute(select(Session).where(Session.id == valid_uuid))
-            session = result.scalar_one_or_none()
-            if session:
-                state = session.state_json or {}
-                _cache[str(session.id)] = state
-                return str(session.id), state
+        # 从数据库获取 (仅当有DB时)
+        if _HAS_DB:
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(select(Session).where(Session.id == valid_uuid))
+                session = result.scalar_one_or_none()
+                if session:
+                    state = session.state_json or {}
+                    _cache[str(session.id)] = state
+                    return str(session.id), state
 
     # 创建新会话（优先使用传入的有效 UUID）
     new_id = valid_uuid if valid_uuid else uuid.uuid4()
-    async with AsyncSessionLocal() as db:
-        session = Session(id=new_id, state_json={}, message_count=0)
-        db.add(session)
-        await db.commit()
-    _cache[str(new_id)] = {}
-    logger.info("Created session: %s", str(new_id)[:8])
-    return str(new_id), {}
+    new_id_str = str(new_id)
+
+    if _HAS_DB:
+        async with AsyncSessionLocal() as db:
+            session = Session(id=new_id, state_json={}, message_count=0)
+            db.add(session)
+            await db.commit()
+
+    _cache[new_id_str] = {}
+    logger.info("Created session: %s (db=%s)", new_id_str[:8], _HAS_DB)
+    return new_id_str, {}
 
 
 async def update_state(session_id: str, **kwargs) -> dict:
@@ -59,20 +81,21 @@ async def update_state(session_id: str, **kwargs) -> dict:
     # 缓存更新
     _cache[session_id] = state
 
-    # 异步持久化
-    try:
-        async with AsyncSessionLocal() as db:
-            await db.execute(
-                update(Session)
-                .where(Session.id == session_id)
-                .values(
-                    state_json=state,
-                    updated_at=datetime.utcnow(),
+    # 异步持久化 (仅当有DB时)
+    if _HAS_DB:
+        try:
+            async with AsyncSessionLocal() as db:
+                await db.execute(
+                    update(Session)
+                    .where(Session.id == session_id)
+                    .values(
+                        state_json=state,
+                        updated_at=datetime.utcnow(),
+                    )
                 )
-            )
-            await db.commit()
-    except Exception as e:
-        logger.warning("Failed to persist state for %s: %s", session_id[:8], e)
+                await db.commit()
+        except Exception as e:
+            logger.warning("Failed to persist state for %s: %s", session_id[:8], e)
 
     logger.debug("Session %s state: %s", session_id[:8], list(kwargs.keys()))
     return state
@@ -80,6 +103,8 @@ async def update_state(session_id: str, **kwargs) -> dict:
 
 async def increment_message_count(session_id: str):
     """增加消息计数"""
+    if not _HAS_DB:
+        return
     try:
         async with AsyncSessionLocal() as db:
             await db.execute(
@@ -103,6 +128,8 @@ async def get_state(session_id: str) -> dict:
 async def clear_state(session_id: str) -> None:
     """清除会话状态"""
     _cache.pop(session_id, None)
+    if not _HAS_DB:
+        return
     try:
         async with AsyncSessionLocal() as db:
             await db.execute(update(Session).where(Session.id == session_id).values(is_active=False))

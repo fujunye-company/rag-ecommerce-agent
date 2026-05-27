@@ -1,12 +1,19 @@
 """Product schemas — 对齐 DATA-CONTRACT.md v1.0 ProductRecord"""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Optional
+from uuid import UUID
 
 
 class ProductRecord(BaseModel):
     """全栈统一商品模型 — DATA-CONTRACT.md v1.0 §1.1"""
+    model_config = ConfigDict(from_attributes=True)
     # 标识
-    product_id: str = Field(..., min_length=1, max_length=64, description="唯一商品ID")
+    product_id: str = Field(..., min_length=1, max_length=64, description="唯一商品ID", validation_alias="id")
+
+    @field_validator("product_id", mode="before")
+    @classmethod
+    def coerce_product_id(cls, v: object) -> str:
+        return str(v)
 
     # 基本信息
     title: str = Field(..., min_length=1, max_length=256)
@@ -61,6 +68,7 @@ class ProductRead(ProductRecord):
 
 class ProductCard(BaseModel):
     """轻量级列表卡片"""
+    model_config = ConfigDict(from_attributes=True)
     product_id: str
     title: str
     price: float

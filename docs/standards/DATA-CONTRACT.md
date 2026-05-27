@@ -241,18 +241,18 @@ T恤, 衬衫, 外套, 裤装, 裙装,
 
 ## 7. 迁移检查清单
 
-- [ ] seed_products.json → 改为 ProductRecord 格式 + 新品类名
-- [ ] Qdrant 重建 collection + 重新摄入
-- [ ] ProductSchema (Pydantic) → 对齐 ProductRecord 字段
-- [ ] ProductCardEvent (SSE) → 补全 image_urls, brand, category
-- [ ] agent.py raw_products/cards → 统一用 ProductRecord 字段
-- [ ] retriever.py payload 读取 → 字段名对齐
-- [ ] product_ranker.py → 输入输出字段对齐 ProductRecord
-- [ ] product_service.py → 返回 ProductRecord
-- [ ] Product.kt → 重写对齐 ProductRecord
-- [ ] SSEEvent.ProductCard → 字段对齐（已有 imageUrls, brand, category）
-- [ ] ChatViewModel → Product 构造适配
-- [ ] MockProducts.kt → 全量重写
-- [ ] ChatMessage.kt → productCards 字段不变（List<Product>）
-- [ ] MockChats/MockExplorePosts → 适配新 Product
-- [ ] 全量编译 + curl SSE 验证
+- [x] seed_products.json → 改为 ProductRecord 格式 + 新品类名
+- [x] Qdrant 重建 collection + 重新摄入
+- [x] ProductSchema (Pydantic) → 对齐 ProductRecord 字段
+- [x] ProductCardEvent (SSE) → 补全 image_urls, brand, category
+- [x] agent.py raw_products/cards → 统一用 ProductRecord 字段
+- [x] retriever.py payload 读取 → 字段名对齐
+- [x] product_ranker.py → 输入输出字段对齐 ProductRecord
+- [x] product_service.py → 返回 ProductRecord
+- [x] Product.kt → 重写对齐 ProductRecord
+- [x] SSEEvent.ProductCard → 字段对齐（已有 imageUrls, brand, category）
+- [x] ChatViewModel → Product 构造适配
+- [x] MockProducts.kt → 全量重写
+- [x] ChatMessage.kt → productCards 字段不变（List<Product>）
+- [x] MockChats/MockExplorePosts → 适配新 Product
+- [x] 全量编译 + curl SSE 验证

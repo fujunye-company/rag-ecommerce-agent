@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
+import com.shopping.agent.core.network.NetworkConfig
 import com.shopping.agent.data.model.CartItem
 import com.shopping.agent.data.model.Product
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +39,7 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    private val baseUrl = "http://10.0.2.2:8000"
+    private val baseUrl = NetworkConfig.BASE_URL
     private val prefs = application.getSharedPreferences("cart_prefs", Context.MODE_PRIVATE)
 
     // 持久化 sessionId：安装后首次生成，之后复用
@@ -122,12 +123,17 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
                         .build()
                     client.newCall(request).execute()
                 }
-            } catch (_: Exception) { }
+            } catch (e: Exception) {
+                android.util.Log.e("CartViewModel", "addToCart server sync failed", e)
+                _uiState.update { it.copy(error = "加购同步失败，请下拉刷新") }
+            }
         }
     }
 
     fun removeFromCart(productId: String) {
         viewModelScope.launch {
+            val previousItems = _uiState.value.items
+            val previousTotal = _uiState.value.totalPrice
             _uiState.update {
                 val updated = it.items.filter { item -> item.product.productId != productId }
                 it.copy(items = updated, totalPrice = updated.sumOf { c -> c.product.price * c.quantity })
@@ -144,13 +150,18 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
                         .build()
                     client.newCall(request).execute()
                 }
-            } catch (_: Exception) { }
+            } catch (e: Exception) {
+                android.util.Log.e("CartViewModel", "removeFromCart server sync failed", e)
+                _uiState.update { it.copy(items = previousItems, totalPrice = previousTotal, error = "删除同步失败，请下拉刷新") }
+            }
         }
     }
 
     fun updateQuantity(productId: String, quantity: Int) {
         if (quantity <= 0) { removeFromCart(productId); return }
         viewModelScope.launch {
+            val previousItems = _uiState.value.items
+            val previousTotal = _uiState.value.totalPrice
             _uiState.update {
                 val updated = it.items.map { item ->
                     if (item.product.productId == productId) item.copy(quantity = quantity)
@@ -171,12 +182,17 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
                         .build()
                     client.newCall(request).execute()
                 }
-            } catch (_: Exception) { }
+            } catch (e: Exception) {
+                android.util.Log.e("CartViewModel", "updateQuantity server sync failed", e)
+                _uiState.update { it.copy(items = previousItems, totalPrice = previousTotal, error = "修改同步失败，请下拉刷新") }
+            }
         }
     }
 
     fun clearCart() {
         viewModelScope.launch {
+            val previousItems = _uiState.value.items
+            val previousTotal = _uiState.value.totalPrice
             _uiState.update { it.copy(items = emptyList(), totalPrice = 0.0) }
             try {
                 withContext(Dispatchers.IO) {
@@ -187,7 +203,10 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
                         .build()
                     client.newCall(request).execute()
                 }
-            } catch (_: Exception) { }
+            } catch (e: Exception) {
+                android.util.Log.e("CartViewModel", "clearCart server sync failed", e)
+                _uiState.update { it.copy(items = previousItems, totalPrice = previousTotal, error = "清空同步失败，请下拉刷新") }
+            }
         }
     }
 

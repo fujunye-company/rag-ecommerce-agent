@@ -38,6 +38,7 @@ fun ChatInputBar(
     onSendRequested: (() -> Unit)? = null,
     placeholder: String = "输入商品需求…",
     showIcons: Boolean = true,
+    modifier: Modifier = Modifier,
 ) {
     val uiState by chatViewModel.uiState.collectAsState()
     var inputText by remember { mutableStateOf(uiState.inputText) }
@@ -61,7 +62,8 @@ fun ChatInputBar(
                 }
                 chatViewModel.sendImage(tempFile)
             } catch (e: Exception) {
-                // 忽略
+                android.util.Log.e("ChatInputBar", "Image save failed", e)
+                android.widget.Toast.makeText(context, "图片处理失败，请重试", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -90,7 +92,7 @@ fun ChatInputBar(
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        uiState.searchStatus.ifBlank { "正在识别商品…" },
+                        uiState.searchStatus.ifBlank { "📷 正在拍照找货…" },
                         style = MaterialTheme.typography.bodyMedium,
                         color = Neutral600,
                         modifier = Modifier.weight(1f)
@@ -106,7 +108,7 @@ fun ChatInputBar(
         }
 
         // 输入栏
-        Surface(shadowElevation = 3.dp, color = Neutral0) {
+        Surface(shadowElevation = 3.dp, color = Neutral0, modifier = modifier) {
             Row(
                 Modifier
                     .padding(horizontal = Dimens.space3, vertical = Dimens.space2)
@@ -141,9 +143,14 @@ fun ChatInputBar(
                     modifier = Modifier.weight(1f),
                     maxLines = 4
                 )
+                // 语音输入按钮（功能预留，暂不可用）
                 if (showIcons) {
-                    IconButton(onClick = {}, modifier = Modifier.size(44.dp)) {
-                        Icon(Icons.Default.Mic, "语音", tint = Neutral500)
+                    IconButton(
+                        onClick = { /* TODO: 语音输入 */ },
+                        enabled = false,
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Icon(Icons.Default.Mic, "语音输入（即将上线）", tint = Neutral300)
                     }
                 }
                 FilledIconButton(

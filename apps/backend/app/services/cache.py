@@ -16,6 +16,9 @@ _lock = asyncio.Lock()
 MAX_SIZE = 100
 TTL_SECONDS = 300
 
+# 缓存版本 — 参数变更时递增，自动失效旧缓存（top_k=3 修复等）
+CACHE_VERSION = 2
+
 # 动态查询关键词 — 命中则不缓存
 SKIP_CACHE_KEYWORDS = ["购物车", "加购", "加到购物车", "加入购物车", "查看购物车", "清空购物车", "下单"]
 
@@ -30,7 +33,7 @@ def _is_dynamic(query: str) -> bool:
 
 
 async def get(query: str) -> dict | None:
-    """查询缓存，返回 {response, cards} 或 None"""
+    """查询缓存，返回 {response, cards, _v} 或 None"""
     if _is_dynamic(query):
         return None
     k = _key(query)
@@ -38,6 +41,11 @@ async def get(query: str) -> dict | None:
         if k in _cache:
             ts, value = _cache[k]
             if time.monotonic() - ts < TTL_SECONDS:
+                # 版本校验：旧版本缓存自动失效
+                if value.get("_v") != CACHE_VERSION:
+                    del _cache[k]
+                    logger.debug("Cache STALE (v%d != v%d): %s", value.get("_v", 0), CACHE_VERSION, query[:30])
+                    return None
                 _cache.move_to_end(k)
                 logger.debug("Cache HIT: %s", query[:30])
                 return value
@@ -54,7 +62,7 @@ async def set(query: str, response: str, cards: list):
     async with _lock:
         if len(_cache) >= MAX_SIZE:
             _cache.popitem(last=False)
-        _cache[k] = (time.monotonic(), {"response": response, "cards": cards})
+        _cache[k] = (time.monotonic(), {"response": response, "cards": cards, "_v": CACHE_VERSION})
     logger.debug("Cache SET: %s", query[:30])
 
 

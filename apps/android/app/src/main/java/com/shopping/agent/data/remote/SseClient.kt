@@ -1,12 +1,13 @@
 package com.shopping.agent.data.remote
 
 import com.google.gson.Gson
+import com.shopping.agent.core.network.NetworkConfig
 import com.shopping.agent.data.model.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.flowOn
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -24,11 +25,12 @@ import java.util.concurrent.TimeUnit
  * connectVision(): POST /api/v1/upload/vision-search (multipart → SSE 流)
  */
 class SseClient(
-    private val baseUrl: String = "http://10.0.2.2:8000"
+    private val baseUrl: String = NetworkConfig.BASE_URL
 ) {
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)  // VLM 推理需要 15-20s
+        .readTimeout(0, TimeUnit.MILLISECONDS)  // SSE 长连接必须为0 (无限超时)
+        .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
     private val gson = Gson()
@@ -50,9 +52,7 @@ class SseClient(
             .header("Accept", "text/event-stream")
             .build()
 
-        val response = withContext(Dispatchers.IO) {
-            client.newCall(request).execute()
-        }
+        val response = client.newCall(request).execute()
 
         if (!response.isSuccessful) {
             emit(SSEEvent.Error("HTTP ${response.code}: ${response.message}"))
@@ -61,7 +61,7 @@ class SseClient(
 
         parseStream(response, conversationId)
         response.close()
-    }
+    }.flowOn(Dispatchers.IO)
 
     // ── 拍照找货 ──────────────────────────────────────────
 
@@ -85,9 +85,7 @@ class SseClient(
             .header("Accept", "text/event-stream")
             .build()
 
-        val response = withContext(Dispatchers.IO) {
-            client.newCall(request).execute()
-        }
+        val response = client.newCall(request).execute()
 
         if (!response.isSuccessful) {
             emit(SSEEvent.Error("HTTP ${response.code}: ${response.message}"))
@@ -96,7 +94,7 @@ class SseClient(
 
         parseStream(response = response, convId = null, isVision = true)
         response.close()
-    }
+    }.flowOn(Dispatchers.IO)
 
     // ── SSE 流解析 ────────────────────────────────────────
 
@@ -184,13 +182,19 @@ class SseClient(
                     )
                 }
                 "progress" -> {
-                    // vision-search 的 vision_parsed 事件 — 显示 VLM 识别结果
-                    val d = gson.fromJson(json, VisionParsedPayload::class.java)
-                    val desc = d.product_info?.get("description") as? String ?: ""
-                    val name = d.product_info?.get("product_name") as? String ?: ""
-                    val msg = if (name.isNotEmpty()) "图片识别: $name" 
-                              else if (desc.isNotEmpty()) "图片识别: $desc"
-                              else "图片已识别，正在检索..."
+                    val node = gson.fromJson(json, com.google.gson.JsonObject::class.java)
+                    val msg = if (node.has("product_info")) {
+                        // vision-search 的 vision_parsed 事件
+                        val pi = node.getAsJsonObject("product_info")
+                        val name = pi?.get("product_name")?.asString ?: ""
+                        val desc = pi?.get("description")?.asString ?: ""
+                        if (name.isNotEmpty()) "图片识别: $name"
+                        else if (desc.isNotEmpty()) "图片识别: $desc"
+                        else "图片已识别，正在检索..."
+                    } else {
+                        // text chat progress — 直接取 message 字段
+                        node.get("message")?.asString ?: ""
+                    }
                     SSEEvent.Progress(msg)
                 }
                 "done" -> {

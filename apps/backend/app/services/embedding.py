@@ -1,20 +1,23 @@
 """
 Embedding 封装 — 本地 BGE 模型，异步非阻塞
+sentence-transformers 为延迟导入，避免阻塞无 RAG 的启动路径
 """
 import asyncio
 import logging
-from sentence_transformers import SentenceTransformer
+from typing import Any
+
 from app.core.config import settings
 
 logger = logging.getLogger("embedding")
 
-_embedding_model: SentenceTransformer | None = None
+_embedding_model: Any = None  # SentenceTransformer | None
 
 
-def get_embedding_model() -> SentenceTransformer:
+def get_embedding_model():
     """懒加载 embedding 模型 (单例, CPU)，warmup 首次调用"""
     global _embedding_model
     if _embedding_model is None:
+        from sentence_transformers import SentenceTransformer  # lazy import
         logger.info("Loading embedding model: %s (CPU, local)", settings.EMBEDDING_MODEL)
         _embedding_model = SentenceTransformer(
             settings.EMBEDDING_MODEL, device="cpu",

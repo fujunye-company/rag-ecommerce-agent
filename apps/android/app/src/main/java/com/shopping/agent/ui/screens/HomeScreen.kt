@@ -23,18 +23,15 @@ fun HomeScreen(
     chatViewModel: ChatViewModel,
 ) {
     val uiState by chatViewModel.uiState.collectAsState()
-    var initialized by remember { mutableStateOf(false) }
 
-    // 模拟 Agent 发送问候 (仅首次)
+    // 首次进入时尝试发送问候（ViewModel 内部保证有历史消息时不覆盖）
     LaunchedEffect(Unit) {
-        if (!initialized) {
-            initialized = true
-            chatViewModel.sendDailyGreeting()
-        }
+        chatViewModel.sendDailyGreeting()
     }
 
+    // ── 统一 Column 布局（与比价页一致）──
     Column(modifier = Modifier.fillMaxSize().background(Neutral50)) {
-        // ===== 超薄渐变条: 仅状态栏+图标行 =====
+        // ===== 渐变条 (与比价页位置一致) =====
         GradientTopBar(icons = {
             IconButton(onClick = LocalOnMenuClick.current, modifier = Modifier.size(34.dp)) {
                 Icon(Icons.Default.Menu, "菜单", tint = Neutral700, modifier = Modifier.size(26.dp))
@@ -49,19 +46,46 @@ fun HomeScreen(
             }
         })
 
-        // ===== 消息/内容区 (占满剩余空间) =====
+        // ===== 内容区 (占满剩余空间) =====
         if (uiState.messages.isEmpty() && !uiState.isStreaming) {
-            // 空态
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                Text("输入商品需求，AI 为你精准推荐",
-                    style = MaterialTheme.typography.bodyLarge, color = Neutral500)
+            // 空态 — 在渐变条和搜索栏之间居中
+            Box(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("输入商品需求",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Neutral700)
+                    Spacer(Modifier.height(8.dp))
+                    Text("AI 为你精准推荐",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Neutral400)
+                    Spacer(Modifier.height(32.dp))
+                    Surface(
+                        onClick = {
+                            chatViewModel.onInputChange("推荐一款降噪耳机")
+                            chatViewModel.sendMessage()
+                        },
+                        shape = RadiusLg,
+                        color = PrimaryLight,
+                        modifier = Modifier.padding(horizontal = 32.dp),
+                    ) {
+                        Text(
+                            "试试：推荐一款降噪耳机",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Primary,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        )
+                    }
+                }
             }
         } else {
             ChatMessageList(uiState = uiState, chatViewModel = chatViewModel,
                 modifier = Modifier.weight(1f))
         }
 
-        // ===== 底部输入栏 =====
+        // ===== 底部搜索栏 (与比价页位置一致) =====
         ChatInputBar(
             chatViewModel = chatViewModel,
             placeholder = "输入商品需求…",

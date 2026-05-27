@@ -13,3 +13,12 @@ data class ChatMessage(
 enum class MessageRole { User, Assistant }
 
 enum class MessageStatus { Sending, Sent, Streaming, Error }
+
+data class ConversationMeta(
+    val id: String,
+    val title: String,
+    val messageCount: Int,
+    val lastMessage: String,
+    val createdAt: Long,
+    val updatedAt: Long,
+)

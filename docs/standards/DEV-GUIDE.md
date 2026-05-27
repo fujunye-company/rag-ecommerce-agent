@@ -44,23 +44,23 @@ Limit: TPM 800K, RPM 700
 ## 三、架构设计
 
 ```
-LangGraph StateGraph (当前 3 节点 → 目标 7 节点):
+LangGraph StateGraph (7 节点 — 全部已实现):
 
   START
     ↓
-  classify_intent   → 9类意图 + 否定条件检测 (所有含否定词查询触发)
+  classify_intent   → 9类意图 + 否定条件检测
     ↓
-  [★ 待实现] clarify → 主动追问Chip (missing_slots非空时)
+  [missing_slots? → clarify] → 主动追问 (已实现)
     ↓
-  retrieve          → Qdrant向量检索 + metadata过滤 + 否定排除 + 文本级兜底过滤
+  retrieve          → Qdrant向量检索 + 否定排除 + 场景多类目并行
     ↓
-  [★ 待实现] rank   → 向量粗排 → LLM精排 → 动态权重
+  [rank + validate] → ProductRanker 5维加权 + _validate_ranked_products
     ↓
-  generate          → SSE stream: text_delta×N → product_cards(with image_urls) → done
+  generate          → SSE stream: progress → text_delta → product_cards → done
     ↓
-  [cart 分支]       → 购物车CRUD (加购/删除/修改/下单)
+  [cart 分支]       → 购物车CRUD + 2步下单确认 (已实现)
     ↓
-  [image 分支]      → 图像理解 → 相似商品检索 (★ VLM待接入)
+  [vision 分支]     → VLM图像理解 → 相似商品检索 (已实现)
     ↓
   END
 ```
@@ -100,11 +100,14 @@ LangGraph StateGraph (当前 3 节点 → 目标 7 节点):
 加分项: 客户端实时展示购物车数量/状态
 ```
 
-### 4.5 agent.py → generate_node
+### 4.5 agent.py → generate_node (v0.3.1 交错输出)
 ```
+输出格式: [SUMMARY] → [PRODUCT_1] 商品名/匹配度/三段理由 → [PRODUCT_2] → [PRODUCT_3] → [CLOSING]
+SSE 推送: progress → (text_delta + product_cards) × N → closing_text → done
+每商品: 第1行=商品全名, 第2行=综合匹配度, ①②③ 三段理由
 禁止: "为您推荐以下几款：1. xxx 2. xxx 3. xxx"
-必须: 三段式理由 + 自信度 + 引用
 禁止: 编造不存在的优惠券/功能/价格（比赛红线）
+缓存: 内存 LRU + CACHE_VERSION 版本校验自动过期 + 启动清空 + API 清空端点
 ```
 
 ### 4.6 intent.py → classify_intent
@@ -153,17 +156,22 @@ SSE 流式速率 ≥ 20 tokens/s
 
 ## 七、模块完成度现状
 
-| 模块 | 完成度 | M5 还需 |
+| 模块 | 完成度 | 备注 |
 |------|:---:|------|
-| agent.py | 85% | 否定语义 + cart 意图分支 |
-| intent.py | 80% | 否定条件检测 + exclude_attributes + 主动反问 |
-| retriever.py | 90% | 否定条件排除过滤 + 条件筛选范围过滤 |
-| product_service.py | 100% | — |
-| state_manager.py | 100% | cart state 扩展 |
-| chat.py | 100% | — |
-| 购物车模块 | 0% | **全新** |
-| 多模态模块 | 0% | **全新** |
-| LLM 切换 | 0% | DeepSeek → Doubao |
+| agent.py | 95% | 全9场景 + 反幻觉 + 2步下单 + 场景分解 |
+| intent.py | 90% | 9类意图 + 否定检测 + 槽位提取 |
+| retriever.py | 95% | Qdrant + 否定排除 + 多类目并行检索 |
+| reranker.py | 90% | BGE-Reranker-v2-m3 线程安全加载 |
+| product_ranker.py | 90% | 5维加权排序 |
+| image_parser.py | 85% | VLM 图像理解 + 结构化输出 |
+| cart_service.py | 90% | PostgreSQL 持久化 + CRUD |
+| state_manager.py | 90% | Session 状态 + 上下文递进 |
+| chat.py | 100% | SSE 流式 + 全事件类型 |
+| upload.py | 90% | 图片上传 + vision-search |
+| 购物车模块 | 90% | 对话式 CRUD + 2步下单确认 |
+| 多模态模块 | 85% | VLM → Qdrant 相似检索 |
+| LLM | 100% | Doubao-Seed-2.0-lite 主路 + DeepSeek 快路 |
+| Android 前端 | 85% | 4页面 + SSE + 拍照找货 + 购物车UI |
 
 ---
 

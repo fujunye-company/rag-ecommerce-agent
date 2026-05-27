@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import com.shopping.agent.data.model.Product
@@ -47,16 +46,6 @@ fun ProductCardHorizontal(
                 Spacer(Modifier.weight(1f))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("¥${product.price}", style = PriceSmall, color = TextPrice)
-                    if (product.price != null && product.price > product.price) {
-                        Spacer(Modifier.width(Dimens.space2))
-                        Text(
-                            "¥${product.price}",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                textDecoration = TextDecoration.LineThrough,
-                            ),
-                            color = Neutral500,
-                        )
-                    }
                 }
                 Spacer(Modifier.height(Dimens.space1))
                 Row(horizontalArrangement = Arrangement.spacedBy(Dimens.space2)) {

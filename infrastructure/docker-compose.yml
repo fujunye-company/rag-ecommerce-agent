@@ -6,12 +6,15 @@ services:
     container_name: shopping-backend
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8080:8080"
     environment:
       - DATABASE_URL=postgresql+asyncpg://shopping:shopping123@postgres:5432/shopping_agent
       - QDRANT_URL=http://qdrant:6333
+      - DOUBAO_API_KEY=${DOUBAO_API_KEY}
+      - DOUBAO_BASE_URL=https://ark.cn-beijing.volces.com/api/v3/
+      - LLM_MODEL=ep-20260514111645-lmgt2
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
-      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com/v1}
+      - DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
     volumes:
       - model_cache:/root/.cache
     depends_on:
@@ -20,7 +23,7 @@ services:
       qdrant:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
       timeout: 3s
       retries: 5

@@ -64,9 +64,13 @@ async def get_products(
     return products, total
 
 
-async def get_product_by_id(db: AsyncSession, product_id: UUID) -> Product | None:
+async def get_product_by_id(db: AsyncSession, product_id: str) -> Product | None:
     """获取单个商品详情"""
-    result = await db.execute(select(Product).where(Product.id == product_id))
+    try:
+        uid = UUID(product_id)
+    except ValueError:
+        return None
+    result = await db.execute(select(Product).where(Product.id == uid))
     return result.scalar_one_or_none()
 
 
@@ -80,7 +84,7 @@ async def create_product(db: AsyncSession, data: dict) -> Product:
     return product
 
 
-async def update_product(db: AsyncSession, product_id: UUID, data: dict) -> Product | None:
+async def update_product(db: AsyncSession, product_id: str, data: dict) -> Product | None:
     """更新商品（仅更新非 None 字段）"""
     product = await get_product_by_id(db, product_id)
     if not product:
@@ -94,9 +98,13 @@ async def update_product(db: AsyncSession, product_id: UUID, data: dict) -> Prod
     return product
 
 
-async def delete_product(db: AsyncSession, product_id: UUID) -> bool:
+async def delete_product(db: AsyncSession, product_id: str) -> bool:
     """删除商品，返回是否成功"""
-    result = await db.execute(delete(Product).where(Product.id == product_id))
+    try:
+        uid = UUID(product_id)
+    except ValueError:
+        return False
+    result = await db.execute(delete(Product).where(Product.id == uid))
     await db.flush()
     deleted = result.rowcount > 0
     if deleted:

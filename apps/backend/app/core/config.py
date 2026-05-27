@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     # ── 服务 ──
     LOG_LEVEL: str = "INFO"
     APP_HOST: str = "0.0.0.0"
-    APP_PORT: int = 8000
+    APP_PORT: int = 8080
     CORS_ORIGINS: list[str] = ["*"]
     MAX_UPLOAD_SIZE_MB: int = 10
 

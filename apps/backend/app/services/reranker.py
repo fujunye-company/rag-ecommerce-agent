@@ -10,12 +10,19 @@
 """
 import asyncio
 import logging
+import os
+import threading
 from typing import List, Dict, Optional
 
 logger = logging.getLogger("reranker")
 
+# 模块加载时设定离线模式（线程安全，仅一次）
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
 # 延迟加载
 _reranker_model = None
+_model_lock = threading.Lock()
 
 
 def _get_content(doc: Dict) -> str:
@@ -37,33 +44,34 @@ def _get_content(doc: Dict) -> str:
 
 
 def _get_model():
-    """加载 BGE-Reranker v2-m3 Cross-Encoder（优先本地缓存）"""
+    """加载 BGE-Reranker v2-m3 Cross-Encoder（优先本地缓存，线程安全）"""
     global _reranker_model
     if _reranker_model is not None:
         return _reranker_model if _reranker_model is not False else None
 
-    from sentence_transformers import CrossEncoder
-    import os
-    os.environ["HF_HUB_OFFLINE"] = "1"
-    os.environ["TRANSFORMERS_OFFLINE"] = "1"
+    with _model_lock:
+        if _reranker_model is not None:
+            return _reranker_model if _reranker_model is not False else None
 
-    model_name = "BAAI/bge-reranker-v2-m3"
-    local_path = os.path.expanduser("~/.cache/huggingface/hub/models--BAAI--bge-reranker-v2-m3/snapshots")
-    
-    # 优先用本地 snapshots 路径
-    if os.path.isdir(local_path):
-        snapshots = sorted(os.listdir(local_path))
-        if snapshots:
-            model_name = os.path.join(local_path, snapshots[-1])
-            logger.info("Loading reranker from local: %s", model_name)
+        from sentence_transformers import CrossEncoder
 
-    logger.info("Loading reranker model...")
-    try:
-        _reranker_model = CrossEncoder(model_name, device="cpu")
-        logger.info("Reranker model loaded (CPU)")
-    except Exception as e:
-        logger.warning("Reranker unavailable: %s", e)
-        _reranker_model = False
+        model_name = "BAAI/bge-reranker-v2-m3"
+        local_path = os.path.expanduser("~/.cache/huggingface/hub/models--BAAI--bge-reranker-v2-m3/snapshots")
+
+        # 优先用本地 snapshots 路径
+        if os.path.isdir(local_path):
+            snapshots = sorted(os.listdir(local_path))
+            if snapshots:
+                model_name = os.path.join(local_path, snapshots[-1])
+                logger.info("Loading reranker from local: %s", model_name)
+
+        logger.info("Loading reranker model...")
+        try:
+            _reranker_model = CrossEncoder(model_name, device="cpu")
+            logger.info("Reranker model loaded (CPU)")
+        except Exception as e:
+            logger.warning("Reranker unavailable: %s", e)
+            _reranker_model = False
     return _reranker_model if _reranker_model is not False else None
 
 

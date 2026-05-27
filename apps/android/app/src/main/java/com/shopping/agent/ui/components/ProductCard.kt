@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -59,13 +58,6 @@ fun ProductCard(
                     Spacer(Modifier.width(4.dp))
                     Text("¥${product.price}", style = PriceMedium.copy(fontWeight = FontWeight.Bold),
                         color = TextPrice)
-                    if (product.price != null && product.price > product.price) {
-                        Spacer(Modifier.width(8.dp))
-                        Text("¥${product.price}",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                textDecoration = TextDecoration.LineThrough),
-                            color = Neutral400)
-                    }
                 }
                 Spacer(Modifier.height(Dimens.space1))
                 Row(verticalAlignment = Alignment.CenterVertically,

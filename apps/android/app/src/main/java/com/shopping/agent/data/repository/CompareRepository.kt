@@ -25,7 +25,7 @@ data class CompareResult(
 )
 
 class CompareRepository(
-    private val baseUrl: String = "http://10.0.2.2:8000"
+    private val baseUrl: String = "http://10.0.2.2:8080"
 ) {
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)

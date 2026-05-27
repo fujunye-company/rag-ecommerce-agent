@@ -7,6 +7,7 @@
 
 import json
 import os
+import hashlib
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from sentence_transformers import SentenceTransformer
@@ -107,7 +108,7 @@ def main():
 
     points = [
         models.PointStruct(
-            id=abs(hash(p["product_id"])) % (10 ** 12),
+            id=int(hashlib.md5(p["product_id"].encode()).hexdigest()[:16], 16) % (2**63),
             vector=emb.tolist(),
             payload=p,
         )

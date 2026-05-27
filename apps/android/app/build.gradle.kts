@@ -15,6 +15,13 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+
+        // Android模拟器访问本机WSL后端: 10.0.2.2 → Windows → WSL port proxy
+        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
@@ -67,4 +74,7 @@ dependencies {
 
     // Activity
     implementation("androidx.activity:activity-compose:1.9.3")
+
+    // SplashScreen — 接管系统冷启动白屏动画
+    implementation("androidx.core:core-splashscreen:1.0.1")
 }

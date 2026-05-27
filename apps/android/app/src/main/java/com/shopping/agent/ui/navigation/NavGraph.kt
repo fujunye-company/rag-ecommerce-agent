@@ -34,8 +34,9 @@ fun AppNavGraph(
 
     var drawerVisible by remember { mutableStateOf(false) }
 
-    // 共享 ChatViewModel
+    // 共享 ChatViewModel（多对话支持）
     val chatViewModel: ChatViewModel = viewModel()
+    val uiState by chatViewModel.uiState.collectAsState()
 
     CompositionLocalProvider(LocalOnMenuClick provides { drawerVisible = true }) {
         Box {
@@ -90,21 +91,20 @@ fun AppNavGraph(
                 }
             }
 
-            // 挂画式历史侧边栏
+            // 挂画式历史侧边栏 — 真实数据
             HistoryDrawer(
                 visible = drawerVisible,
                 onDismiss = { drawerVisible = false },
-                onSessionClick = {
-                    drawerVisible = false
-                    navController.navigate("home") {
-                        popUpTo("home") { inclusive = true }
-                    }
+                conversations = uiState.conversations,
+                currentConversationId = uiState.currentConversationId,
+                onSessionClick = { convId ->
+                    chatViewModel.loadConversation(convId)
                 },
                 onNewChat = {
-                    drawerVisible = false
-                    navController.navigate("home") {
-                        popUpTo("home") { inclusive = true }
-                    }
+                    chatViewModel.createNewConversation()
+                },
+                onDeleteConversation = { convId ->
+                    chatViewModel.deleteConversation(convId)
                 },
             )
         }

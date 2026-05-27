@@ -1,5 +1,4 @@
 """商品API端点 — 纯路由层，委托给 services/product_service"""
-from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
@@ -33,7 +32,19 @@ async def list_products(
         keyword=keyword, sort_by=sort_by,
         page=page, size=size,
     )
-    items = [ProductCard.model_validate(p).model_dump(mode="json") for p in products]
+    items = [
+        ProductCard(
+            product_id=str(p.id),
+            title=p.title,
+            price=p.price,
+            category=p.category,
+            brand=p.brand,
+            rating=p.rating or 0,
+            image_url=p.image_urls[0] if p.image_urls else None,
+            highlights=p.highlights or [],
+        ).model_dump(mode="json")
+        for p in products
+    ]
     return ApiResponse(
         data=PaginatedResponse(items=items, total=total, page=page, size=size)
     ).model_dump()
@@ -41,7 +52,7 @@ async def list_products(
 
 @router.get("/products/{product_id}")
 async def get_product_detail(
-    product_id: UUID,
+    product_id: str,
     db: AsyncSession = Depends(get_db),
 ):
     """商品详情"""
@@ -63,7 +74,7 @@ async def create_product_endpoint(
 
 @router.put("/products/{product_id}")
 async def update_product_endpoint(
-    product_id: UUID,
+    product_id: str,
     body: ProductUpdate,
     db: AsyncSession = Depends(get_db),
 ):
@@ -76,7 +87,7 @@ async def update_product_endpoint(
 
 @router.delete("/products/{product_id}")
 async def delete_product_endpoint(
-    product_id: UUID,
+    product_id: str,
     db: AsyncSession = Depends(get_db),
 ):
     """删除商品"""

@@ -127,7 +127,7 @@ async def classify_intent(query: str) -> dict:
 
 
 def _keyword_classify(query: str) -> dict:
-    """关键词规则回退"""
+    """关键词规则回退 + 短词品类检测"""
     q = query.lower()
     if any(kw in q for kw in ["对比", "比较", "区别", "哪个好", "怎么选"]):
         return {"intent": "commodity_compare", "confidence": 0.6}
@@ -143,9 +143,12 @@ def _keyword_classify(query: str) -> dict:
         return {"intent": "anti_selection", "confidence": 0.7}
     if any(kw in q for kw in ["购物车", "加购", "加入", "下单", "结算", "清空", "查看购物车", "我的购物车"]):
         return {"intent": "cart_operation", "confidence": 0.7}
-    if len(q) <= 4 or any(kw in q for kw in ["你好", "谢谢", "天气", "再见"]):
-        return {"intent": "chitchat", "confidence": 0.8}
-    return {"intent": "commodity_recommend", "confidence": 0.4}
+    # 明确闲聊词 → chitchat
+    if any(kw in q for kw in ["你好", "谢谢", "天气", "再见", "哈哈", "呵呵"]):
+        return {"intent": "chitchat", "confidence": 0.9}
+    # 短词/单字可能是品类关键词 → 视为推荐意图（非闲聊）
+    # "鞋", "平板", "耳机", "手机", "电脑", "显示器" 等都应触发检索
+    return {"intent": "commodity_recommend", "confidence": 0.45}
 
 
 async def extract_slots(query: str, intent: str) -> dict:

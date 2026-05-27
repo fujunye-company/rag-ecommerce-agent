@@ -1,6 +1,12 @@
 """
 FastAPI应用入口 — 电商AI导购系统
 """
+import asyncio
+import sys
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 import logging
 from contextlib import asynccontextmanager
 
@@ -27,13 +33,16 @@ logger = logging.getLogger("main")
 async def lifespan(app: FastAPI):
     """应用生命周期：启动时建表+预热模型，关闭时断开数据库"""
     # startup
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        logger.info("数据库表创建/验证完成")
-    except Exception as exc:
-        logger.error("数据库初始化失败: %s", exc)
-        raise
+    if settings.DATABASE_URL:
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("数据库表创建/验证完成")
+        except Exception as exc:
+            logger.error("数据库初始化失败: %s", exc)
+            raise
+    else:
+        logger.info("DATABASE_URL 未配置，跳过数据库初始化（内存模式）")
 
     # 预热 Reranker 模型（同步，阻塞启动直到就绪）
     try:
@@ -43,6 +52,11 @@ async def lifespan(app: FastAPI):
         logger.info("Reranker model warmed up")
     except Exception as e:
         logger.warning("Reranker warmup skipped: %s", e)
+
+    # 清空旧缓存 — 确保 top_k 等参数变更后不返回过期数据
+    from app.services import cache
+    await cache.clear()
+    logger.info("Query cache cleared on startup")
 
     yield
     # shutdown
@@ -115,19 +129,41 @@ for prefix in ["/api/v1", "/api"]:
 # ── 健康检查 ──────────────────────────────────────────────
 @app.get("/health")
 async def health():
-    """健康检查：验证应用 + 数据库连通性"""
+    """健康检查：验证应用 + 数据库 + Qdrant 连通性"""
+    import httpx
+    
     db_status = "connected"
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
     except Exception:
         db_status = "unavailable"
-
+    
+    # Qdrant 连通性检查
+    qdrant_status = "unknown"
+    collection_name = ""
+    vector_size = 0
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            r = await client.get(f"{settings.QDRANT_URL}/collections/{settings.QDRANT_COLLECTION}")
+            if r.status_code == 200:
+                data = r.json()
+                qdrant_status = "ok"
+                collection_name = settings.QDRANT_COLLECTION
+                vector_size = data.get("result", {}).get("config", {}).get("params", {}).get("vectors", {}).get("size", 0)
+            else:
+                qdrant_status = f"error: HTTP {r.status_code}"
+    except Exception as e:
+        qdrant_status = f"unavailable: {str(e)[:50]}"
+    
     healthy = db_status == "connected"
     return {
         "status": "ok" if healthy else "degraded",
         "version": "0.1.0",
         "database": db_status,
+        "qdrant": qdrant_status,
+        "collection": collection_name,
+        "vector_size": vector_size,
     }, 200 if healthy else 503
 
 
@@ -145,8 +181,20 @@ async def version():
     }
 
 
+# ── 缓存管理 ──────────────────────────────────────────────
+@app.post("/api/cache/clear")
+async def clear_cache():
+    """清空查询缓存 — 参数变更后使用"""
+    from app.services import cache
+    st = await cache.stats()
+    await cache.clear()
+    logger.info("Cache cleared via API (was %d entries)", st["size"])
+    return {"status": "ok", "cleared": st["size"]}
+
+
 # ── 根路径 ────────────────────────────────────────────────
 @app.get("/")
 async def root():
     """根路径：重定向到 /docs 便于开发调试"""
     return RedirectResponse(url="/docs")
+ 

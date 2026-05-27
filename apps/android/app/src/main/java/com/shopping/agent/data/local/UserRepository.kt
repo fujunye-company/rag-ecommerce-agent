@@ -83,6 +83,39 @@ class UserRepository(context: Context) {
         list
     }
 
+    suspend fun getConversationMetas(limit: Int = 50): List<com.shopping.agent.data.model.ConversationMeta> = withContext(Dispatchers.IO) {
+        val cursor = db.readableDatabase.query(
+            LocalDatabase.TABLE_CONVERSATIONS, null, null, null, null, null,
+            "updated_at DESC", limit.toString()
+        )
+        val list = mutableListOf<com.shopping.agent.data.model.ConversationMeta>()
+        while (cursor.moveToNext()) {
+            list.add(com.shopping.agent.data.model.ConversationMeta(
+                id = cursor.getString(cursor.getColumnIndexOrThrow("id")),
+                title = cursor.getString(cursor.getColumnIndexOrThrow("title")) ?: "",
+                messageCount = cursor.getInt(cursor.getColumnIndexOrThrow("message_count")),
+                lastMessage = cursor.getString(cursor.getColumnIndexOrThrow("last_message")) ?: "",
+                createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at")),
+                updatedAt = cursor.getLong(cursor.getColumnIndexOrThrow("updated_at")),
+            ))
+        }
+        cursor.close()
+        list
+    }
+
+    suspend fun updateConversationTitle(convId: String, title: String) = withContext(Dispatchers.IO) {
+        val cv = ContentValues().apply {
+            put("title", title)
+            put("updated_at", System.currentTimeMillis())
+        }
+        db.writableDatabase.update(LocalDatabase.TABLE_CONVERSATIONS, cv, "id=?", arrayOf(convId))
+    }
+
+    suspend fun deleteConversation(convId: String) = withContext(Dispatchers.IO) {
+        db.writableDatabase.delete(LocalDatabase.TABLE_MESSAGES, "conversation_id=?", arrayOf(convId))
+        db.writableDatabase.delete(LocalDatabase.TABLE_CONVERSATIONS, "id=?", arrayOf(convId))
+    }
+
     // ═══════════════════════════════════════════════════════
     // 聊天消息
     // ═══════════════════════════════════════════════════════
@@ -209,16 +242,24 @@ class UserRepository(context: Context) {
     // ═══════════════════════════════════════════════════════
 
     suspend fun getSetting(key: String, default: String = ""): String = withContext(Dispatchers.IO) {
+        getSettingSync(key, default)
+    }
+
+    fun getSettingSync(key: String, default: String = ""): String {
         val cursor = db.readableDatabase.query(
             LocalDatabase.TABLE_SETTINGS, arrayOf("value"),
             "key=?", arrayOf(key), null, null, null
         )
         val value = if (cursor.moveToFirst()) cursor.getString(0) ?: default else default
         cursor.close()
-        value
+        return value
     }
 
     suspend fun setSetting(key: String, value: String) = withContext(Dispatchers.IO) {
+        setSettingSync(key, value)
+    }
+
+    fun setSettingSync(key: String, value: String) {
         val cv = ContentValues().apply {
             put("key", key)
             put("value", value)

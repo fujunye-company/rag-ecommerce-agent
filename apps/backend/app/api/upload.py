@@ -80,7 +80,7 @@ async def vision_search(file: UploadFile = File(...)):
     try:
         candidates = await search_similar_products(
             query_text=search_query,
-            top_k=8,
+            top_k=3,
         )
     except Exception as e:
         logger.warning("Qdrant search failed, using fallback: %s", e)

@@ -20,6 +20,8 @@ import java.util.UUID
 
 data class GuideUiState(
     val messages: List<ChatMessage> = emptyList(),
+    val conversations: List<ConversationMeta> = emptyList(),
+    val currentConversationId: String = UUID.randomUUID().toString(),
     val inputText: String = "",
     val isRecording: Boolean = false,
     val selectedImageUri: Uri? = null,
@@ -54,21 +56,32 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            // 恢复持久化的 sessionId（安装后复用，保证跨重启同一会话）
+            // 恢复持久化的 sessionId（后端状态跟踪，跨会话复用）
             val savedId = userRepo.getSetting("chat_session_id")
-            val convId = if (savedId.isNotEmpty()) savedId else _uiState.value.sessionId
+            val sessionId = if (savedId.isNotEmpty()) savedId else _uiState.value.sessionId
             if (savedId.isEmpty()) {
-                userRepo.setSetting("chat_session_id", convId)
+                userRepo.setSetting("chat_session_id", sessionId)
             }
-            _uiState.update { it.copy(sessionId = convId) }
 
-            // 加载历史消息
+            // 加载最近使用的 conversationId
+            val lastConvId = userRepo.getSetting("last_conversation_id")
+            val convId = if (lastConvId.isNotEmpty()) lastConvId else _uiState.value.currentConversationId
+
+            // 确保会话记录存在
             userRepo.createConversation(convId, "")
             val messages = userRepo.getMessages(convId)
-            if (messages.isNotEmpty()) {
-                _uiState.update {
-                    it.copy(messages = messages, screenState = ScreenState.Content(true))
-                }
+
+            // 加载对话列表
+            val metas = userRepo.getConversationMetas()
+
+            _uiState.update {
+                it.copy(
+                    sessionId = sessionId,
+                    currentConversationId = convId,
+                    messages = messages,
+                    conversations = metas,
+                    screenState = if (messages.isNotEmpty()) ScreenState.Content(true) else ScreenState.Idle,
+                )
             }
         }
     }
@@ -77,7 +90,19 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(inputText = text) }
     }
 
+    // ═══════════════════════════════════════════════════════
+    // 每日问候（仅当日首次，且当前对话为空时发送）
+    // ═══════════════════════════════════════════════════════
+
     fun sendDailyGreeting() {
+        if (_uiState.value.messages.isNotEmpty()) return
+
+        val today = java.time.LocalDate.now().toString()
+        val lastGreetingDate = userRepo.getSettingSync("last_greeting_date")
+        if (lastGreetingDate == today) return
+
+        userRepo.setSettingSync("last_greeting_date", today)
+
         val greeting = ChatMessage(
             id = UUID.randomUUID().toString(),
             role = MessageRole.Assistant,
@@ -92,13 +117,116 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             productCards = products,
             status = MessageStatus.Sent,
         )
+
+        // 保存问候消息到当前对话
+        val convId = _uiState.value.currentConversationId
+        viewModelScope.launch {
+            userRepo.saveMessage(greeting, convId)
+            userRepo.saveMessage(productMsg, convId)
+            userRepo.updateConversationTitle(convId, "每日推荐")
+            refreshConversationList()
+        }
+
         _uiState.update {
             it.copy(messages = listOf(greeting, productMsg),
                 screenState = ScreenState.Content(true))
         }
     }
 
+    // ═══════════════════════════════════════════════════════
+    // 多对话管理
+    // ═══════════════════════════════════════════════════════
+
+    fun createNewConversation() {
+        val newId = UUID.randomUUID().toString()
+        viewModelScope.launch {
+            userRepo.createConversation(newId, "")
+            userRepo.setSetting("last_conversation_id", newId)
+            refreshConversationList()
+        }
+        _uiState.update {
+            it.copy(
+                currentConversationId = newId,
+                messages = emptyList(),
+                streamingText = "",
+                streamingCards = emptyList(),
+                clarifyChips = emptyList(),
+                searchStatus = "",
+                screenState = ScreenState.Idle,
+                inputText = "",
+            )
+        }
+    }
+
+    fun loadConversation(convId: String) {
+        if (convId == _uiState.value.currentConversationId) return
+        viewModelScope.launch {
+            userRepo.setSetting("last_conversation_id", convId)
+            val messages = userRepo.getMessages(convId)
+            _uiState.update {
+                it.copy(
+                    currentConversationId = convId,
+                    messages = messages,
+                    streamingText = "",
+                    streamingCards = emptyList(),
+                    clarifyChips = emptyList(),
+                    searchStatus = "",
+                    screenState = if (messages.isNotEmpty()) ScreenState.Content(true) else ScreenState.Idle,
+                )
+            }
+        }
+    }
+
+    fun deleteConversation(convId: String) {
+        viewModelScope.launch {
+            userRepo.deleteConversation(convId)
+            val metas = userRepo.getConversationMetas()
+
+            if (convId == _uiState.value.currentConversationId) {
+                // 删除的是当前对话 → 切换到最近的对话或创建新对话
+                val next = metas.firstOrNull()
+                if (next != null) {
+                    userRepo.setSetting("last_conversation_id", next.id)
+                    val messages = userRepo.getMessages(next.id)
+                    _uiState.update {
+                        it.copy(
+                            currentConversationId = next.id,
+                            messages = messages,
+                            conversations = metas,
+                            screenState = if (messages.isNotEmpty()) ScreenState.Content(true) else ScreenState.Idle,
+                        )
+                    }
+                } else {
+                    // 没有其他对话了，创建新的
+                    val newId = UUID.randomUUID().toString()
+                    userRepo.createConversation(newId, "")
+                    userRepo.setSetting("last_conversation_id", newId)
+                    _uiState.update {
+                        it.copy(
+                            currentConversationId = newId,
+                            messages = emptyList(),
+                            conversations = emptyList(),
+                            screenState = ScreenState.Idle,
+                        )
+                    }
+                }
+            } else {
+                _uiState.update { it.copy(conversations = metas) }
+            }
+        }
+    }
+
+    private suspend fun refreshConversationList() {
+        val metas = userRepo.getConversationMetas()
+        _uiState.update { it.copy(conversations = metas) }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // 发送消息
+    // ═══════════════════════════════════════════════════════
+
     fun sendMessage() {
+        if (_uiState.value.isStreaming) return
         val text = _uiState.value.inputText.trim()
         if (text.isEmpty()) return
 
@@ -118,14 +246,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 streamingText = "",
                 streamingCards = emptyList(),
                 clarifyChips = emptyList(),
-                searchStatus = "正在搜索中…",
+                searchStatus = "AI 正在思考…",
             )
         }
 
-        // ── 真实 SSE 流（替代 simulateStreamingResponse） ──
         viewModelScope.launch {
             val accText = StringBuilder()
             val accCards = mutableListOf<Product>()
+            val convId = _uiState.value.currentConversationId
 
             try {
                 chatRepository.sendMessage(text, _uiState.value.sessionId)
@@ -152,37 +280,72 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                     matchScore = event.matchScore,
                                 )
                                 accCards.add(product)
-                                _uiState.update { it.copy(streamingCards = accCards.toList()) }
+
+                                // 提交当前累积文本 + 此卡片为独立消息（交错格式）
+                                val textSoFar = accText.toString().trim()
+                                if (textSoFar.isNotEmpty()) {
+                                    val partialMsg = ChatMessage(
+                                        id = UUID.randomUUID().toString(),
+                                        role = MessageRole.Assistant,
+                                        content = textSoFar,
+                                        productCards = listOf(product),
+                                        status = MessageStatus.Sent,
+                                    )
+                                    _uiState.update {
+                                        it.copy(
+                                            messages = it.messages + partialMsg,
+                                            streamingText = "",
+                                            streamingCards = emptyList(),
+                                        )
+                                    }
+                                    userRepo.saveMessage(partialMsg, convId)
+                                    accText.clear()
+                                } else {
+                                    // 无前置文本：卡片单独追加到 streamingCards
+                                    _uiState.update { it.copy(streamingCards = accCards.toList()) }
+                                }
                             }
                             is SSEEvent.Done -> {
-                                val finalText = accText.toString()
-                                val finalCards = accCards.toList()
-
-                                val aiMessage = ChatMessage(
-                                    id = UUID.randomUUID().toString(),
-                                    role = MessageRole.Assistant,
-                                    content = finalText,
-                                    productCards = finalCards,
-                                    status = MessageStatus.Sent,
-                                )
+                                // 提交剩余文本（如结语）
+                                val remainingText = accText.toString().trim()
+                                if (remainingText.isNotEmpty()) {
+                                    val closingMsg = ChatMessage(
+                                        id = UUID.randomUUID().toString(),
+                                        role = MessageRole.Assistant,
+                                        content = remainingText,
+                                        productCards = emptyList(),
+                                        status = MessageStatus.Sent,
+                                    )
+                                    _uiState.update {
+                                        it.copy(messages = it.messages + closingMsg)
+                                    }
+                                    userRepo.saveMessage(closingMsg, convId)
+                                }
 
                                 _uiState.update {
                                     it.copy(
-                                        messages = it.messages + aiMessage,
                                         isStreaming = false,
                                         streamingText = "",
                                         streamingCards = emptyList(),
                                         searchStatus = "",
-                                        screenState = ScreenState.Content(finalCards.isNotEmpty()),
+                                        screenState = ScreenState.Content(accCards.isNotEmpty()),
                                     )
                                 }
 
-                                // 持久化: 用户消息 + AI 回复
-                                val convId = _uiState.value.sessionId
+                                // 持久化用户消息（AI 消息已逐卡片增量保存）
                                 userRepo.saveMessage(userMessage, convId)
-                                userRepo.saveMessage(aiMessage, convId)
 
-                                // 生成反选 chips: 排除推荐商品中的品牌
+                                // 自动设置对话标题（首条用户消息截取）
+                                val currentTitle = userRepo.getConversationMetas()
+                                    .find { it.id == convId }?.title ?: ""
+                                if (currentTitle.isEmpty() || currentTitle == "每日推荐") {
+                                    userRepo.updateConversationTitle(convId, text.take(30))
+                                }
+
+                                refreshConversationList()
+
+                                // 反选 chips
+                                val finalCards = accCards.toList()
                                 if (finalCards.isNotEmpty()) {
                                     val brands = finalCards
                                         .mapNotNull { it.brand }
@@ -194,6 +357,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                 }
                             }
                             is SSEEvent.Error -> {
+                                android.util.Log.e("ChatViewModel", "SSE Error: ${event.message}")
                                 _uiState.update {
                                     it.copy(
                                         searchStatus = "",
@@ -205,6 +369,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     }
             } catch (e: Exception) {
+                android.util.Log.e("ChatViewModel", "SSE exception: ${e.message}", e)
                 _uiState.update {
                     it.copy(
                         searchStatus = "",
@@ -245,13 +410,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 isStreaming = true,
                 streamingText = "",
                 streamingCards = emptyList(),
-                searchStatus = "正在识别图片…",
+                searchStatus = "📷 正在识别图片，请稍候…",
             )
         }
 
         viewModelScope.launch {
             val accText = StringBuilder()
             val accCards = mutableListOf<Product>()
+            val convId = _uiState.value.currentConversationId
 
             try {
                 visionClient.connectVision(imageFile)
@@ -288,7 +454,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                 }
                                 val finalCards = accCards.toList()
 
-                                // 添加为 ChatMessage
                                 val aiMessage = ChatMessage(
                                     id = UUID.randomUUID().toString(),
                                     role = MessageRole.Assistant,
@@ -306,8 +471,18 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                         screenState = ScreenState.Content(finalCards.isNotEmpty()),
                                     )
                                 }
+
+                                // 持久化
+                                userRepo.saveMessage(aiMessage, convId)
+                                val currentTitle = userRepo.getConversationMetas()
+                                    .find { it.id == convId }?.title ?: ""
+                                if (currentTitle.isEmpty()) {
+                                    userRepo.updateConversationTitle(convId, "拍照找货")
+                                }
+                                refreshConversationList()
                             }
                             is SSEEvent.Error -> {
+                                android.util.Log.e("ChatViewModel", "SSE Error: ${event.message}")
                                 _uiState.update {
                                     it.copy(
                                         searchStatus = "",
@@ -316,10 +491,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                     )
                                 }
                             }
-                            else -> {}  // TextDelta not expected from vision-search
+                            else -> {}
                         }
                     }
             } catch (e: Exception) {
+                android.util.Log.e("ChatViewModel", "Vision SSE exception: ${e.message}", e)
                 _uiState.update {
                     it.copy(
                         searchStatus = "",

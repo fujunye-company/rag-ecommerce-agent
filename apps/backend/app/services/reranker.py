@@ -96,6 +96,14 @@ def rerank(
 
     model = _get_model()
 
+    # 模型不可用（CI 环境无 HF 缓存）→ 降级为原分数排序
+    if model is None:
+        logger.warning("Reranker model unavailable, falling back to original scores")
+        ranked = [{**doc, "rerank_score": doc.get("score", 0.5),
+                   "final_score": doc.get("score", 0.5)} for doc in documents]
+        ranked.sort(key=lambda x: x["final_score"], reverse=True)
+        return ranked[:top_k]
+
     # 构造 (query, doc) pairs（兼容 Qdrant 和通用格式）
     pairs = [(query, _get_content(doc)) for doc in documents]
 

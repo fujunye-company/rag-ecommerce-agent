@@ -2,6 +2,7 @@ package com.shopping.agent.data.repository
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.shopping.agent.data.model.Product
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -25,13 +26,48 @@ data class CompareResult(
 )
 
 class CompareRepository(
-    private val baseUrl: String = "http://10.0.2.2:8080"
+    private val baseUrl: String = "http://10.0.2.2:8082"
 ) {
     private val client = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
     private val gson = Gson()
+
+    suspend fun fetchProducts(): List<Product>? = withContext(Dispatchers.IO) {
+        try {
+            val request = Request.Builder()
+                .url("$baseUrl/api/products?limit=100")
+                .get()
+                .build()
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                val json = response.body?.string() ?: return@withContext null
+                val arr = JSONArray(json)
+                val products = mutableListOf<Product>()
+                for (i in 0 until arr.length()) {
+                    val obj = arr.getJSONObject(i)
+                    products.add(Product(
+                        productId = obj.optString("product_id", ""),
+                        title = obj.optString("title", ""),
+                        brand = obj.optString("brand", null),
+                        category = obj.optString("category", ""),
+                        price = obj.optDouble("price", 0.0),
+                        rating = obj.optDouble("rating", 3.0).toFloat(),
+                        ratingCount = obj.optInt("rating_count", 0),
+                        imageUrl = obj.optString("image_url", null),
+                        imageUrls = listOf(),
+                        highlights = listOf(),
+                        attributes = mapOf(),
+                        source = obj.optString("source", ""),
+                    ))
+                }
+                products
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
 
     suspend fun compareProducts(productIds: List<String>): CompareResult? = withContext(Dispatchers.IO) {
         try {

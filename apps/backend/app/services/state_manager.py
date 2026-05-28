@@ -8,6 +8,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import AsyncSessionLocal
 from app.models.session import Session
+from app.models.message import Message
 
 logger = logging.getLogger("state_manager")
 
@@ -136,3 +137,45 @@ async def clear_state(session_id: str) -> None:
             await db.commit()
     except Exception as e:
         logger.warning("Failed to deactivate session: %s", e)
+
+
+async def save_message(session_id: str, role: str, content: str, product_ids: list = None) -> None:
+    """持久化单条消息到 messages 表"""
+    if not content.strip():
+        return
+    if not _HAS_DB:
+        return
+    try:
+        sid = uuid.UUID(session_id)
+        async with AsyncSessionLocal() as db:
+            msg = Message(
+                session_id=sid,
+                role=role,
+                content=content[:2000],  # 截断过长内容
+                product_ids=product_ids or [],
+            )
+            db.add(msg)
+            await db.commit()
+    except Exception as e:
+        logger.warning("Failed to save message for %s: %s", session_id[:8], e)
+
+
+async def get_recent_messages(session_id: str, limit: int = 6) -> list[dict]:
+    """获取最近 N 条消息，返回 [{role, content}, ...]（时间正序）"""
+    if not _HAS_DB:
+        return []
+    try:
+        sid = uuid.UUID(session_id)
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(Message.content, Message.role)
+                .where(Message.session_id == sid)
+                .order_by(Message.created_at.desc())
+                .limit(limit)
+            )
+            rows = result.all()
+            # 逆转为时间正序
+            return [{"role": r.role, "content": r.content} for r in reversed(rows)]
+    except Exception as e:
+        logger.warning("Failed to get recent messages for %s: %s", session_id[:8], e)
+        return []

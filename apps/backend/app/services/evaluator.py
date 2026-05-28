@@ -74,6 +74,9 @@ async def run_evaluation(
 
     for case in test_cases:
         query = case.get("query", "")
+        # 图片搜索评测：去掉 [图片] 模拟前缀，测试 VLM 解析后的文本路径
+        if query.startswith("[图片]"):
+            query = query[len("[图片]"):]
         expected_intent = case.get("expected_intent")
         ground_truth = case.get("ground_truth_product_ids", [])
 

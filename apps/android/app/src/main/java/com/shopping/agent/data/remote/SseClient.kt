@@ -205,6 +205,14 @@ class SseClient(
                         latencyMs = d.latency_ms
                     )
                 }
+                "clarify" -> {
+                    val d = gson.fromJson(json, ClarifyPayload::class.java)
+                    SSEEvent.Clarify(
+                        question = d.question,
+                        missingSlots = d.missing_slots ?: emptyList(),
+                        options = d.options ?: emptyList()
+                    )
+                }
                 "error" -> {
                     val d = gson.fromJson(json, ErrorPayload::class.java)
                     SSEEvent.Error(d.message)

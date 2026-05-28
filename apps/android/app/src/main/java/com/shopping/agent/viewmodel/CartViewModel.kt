@@ -27,6 +27,7 @@ data class CartUiState(
     val totalPrice: Double = 0.0,
     val isLoading: Boolean = false,
     val error: String? = null,
+    val orderResult: String? = null,  // 下单结果信息
 )
 
 class CartViewModel(application: Application) : AndroidViewModel(application) {
@@ -208,6 +209,49 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
                 _uiState.update { it.copy(items = previousItems, totalPrice = previousTotal, error = "清空同步失败，请下拉刷新") }
             }
         }
+    }
+
+    fun placeOrder() {
+        if (_uiState.value.items.isEmpty()) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    val body = JSONObject().apply {
+                        put("session_id", sessionId)
+                        put("address", "默认地址")
+                    }
+                    val request = Request.Builder()
+                        .url("$baseUrl/api/v1/orders")
+                        .post(body.toString().toRequestBody("application/json".toMediaType()))
+                        .build()
+                    client.newCall(request).execute()
+                }
+                if (response.isSuccessful) {
+                    val body = response.body?.string() ?: "{}"
+                    val json = JSONObject(body)
+                    val orderNo = json.optString("order_no", "")
+                    val total = json.optDouble("total", 0.0)
+                    _uiState.update {
+                        it.copy(
+                            items = emptyList(),
+                            totalPrice = 0.0,
+                            isLoading = false,
+                            orderResult = "下单成功！\n订单号：$orderNo\n实付：¥${"%.2f".format(total)}"
+                        )
+                    }
+                } else {
+                    val body = response.body?.string() ?: ""
+                    _uiState.update { it.copy(isLoading = false, error = "下单失败：${response.code}") }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = "网络错误：${e.message}") }
+            }
+        }
+    }
+
+    fun dismissOrderResult() {
+        _uiState.update { it.copy(orderResult = null) }
     }
 
     val itemCount: Int get() = _uiState.value.items.sumOf { it.quantity }

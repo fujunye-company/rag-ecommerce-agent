@@ -37,6 +37,12 @@ sealed class SSEEvent {
     ) : SSEEvent()
     
     data class Error(val message: String) : SSEEvent()
+
+    data class Clarify(
+        val question: String,
+        val missingSlots: List<String>,
+        val options: List<String>
+    ) : SSEEvent()
 }
 
 // ── JSON payload 映射（仅 SseClient 内部解析用） ──
@@ -67,3 +73,9 @@ data class DonePayload(
 )
 
 data class ErrorPayload(val message: String, val code: String?)
+
+data class ClarifyPayload(
+    val question: String,
+    val missing_slots: List<String>?,
+    val options: List<String>?
+)

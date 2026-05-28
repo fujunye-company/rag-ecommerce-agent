@@ -10,12 +10,15 @@ if sys.platform == "win32":
 import logging
 from contextlib import asynccontextmanager
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
-from app.api import chat, products, upload, evaluation, feedback, compare, knowledge, cart
+from app.api import chat, products, upload, evaluation, feedback, compare, knowledge, cart, order
 from app.core.config import settings
 from app.core.database import engine, Base
 
@@ -39,8 +42,8 @@ async def lifespan(app: FastAPI):
                 await conn.run_sync(Base.metadata.create_all)
             logger.info("数据库表创建/验证完成")
         except Exception as exc:
-            logger.error("数据库初始化失败: %s", exc)
-            raise
+            logger.warning("数据库初始化失败（降级运行，购物车/多轮历史暂不可用）: %s", exc)
+            # 不 raise — 允许应用在无数据库模式下运行
     else:
         logger.info("DATABASE_URL 未配置，跳过数据库初始化（内存模式）")
 
@@ -69,9 +72,21 @@ async def lifespan(app: FastAPI):
 
 # ── FastAPI app ───────────────────────────────────────────
 app = FastAPI(
-    title="电商AI导购系统",
-    version="0.1.0",
+    title="Hermes 电商AI导购系统",
+    description="""基于 RAG 的多模态电商智能导购 AI Agent。
+
+## 核心能力
+- **智能导购**: 9 种意图识别（推荐/对比/详情/场景/反选/购物车/拍照找货/售后/闲聊）
+- **多轮对话**: 上下文继承、澄清反问、槽位填充
+- **拍照找货**: VLM 图片解析 → 向量检索 → 商品匹配
+- **流式响应**: SSE (Server-Sent Events) 实时推送
+
+## 技术栈
+FastAPI + LangGraph + Qdrant + Doubao-Seed-2.0 + BGE-large-v1.5""",
+    version="1.0.0",
     lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
 # CORS — MVP 阶段不传 credentials（避免与 wildcard origin 冲突）
@@ -104,14 +119,31 @@ async def app_exception_handler(request: Request, exc: AppException):
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
-    """兜底异常处理器 — 不暴露堆栈"""
+    """兜底异常处理器 — 不暴露堆栈，记录请求上下文"""
     import logging
     logger = logging.getLogger("main")
-    logger.error("Unhandled exception: %s", exc, exc_info=True)
+    logger.error(
+        "Unhandled exception: %s %s [client=%s] — %s",
+        request.method, request.url.path, request.client.host if request.client else "?",
+        exc, exc_info=True,
+    )
     return JSONResponse(
         status_code=500,
         content=ApiResponse(code=5000, message="服务器内部错误", data=None).model_dump(),
     )
+
+
+# ── 请求耗时中间件 ──────────────────────────────────────────
+@app.middleware("http")
+async def request_timing_middleware(request: Request, call_next):
+    """记录每个请求的耗时，慢查询警告"""
+    import time as _time
+    t0 = _time.monotonic()
+    response = await call_next(request)
+    elapsed_ms = (_time.monotonic() - t0) * 1000
+    if elapsed_ms > 3000:
+        logger.warning("Slow request: %s %s — %.0fms", request.method, request.url.path, elapsed_ms)
+    return response
 
 # 路由注册 — /api/v1 为主要版本，/api 保留向后兼容
 # TODO: 全量阶段废弃 /api 前缀，仅保留 /api/v1
@@ -124,7 +156,12 @@ for prefix in ["/api/v1", "/api"]:
     app.include_router(compare.router, prefix=prefix, tags=["compare"])
     app.include_router(knowledge.router, prefix=prefix, tags=["knowledge"])
     app.include_router(cart.router, prefix=prefix, tags=["cart"])
+    app.include_router(order.router, prefix=prefix, tags=["order"])
 
+# 静态文件 — 商品图片 (data/images/)
+IMAGES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "data" / "images"
+if IMAGES_DIR.exists():
+    app.mount("/images", StaticFiles(directory=str(IMAGES_DIR)), name="images")
 
 # ── 健康检查 ──────────────────────────────────────────────
 @app.get("/health")
@@ -159,7 +196,7 @@ async def health():
     healthy = db_status == "connected"
     return {
         "status": "ok" if healthy else "degraded",
-        "version": "0.1.0",
+        "version": "1.0.0",
         "database": db_status,
         "qdrant": qdrant_status,
         "collection": collection_name,
@@ -173,7 +210,7 @@ async def version():
     """返回系统版本及技术栈信息"""
     return {
         "name": "电商AI导购系统",
-        "version": "0.1.0",
+        "version": "1.0.0",
         "tech_stack": {
             "backend": "FastAPI",
             "llm": "Doubao-Seed-2.0-lite",

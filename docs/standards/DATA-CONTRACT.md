@@ -93,6 +93,7 @@ data class Product(
 | `progress` | 流水线进度 | `{"message": "..."}` |
 | `text_delta` | LLM 流式增量 | `{"content": "..."}` |
 | `product_cards` | 单张商品卡片 | 见 2.2 |
+| `clarify` | Agent 主动反问 | `{"question": "...", "missing_slots": [...], "options": [...]}` |
 | `done` | 流结束 | `{"total_cards": N, "latency_ms": M}` |
 | `error` | 错误 | `{"message": "...", "code": "..."}` |
 
@@ -122,6 +123,7 @@ data class Product(
 | `progress` | `SSEEvent.Progress` | `message` → `message` |
 | `text_delta` | `SSEEvent.TextDelta` | `content` → `content` |
 | `product_cards` | `SSEEvent.ProductCard` | 见 2.2 → ProductCard |
+| `clarify` | `SSEEvent.Clarify` | `question`→`question`, `missing_slots`→`missingSlots`, `options`→`options` |
 | `done` | `SSEEvent.Done` | `total_cards`→`totalCards`, `latency_ms`→`latencyMs` |
 | `error` | `SSEEvent.Error` | `message` → `message` |
 
@@ -148,6 +150,8 @@ payload index: category, brand, price
 ```
 seed_products.json → ProductRecord → embed(title) → Qdrant.upsert
 ```
+
+Point ID 使用 `uuid.uuid5(namespace, product_id)` 确定性生成，避免 md5 hash 碰撞。
 
 种子数据文件 (`data/qdrant/seed_products.json`) 必须使用 ProductRecord 格式。
 

@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shopping.agent.ui.components.*
 import com.shopping.agent.ui.navigation.LocalOnMenuClick
@@ -21,6 +22,7 @@ import com.shopping.agent.viewmodel.GuideUiState
 @Composable
 fun HomeScreen(
     chatViewModel: ChatViewModel,
+    onProductTap: (String) -> Unit = {},
 ) {
     val uiState by chatViewModel.uiState.collectAsState()
 
@@ -37,6 +39,17 @@ fun HomeScreen(
                 Icon(Icons.Default.Menu, "菜单", tint = Neutral700, modifier = Modifier.size(26.dp))
             }
             Row {
+                IconButton(
+                    onClick = { chatViewModel.toggleTts() },
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Icon(
+                        imageVector = if (uiState.ttsEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
+                        contentDescription = "语音播报",
+                        tint = if (uiState.ttsEnabled) Primary else Neutral400,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
                 IconButton(onClick = {}, modifier = Modifier.size(34.dp)) {
                     Icon(Icons.Default.Call, "电话", tint = Neutral700, modifier = Modifier.size(26.dp))
                 }
@@ -82,7 +95,7 @@ fun HomeScreen(
             }
         } else {
             ChatMessageList(uiState = uiState, chatViewModel = chatViewModel,
-                modifier = Modifier.weight(1f))
+                onProductTap = onProductTap, modifier = Modifier.weight(1f))
         }
 
         // ===== 底部搜索栏 (与比价页位置一致) =====
@@ -98,6 +111,7 @@ fun HomeScreen(
 private fun ChatMessageList(
     uiState: GuideUiState,
     chatViewModel: ChatViewModel,
+    onProductTap: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
@@ -109,23 +123,53 @@ private fun ChatMessageList(
         contentPadding = PaddingValues(horizontal = Dimens.pageHorizontal, vertical = Dimens.space2),
         verticalArrangement = Arrangement.spacedBy(Dimens.space3)) {
         items(uiState.messages, key = { it.id }) { msg ->
-            MessageBubble(message = msg, onProductTap = {})
+            MessageBubble(message = msg, onProductTap = { onProductTap(it.productId) })
         }
         if (uiState.isStreaming) {
             item(key = "streaming") {
                 StreamingBubble(text = uiState.streamingText, isActive = true,
                     searchStatus = uiState.searchStatus,
-                    productCards = uiState.streamingCards, onProductTap = {})
+                    productCards = uiState.streamingCards, onProductTap = { onProductTap(it.productId) })
             }
         }
-        if (uiState.clarifyChips.isNotEmpty()) {
+        if (uiState.clarifyChips.isNotEmpty() || uiState.clarifyQuestion.isNotEmpty()) {
             item(key = "clarify") {
-                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.space2)) {
-                    uiState.clarifyChips.forEach { chip ->
-                        AssistChip(onClick = { chatViewModel.onClarifyChipClick(chip) },
-                            label = { Text(chip) }, shape = RadiusFull,
-                            colors = AssistChipDefaults.assistChipColors(
-                                containerColor = PrimaryLight, labelColor = Primary))
+                Column(modifier = Modifier.padding(horizontal = Dimens.space2)) {
+                    if (uiState.clarifyQuestion.isNotEmpty()) {
+                        Surface(
+                            shape = AgentBubbleShape,
+                            color = Neutral0,
+                            shadowElevation = 2.dp,
+                            modifier = Modifier.widthIn(max = Dimens.messageBubbleMaxWidth)
+                        ) {
+                            Column(modifier = Modifier.padding(Dimens.space3)) {
+                                Text(
+                                    "🤔 ${uiState.clarifyQuestion}",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Neutral900,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
+                        }
+                        Spacer(Modifier.height(Dimens.space2))
+                    }
+                    if (uiState.clarifyChips.isNotEmpty()) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.space2),
+                            modifier = Modifier.padding(start = Dimens.space2)
+                        ) {
+                            uiState.clarifyChips.forEach { chip ->
+                                AssistChip(
+                                    onClick = { chatViewModel.onClarifyChipClick(chip) },
+                                    label = { Text(chip) },
+                                    shape = RadiusFull,
+                                    colors = AssistChipDefaults.assistChipColors(
+                                        containerColor = PrimaryLight,
+                                        labelColor = Primary
+                                    )
+                                )
+                            }
+                        }
                     }
                 }
             }

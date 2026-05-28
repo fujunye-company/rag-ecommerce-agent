@@ -1,8 +1,9 @@
-# 电商AI导购Agent — 开发总纲 DEV-GUIDE v3.1
+# 电商AI导购Agent — 开发总纲 DEV-GUIDE v3.2
 
 > **最高优先级参考：`docs/background/REQS-竞赛核心需求.md`**  
 > 本文档 = PRD + 竞品分析 + 架构分析 + 创新调研 + UI设计 + 比赛需求 的压缩版  
-> 每次编码前必读。冲突时以 REQS.md 为准。
+> 每次编码前必读。冲突时以 REQS.md 为准。  
+> **新手入门**：先看 `docs/standards/SETUP.md` 从零搭建环境。
 
 ---
 
@@ -154,7 +155,81 @@ SSE 流式速率 ≥ 20 tokens/s
 
 ---
 
-## 七、模块完成度现状
+## 七、模型下载指南
+
+项目依赖 2 个 HuggingFace 模型，**不在 Git 仓库中**（~3.5GB），需要每位开发者自行下载一次。
+
+### 7.1 模型清单
+
+| 模型 | 用途 | 大小 | 加载代码 | 无模型时行为 |
+|------|------|:--:|------|------|
+| `BAAI/bge-large-zh-v1.5` | Embedding 向量化 | ~1.3GB | `embedding.py` | **报错退出**（`local_files_only=True`） |
+| `BAAI/bge-reranker-v2-m3` | Cross-Encoder 精排 | ~2.2GB | `reranker.py` | 降级为原始分数排序 |
+
+### 7.2 缓存位置
+
+```
+~/.cache/huggingface/hub/
+├── models--BAAI--bge-large-zh-v1.5/
+│   └── snapshots/<hash>/    ← Embedding 模型文件
+└── models--BAAI--bge-reranker-v2-m3/
+    └── snapshots/<hash>/    ← Reranker 模型文件
+```
+
+### 7.3 下载命令
+
+```bash
+# 激活项目虚拟环境
+source ~/.hermes-venv/bin/activate
+
+# 下载 Embedding 模型（必须先下载，否则后端启动报错）
+python -c "
+from sentence_transformers import SentenceTransformer
+m = SentenceTransformer('BAAI/bge-large-zh-v1.5')
+print('Embedding model downloaded, dim =', m.get_sentence_embedding_dimension())
+"
+
+# 下载 Reranker 模型（可选，无模型时自动降级）
+python -c "
+from sentence_transformers import CrossEncoder
+m = CrossEncoder('BAAI/bge-reranker-v2-m3')
+print('Reranker model downloaded')
+"
+```
+
+### 7.4 验证下载成功
+
+```bash
+python -c "
+from sentence_transformers import SentenceTransformer, CrossEncoder
+# Embedding: 必须成功
+m1 = SentenceTransformer('BAAI/bge-large-zh-v1.5', local_files_only=True)
+print('Embedding OK, dim =', m1.get_sentence_embedding_dimension())
+# Reranker: 必须成功
+m2 = CrossEncoder('BAAI/bge-reranker-v2-m3')
+print('Reranker OK')
+"
+```
+
+> 如果 `local_files_only=True` 报 `LocalEntryNotFoundError`，说明模型未正确下载，重新执行 7.3 的下载命令。
+
+### 7.5 离线环境迁移
+
+如果另一台机器无法访问 HuggingFace，可从已下载的机器复制缓存目录：
+
+```bash
+# 源机器：打包缓存
+tar -czf huggingface-models.tar.gz \
+  ~/.cache/huggingface/hub/models--BAAI--bge-large-zh-v1.5 \
+  ~/.cache/huggingface/hub/models--BAAI--bge-reranker-v2-m3
+
+# 目标机器：解压到相同位置
+tar -xzf huggingface-models.tar.gz -C ~/
+```
+
+---
+
+## 八、模块完成度现状
 
 | 模块 | 完成度 | 备注 |
 |------|:---:|------|

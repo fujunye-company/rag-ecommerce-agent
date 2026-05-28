@@ -1,18 +1,29 @@
 """
 图像理解 — VLM 商品图片结构化提取
 
-仅使用本地 Qwen3-VL-2B 模型推理，无外部 API 依赖。
-模型: Qwen/Qwen3-VL-2B-Instruct (~4GB, ModelScope 缓存)
+优先级: 本地 Qwen3-VL-2B (快速/免费) → Doubao 视觉 API (云端回退)
 """
 import asyncio
 import base64
 import json
 import logging
 import re
+import time
 import uuid
 from pathlib import Path
 
 logger = logging.getLogger("image_parser")
+
+# 延迟导入，避免循环依赖
+_llm_client = None
+
+
+def _get_llm_client():
+    global _llm_client
+    if _llm_client is None:
+        from app.services.llm_client import create_llm_client
+        _llm_client = create_llm_client()
+    return _llm_client
 
 # 上传图片存储目录
 UPLOAD_DIR = Path(__file__).resolve().parents[3] / "uploads"
@@ -57,24 +68,69 @@ def _get_local_model():
     return _local_model, _local_processor
 
 
+async def _parse_with_doubao(image_bytes: bytes) -> dict:
+    """使用 Doubao 视觉 API 解析商品图片（OpenAI-compatible vision 格式）"""
+    from app.core.config import settings
+
+    img_b64 = base64.b64encode(image_bytes).decode("utf-8")
+    data_url = f"data:image/jpeg;base64,{img_b64}"
+
+    prompt = _build_prompt()
+
+    messages = [{
+        "role": "user",
+        "content": [
+            {"type": "image_url", "image_url": {"url": data_url}},
+            {"type": "text", "text": prompt},
+        ],
+    }]
+
+    client = _get_llm_client()
+    start = time.time()
+
+    resp = await client.chat.completions.create(
+        model=settings.LLM_MODEL,
+        messages=messages,
+        temperature=0.1,
+        max_tokens=256,
+        extra_body={"thinking": {"type": "disabled"}},
+    )
+
+    elapsed = time.time() - start
+    output_text = resp.choices[0].message.content or ""
+    logger.info("Doubao vision parsed in %.1fs: %s...", elapsed, output_text[:80])
+
+    result = _parse_vlm_output(output_text)
+    if result["confidence"] == 0.0:
+        result["confidence"] = 0.3  # 云端模型有基本识别能力
+    return result
+
+
 async def parse_product_image(image_bytes: bytes) -> dict:
     """
     解析商品图片，提取结构化商品信息。
 
-    使用本地 Qwen3-VL-2B 模型推理（在线程池中执行，不阻塞事件循环）。
-    模型不可用时抛出 RuntimeError。
+    优先级: 本地 Qwen3-VL-2B → Doubao 视觉 API。
+    模型不可用时自动降级；全部不可用时抛出 RuntimeError。
 
     Returns:
         {category, brand, color, material, style, keywords, description, confidence}
     """
+    # 1. 优先尝试本地 Qwen3-VL-2B (快速/免费)
     local_model, processor = _get_local_model()
     if local_model:
         return await asyncio.to_thread(_parse_with_local, image_bytes, local_model, processor)
 
-    raise RuntimeError(
-        "VLM 模型未就绪。请确保已下载 Qwen3-VL-2B-Instruct 到 "
-        "~/.cache/modelscope/qwen/Qwen3-VL-2B-Instruct"
-    )
+    # 2. 降级到 Doubao 视觉 API
+    try:
+        logger.info("Local VLM unavailable, falling back to Doubao vision API")
+        return await _parse_with_doubao(image_bytes)
+    except Exception as e:
+        logger.error("Doubao vision API also failed: %s", e)
+        raise RuntimeError(
+            "VLM 模型未就绪且云视觉 API 调用失败。"
+            f"本地: 未找到 Qwen3-VL-2B；云端: {str(e)[:100]}"
+        )
 
 
 def _parse_with_local(image_bytes, model, processor) -> dict:
@@ -149,7 +205,7 @@ def _parse_vlm_output(text: str) -> dict:
 
     result = {**default}
     for k in default:
-        if k in data and data[k] is not None:
+        if k in data and data[k] is not None and data[k] != "null":
             result[k] = data[k]
 
     if not isinstance(result["keywords"], list):

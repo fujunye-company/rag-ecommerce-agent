@@ -1,5 +1,9 @@
 package com.shopping.agent.ui.screens
 
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -20,6 +24,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -27,7 +32,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import java.util.Locale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.shopping.agent.data.mock.MockCompareData
@@ -40,7 +47,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun CompareTabScreen() {
-    val allProducts = remember { MockCompareData.products }
+    var allProducts by remember { mutableStateOf(MockCompareData.products) }
     val categories = MockCompareData.categories
     var selectedCategory by remember { mutableStateOf(MockCompareData.defaultCategory) }
     var selectedProduct by remember { mutableStateOf<String?>(null) }
@@ -55,6 +62,14 @@ fun CompareTabScreen() {
     var aiCompareResult by remember { mutableStateOf<com.shopping.agent.data.repository.CompareResult?>(null) }
     var showCompareDialog by remember { mutableStateOf(false) }
     val compareRepo = remember { CompareRepository() }
+
+    // 启动时从后端拉取真实商品，失败则保留 mock 数据
+    LaunchedEffect(Unit) {
+        val real = compareRepo.fetchProducts()
+        if (!real.isNullOrEmpty()) {
+            allProducts = real
+        }
+    }
 
     // 按选中分类过滤（非搜索模式下）
     val categoryProducts by remember {
@@ -226,9 +241,32 @@ private fun CompareSearchBar(
                 modifier = Modifier.weight(1f),
                 maxLines = 4
             )
-            // 语音输入图标
-            IconButton(onClick = {}, modifier = Modifier.size(44.dp)) {
-                Icon(Icons.Default.Mic, "语音输入", tint = Neutral500)
+            // 语音输入
+            val context = LocalContext.current
+            val hasSpeech = remember { android.speech.SpeechRecognizer.isRecognitionAvailable(context) }
+            val voiceLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.StartActivityForResult()
+            ) { result ->
+                if (result.resultCode == android.app.Activity.RESULT_OK) {
+                    val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull() ?: return@rememberLauncherForActivityResult
+                    onQueryChange(spoken)
+                }
+            }
+            IconButton(
+                onClick = {
+                    if (hasSpeech) {
+                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                            putExtra(RecognizerIntent.EXTRA_PROMPT, "说出想对比的商品...")
+                        }
+                        voiceLauncher.launch(intent)
+                    }
+                },
+                enabled = hasSpeech,
+                modifier = Modifier.size(44.dp)
+            ) {
+                Icon(Icons.Default.Mic, "语音输入", tint = if (hasSpeech) Neutral500 else Neutral300)
             }
             // 发送按钮
             FilledIconButton(

@@ -1,0 +1,100 @@
+"""订单 API 端点 — 下单/查单/取消"""
+from fastapi import APIRouter, Depends, Query, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel
+from app.core.database import get_db
+from app.services import order_service, cart_service
+
+router = APIRouter()
+
+
+class PlaceOrderRequest(BaseModel):
+    session_id: str
+    address: str = "默认地址"
+    remark: str = ""
+
+
+@router.post("/orders")
+async def place_order(body: PlaceOrderRequest, db: AsyncSession = Depends(get_db)):
+    """下单 — 读取购物车，创建订单，清空购物车"""
+    # 读取当前购物车
+    items = await cart_service.get_cart(db, body.session_id)
+    if not items:
+        raise HTTPException(status_code=400, detail="购物车为空，无法下单")
+
+    total = await cart_service.get_cart_total(db, body.session_id)
+    items_snapshot = [
+        {
+            "product_id": it.product_id,
+            "title": it.title,
+            "price": it.price,
+            "quantity": it.quantity,
+        }
+        for it in items
+    ]
+
+    # 创建订单
+    order = await order_service.create_order(
+        db, body.session_id, items_snapshot, total, body.address, body.remark
+    )
+
+    # 清空购物车
+    await cart_service.clear_cart(db, body.session_id)
+
+    return {
+        "order_id": str(order.id),
+        "order_no": order.order_no,
+        "total": order.total,
+        "items_count": len(items_snapshot),
+        "status": order.status,
+        "created_at": order.created_at.isoformat() if order.created_at else None,
+    }
+
+
+@router.get("/orders")
+async def list_orders(
+    session_id: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """查询当前会话的所有订单"""
+    orders = await order_service.get_orders_by_session(db, session_id)
+    return {
+        "orders": [
+            {
+                "order_id": str(o.id),
+                "order_no": o.order_no,
+                "total": o.total,
+                "status": o.status,
+                "items_count": len(o.items_snapshot) if o.items_snapshot else 0,
+                "created_at": o.created_at.isoformat() if o.created_at else None,
+            }
+            for o in orders
+        ]
+    }
+
+
+@router.get("/orders/{order_id}")
+async def get_order(order_id: str, db: AsyncSession = Depends(get_db)):
+    """查询单个订单详情"""
+    order = await order_service.get_order(db, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    return {
+        "order_id": str(order.id),
+        "order_no": order.order_no,
+        "total": order.total,
+        "status": order.status,
+        "address": order.address,
+        "remark": order.remark,
+        "items": order.items_snapshot,
+        "created_at": order.created_at.isoformat() if order.created_at else None,
+    }
+
+
+@router.post("/orders/{order_id}/cancel")
+async def cancel_order(order_id: str, db: AsyncSession = Depends(get_db)):
+    """取消订单"""
+    ok = await order_service.cancel_order(db, order_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    return {"cancelled": True}

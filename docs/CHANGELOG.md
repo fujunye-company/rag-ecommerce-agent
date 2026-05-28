@@ -1,5 +1,39 @@
 # 变更日志
 
+## [0.4.0] - 2026-05-28
+
+### Added
+- **下单/结算闭环**：Order ORM 模型 + order_service + REST API（POST/GET/cancel），agent.py checkout 调用真实 service，Android CartScreen 结算按钮对接下单 API + 下单成功弹窗
+- **clarify SSE 事件类型**：后端 ClarifyEvent + agent.py 反问专用事件，Android SSEEvent.Clarify + HomeScreen 反问气泡 + 选项 chips
+- **商品详情页**：ProductDetailScreen（9 组件：HeroGallery/InfoCard/CouponCard/LogisticsCard/SpecGrid/ReviewSection/ShopCard/BottomActionBar），ProductDetailData 数据模型，ProductDetailViewModel（收藏/关注/加购/下单），NavGraph 导航集成 + HomeScreen 商品卡片点击跳转
+- **CompareScreen 真实数据联调**：CompareRepository.fetchProducts() 从后端 API 拉取真实商品，mock fallback
+- **E2E 测试脚本**：tests/e2e_scenarios.sh 覆盖 9 场景 + 加分项（购物车/反馈/缓存）
+- **性能基准文档**：docs/notes/PERFORMANCE.md（延迟分解/场景实测/缓存指标/优化记录）
+- **3-5 分钟演示脚本**：docs/notes/DEMO-SCRIPT.md（5 幕演示 + 技术讲解）
+- **答辩 PPT 大纲**：docs/notes/PPT-OUTLINE.md（18 页结构化大纲）
+- **final_delivery 打包**：MANIFEST.md + 目录结构（apk/source/docs）
+- **P@3 检索精度重测**：scripts/run_p3_test.py（直连 Qdrant + BGE 嵌入），eval_cases.json ground truth 更新为真实 product_id，286 用例实测 P@3=0.146（商品推荐类 0.213），消除了 UUID5 修复前的 P@3=0 误报
+- **S7 场景化购物增强**：intent.py 关键词扩展（6→18），agent.py `_SCENARIO_FALLBACK_MAP`（11 场景），LLM 失败时规则兜底
+
+### Fixed
+- **`get_fast_client()` 修复**：改为复用 `create_llm_client()` → Doubao，不再硬编码 DeepSeek
+- **Doubao API Key 验证**：`ark-d50e8124-...` 实测通过，`ep-20260514111645-lmgt2` 正常响应
+- **Qdrant 数据完整性**：md5[:16]%2^63 hash 碰撞 → uuid.uuid5() 确定性 UUID，消除 ~60 条丢失
+- **DATA-CONTRACT 补充**：新增 clarify 事件类型 + UUID5 point ID 说明
+
+### Changed
+- 意图分类 / 槽位提取 / 反问生成 / 查询扩展 / 否定解析 — 全部从关键词规则恢复为 LLM 调用
+- README.md 全矩阵更新（LLM/Android 状态 + 9 场景完成度 + 技术栈版本）
+
+## [0.3.2] - 2026-05-28
+
+### Added
+- **TTS 语音播报**：`TtsManager` 封装 Android TextToSpeech 引擎（中文），增量播报流式 SSE 文本（`speakIncremental`），HomeScreen 顶栏扬声器开关按钮，ChatViewModel 集成 TTS 状态管理
+
+### Audited
+- **全场景审计**：场景5（主动反问）后端逻辑完整但无专用SSE事件；场景8 购物车CRUD完整但下单仅对话桩代码；场景9（拍照找货）四层完整打通
+- **Doubao LLM 审计**：主生成路径已配置Doubao但Key未验证；`get_fast_client()` 硬编码DeepSeek无Key→全部轻量任务降级关键词规则
+
 ## [0.3.1] - 2026-05-27
 
 ### Fixed

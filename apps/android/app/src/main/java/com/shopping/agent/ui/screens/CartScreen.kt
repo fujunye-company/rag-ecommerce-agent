@@ -8,14 +8,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +21,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.shopping.agent.data.model.CartItem
@@ -114,16 +113,53 @@ fun CartScreen(
                         )
                     }
                     Button(
-                        onClick = { /* TODO: 结算流程 */ },
+                        onClick = { viewModel.placeOrder() },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Primary),
-                        modifier = Modifier.height(48.dp)
+                        modifier = Modifier.height(48.dp),
+                        enabled = !uiState.isLoading,
                     ) {
-                        Text("结算 (${viewModel.itemCount})", color = OnPrimary)
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(color = OnPrimary, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("结算 (${viewModel.itemCount})", color = OnPrimary)
+                        }
                     }
                 }
             }
         }
+
+        // 下单成功弹窗
+        if (uiState.orderResult != null) {
+            Dialog(onDismissRequest = { viewModel.dismissOrderResult() }) {
+                Surface(shape = RoundedCornerShape(16.dp), color = Neutral0) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Icon(Icons.Default.CheckCircle, null, tint = Primary, modifier = Modifier.size(48.dp))
+                        Spacer(Modifier.height(12.dp))
+                        Text("下单成功！", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            uiState.orderResult!!,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Neutral700,
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Button(
+                            onClick = { viewModel.dismissOrderResult() },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                        ) {
+                            Text("完成", color = OnPrimary)
+                        }
+                    }
+                }
+            }
+        }
+
     }
 }
 

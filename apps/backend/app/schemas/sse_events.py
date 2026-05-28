@@ -74,5 +74,13 @@ class CompareEvent(BaseModel, SSEMixin):
     dimensions: list[dict] = []
 
 
+class ClarifyEvent(BaseModel, SSEMixin):
+    """Agent 主动反问 — 信息不足时引导细化需求"""
+    type: str = "clarify"
+    question: str
+    missing_slots: list[str] = []
+    options: list[str] = []  # 可选引导选项，如 ["拍照", "续航", "性价比"]
+
+
 # ── 联合类型 ──
-SSEEvent = TextDeltaEvent | ProductCardEvent | DoneEvent | ErrorEvent | ProgressEvent
+SSEEvent = TextDeltaEvent | ProductCardEvent | DoneEvent | ErrorEvent | ProgressEvent | ClarifyEvent

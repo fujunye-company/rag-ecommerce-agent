@@ -9,6 +9,7 @@ import com.shopping.agent.data.mock.mockProducts
 import com.shopping.agent.data.model.*
 import com.shopping.agent.data.remote.SseClient
 import com.shopping.agent.data.repository.ChatRepository
+import com.shopping.agent.data.tts.TtsManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +33,9 @@ data class GuideUiState(
     val searchStatus: String = "",
 
     val clarifyChips: List<String> = emptyList(),
+    val clarifyQuestion: String = "",       // Agent 反问的问题文本
+
+    val ttsEnabled: Boolean = false,
 
     val screenState: ScreenState = ScreenState.Idle,
     val sessionId: String = UUID.randomUUID().toString(),
@@ -53,6 +57,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val chatRepository = ChatRepository()
     private val visionClient = SseClient()
     private val userRepo = UserRepository(application)
+    private val ttsManager = TtsManager(application)
 
     init {
         viewModelScope.launch {
@@ -88,6 +93,16 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onInputChange(text: String) {
         _uiState.update { it.copy(inputText = text) }
+    }
+
+    fun toggleTts() {
+        val newState = ttsManager.toggleEnabled()
+        _uiState.update { it.copy(ttsEnabled = newState) }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        ttsManager.shutdown()
     }
 
     // ═══════════════════════════════════════════════════════
@@ -250,21 +265,40 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
 
+        ttsManager.resetForNewMessage()
+
         viewModelScope.launch {
             val accText = StringBuilder()
             val accCards = mutableListOf<Product>()
             val convId = _uiState.value.currentConversationId
 
             try {
-                chatRepository.sendMessage(text, _uiState.value.sessionId)
+                chatRepository.sendMessage(text, _uiState.value.currentConversationId)
                     .collect { event ->
                         when (event) {
                             is SSEEvent.Progress -> {
                                 _uiState.update { it.copy(searchStatus = event.message) }
                             }
+                            is SSEEvent.Clarify -> {
+                                _uiState.update {
+                                    it.copy(
+                                        clarifyQuestion = event.question,
+                                        clarifyChips = event.options.ifEmpty {
+                                            event.missingSlots.map { s -> "补充$s" }
+                                        },
+                                        isStreaming = false,
+                                        streamingText = "",
+                                        searchStatus = "",
+                                    )
+                                }
+                                // 播报反问问题
+                                ttsManager.speakFull(event.question)
+                            }
                             is SSEEvent.TextDelta -> {
                                 accText.append(event.content)
-                                _uiState.update { it.copy(streamingText = accText.toString()) }
+                                val fullText = accText.toString()
+                                _uiState.update { it.copy(streamingText = fullText) }
+                                ttsManager.speakIncremental(fullText)
                             }
                             is SSEEvent.ProductCard -> {
                                 val product = Product(
@@ -414,6 +448,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
 
+        ttsManager.resetForNewMessage()
+
         viewModelScope.launch {
             val accText = StringBuilder()
             val accCards = mutableListOf<Product>()
@@ -425,12 +461,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                         when (event) {
                             is SSEEvent.Progress -> {
                                 accText.append(event.message).append("\n")
+                                val fullText = accText.toString()
                                 _uiState.update {
                                     it.copy(
                                         searchStatus = event.message,
-                                        streamingText = accText.toString()
+                                        streamingText = fullText
                                     )
                                 }
+                                ttsManager.speakIncremental(fullText)
                             }
                             is SSEEvent.ProductCard -> {
                                 val product = Product(

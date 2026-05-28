@@ -56,7 +56,10 @@ fun AppNavGraph(
                 NavHost(navController = navController, startDestination = "home",
                     modifier = Modifier.padding(innerPadding)) {
                     composable("home") {
-                        HomeScreen(chatViewModel = chatViewModel)
+                        HomeScreen(
+                            chatViewModel = chatViewModel,
+                            onProductTap = { productId -> navController.navigate("product_detail/$productId") },
+                        )
                     }
                     composable("compare_tab") {
                         CompareTabScreen()
@@ -88,6 +91,13 @@ fun AppNavGraph(
                         )
                     }
                     composable("history") { HistoryScreen() }
+                    composable("product_detail/{productId}",
+                        arguments = listOf(navArgument("productId") { type = NavType.StringType })) { entry ->
+                        ProductDetailScreen(
+                            productId = entry.arguments?.getString("productId") ?: "",
+                            onBack = { navController.popBackStack() },
+                        )
+                    }
                 }
             }
 

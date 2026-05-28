@@ -7,9 +7,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3
   },
@@ -22,8 +22,8 @@
     "expected_slots": {},
     "ground_truth_product_ids": [
       "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD2718739",
+      "JD2718819"
     ],
     "min_expected_results": 3
   },
@@ -35,9 +35,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD10050005",
+      "JD10070007",
+      "JD100099038454-S"
     ],
     "min_expected_results": 3
   },
@@ -49,9 +49,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD100129381482",
+      "JD100209512296",
+      "JD174542270"
     ],
     "min_expected_results": 3
   },
@@ -63,9 +63,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 3
   },
@@ -77,9 +77,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD100017986276",
+      "JD100197769762",
+      "JD100129381482-A"
     ],
     "min_expected_results": 3
   },
@@ -91,9 +91,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD100017986276",
+      "JD100197769762",
+      "JD100129381482-A"
     ],
     "min_expected_results": 3
   },
@@ -105,9 +105,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3
   },
@@ -119,9 +119,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD42ea6836",
+      "JDc01c8260",
+      "JD8e53becb"
     ],
     "min_expected_results": 3
   },
@@ -218,8 +218,8 @@
     "expected_slots": {},
     "ground_truth_product_ids": [
       "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD2718739",
+      "JD2718819"
     ],
     "min_expected_results": 3
   },
@@ -245,9 +245,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3
   },
@@ -259,9 +259,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD10050005",
+      "JD10070007",
+      "JD100099038454-S"
     ],
     "min_expected_results": 3
   },
@@ -274,8 +274,8 @@
     "expected_slots": {},
     "ground_truth_product_ids": [
       "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD2718739",
+      "JD2718819"
     ],
     "min_expected_results": 3
   },
@@ -287,9 +287,9 @@
     "expected_intent": "anti_selection",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "TBcbbc0b11",
+      "p_beauty_006",
+      "p_beauty_010"
     ],
     "min_expected_results": 3
   },
@@ -301,9 +301,9 @@
     "expected_intent": "anti_selection",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3
   },
@@ -315,9 +315,9 @@
     "expected_intent": "anti_selection",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD100129381482",
+      "JD100209512296",
+      "JD174542270"
     ],
     "min_expected_results": 3
   },
@@ -330,8 +330,8 @@
     "expected_slots": {},
     "ground_truth_product_ids": [
       "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD2718739",
+      "JD2718819"
     ],
     "min_expected_results": 3
   },
@@ -343,9 +343,9 @@
     "expected_intent": "anti_selection",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD10050005",
+      "JD10070007",
+      "JD100099038454-S"
     ],
     "min_expected_results": 3
   },
@@ -357,9 +357,9 @@
     "expected_intent": "anti_selection",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 3
   },
@@ -371,9 +371,9 @@
     "expected_intent": "anti_selection",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3
   },
@@ -385,9 +385,9 @@
     "expected_intent": "anti_selection",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD100017986276",
+      "JD100197769762",
+      "JD100129381482-A"
     ],
     "min_expected_results": 3
   },
@@ -399,9 +399,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "TBa3a0add9",
+      "p_beauty_015",
+      "p_beauty_025"
     ],
     "min_expected_results": 3
   },
@@ -413,9 +413,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "TBb0adde4c",
+      "TB16892645",
+      "TB550f8056"
     ],
     "min_expected_results": 3
   },
@@ -441,9 +441,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "TBcbbc0b11",
+      "p_beauty_006",
+      "p_beauty_010"
     ],
     "min_expected_results": 3
   },
@@ -469,9 +469,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "TBa990239e",
+      "TBcdf3e424",
+      "TBc0973fda"
     ],
     "min_expected_results": 3
   },
@@ -525,9 +525,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3
   },
@@ -553,9 +553,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3
   },
@@ -567,9 +567,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "p_clothes_015",
+      "p_clothes_013",
+      "p_clothes_012"
     ],
     "min_expected_results": 3
   },
@@ -595,9 +595,7 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "TBa9bb1f4b"
     ],
     "min_expected_results": 3
   },
@@ -623,9 +621,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "TBa3a0add9",
+      "p_beauty_015",
+      "p_beauty_025"
     ],
     "min_expected_results": 3
   },
@@ -637,9 +635,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2102664",
-      "JD2718739"
+      "p_clothes_015",
+      "p_clothes_013",
+      "p_clothes_012"
     ],
     "min_expected_results": 3
   },
@@ -700,9 +698,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -714,9 +712,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -742,9 +740,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -756,9 +754,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100129381482",
+      "JD100209512296",
+      "JD174542270"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -770,9 +768,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD10050005",
+      "JD10070007",
+      "JD100099038454-S"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -784,9 +782,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -812,9 +810,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -840,9 +838,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD10080008",
+      "JD100009073095",
+      "JD10090009"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -854,9 +852,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100017986276",
+      "JD100197769762",
+      "JD100129381482-A"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -868,9 +866,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100017986276",
+      "JD100197769762",
+      "JD100129381482-A"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -882,9 +880,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -896,9 +894,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -924,9 +922,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -952,9 +950,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -966,9 +964,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD10050005",
+      "JD10070007",
+      "JD100099038454-S"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -980,9 +978,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100129381482",
+      "JD100209512296",
+      "JD174542270"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -994,9 +992,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -1008,9 +1006,7 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "TBa9bb1f4b"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -1036,9 +1032,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -1064,9 +1060,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -1078,9 +1074,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -1092,9 +1088,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -1120,9 +1116,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -1134,9 +1130,7 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "TB16a6002f"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -1162,9 +1156,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -1176,9 +1170,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD10050005",
+      "JD10070007",
+      "JD100099038454-S"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -1204,9 +1198,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -1218,9 +1212,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -1232,9 +1226,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -1260,9 +1254,9 @@
     "expected_intent": "commodity_recommend",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -1305,8 +1299,7 @@
     "ground_truth_product_ids": [
       "JD100225615118",
       "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD2718819"
     ],
     "min_expected_results": 2,
     "difficulty": "easy"
@@ -1348,10 +1341,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD10050005",
+      "JD10070007",
+      "JD100099038454-S"
     ],
     "min_expected_results": 2,
     "difficulty": "easy"
@@ -1363,10 +1355,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD100129381482",
+      "JD100209512296",
+      "JD174542270"
     ],
     "min_expected_results": 2,
     "difficulty": "easy"
@@ -1378,10 +1369,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 2,
     "difficulty": "easy"
@@ -1393,10 +1383,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 2,
     "difficulty": "easy"
@@ -1423,10 +1412,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 2,
     "difficulty": "easy"
@@ -1438,10 +1426,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 2,
     "difficulty": "easy"
@@ -1453,10 +1440,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 2,
     "difficulty": "easy"
@@ -1468,10 +1454,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 2,
     "difficulty": "easy"
@@ -1483,10 +1468,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 2,
     "difficulty": "easy"
@@ -1498,10 +1482,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD100129381482",
+      "JD100209512296",
+      "JD174542270"
     ],
     "min_expected_results": 2,
     "difficulty": "easy"
@@ -1513,10 +1496,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 2,
     "difficulty": "medium"
@@ -1528,10 +1510,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 2,
     "difficulty": "medium"
@@ -1543,10 +1524,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD10080008",
+      "JD100009073095",
+      "JD10090009"
     ],
     "min_expected_results": 2,
     "difficulty": "medium"
@@ -1558,10 +1538,7 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "TB16a6002f"
     ],
     "min_expected_results": 2,
     "difficulty": "medium"
@@ -1573,10 +1550,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 2,
     "difficulty": "medium"
@@ -1618,10 +1594,9 @@
     "expected_intent": "commodity_compare",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 2,
     "difficulty": "medium"
@@ -1635,8 +1610,7 @@
     "ground_truth_product_ids": [
       "JD100225615118",
       "JD2718739",
-      "JD2718819",
-      "JD2102664"
+      "JD2718819"
     ],
     "min_expected_results": 2,
     "difficulty": "medium"
@@ -1648,8 +1622,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1675,7 +1650,8 @@
     "expected_slots": {},
     "ground_truth_product_ids": [
       "JD100225615118",
-      "JD2718739"
+      "JD2718739",
+      "JD2718819"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1687,8 +1663,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1700,8 +1677,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD10050005",
+      "JD10070007",
+      "JD100099038454-S"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1713,8 +1691,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD100129381482",
+      "JD100209512296",
+      "JD174542270"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1739,8 +1718,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1753,7 +1733,8 @@
     "expected_slots": {},
     "ground_truth_product_ids": [
       "JD100225615118",
-      "JD2718739"
+      "JD2718739",
+      "JD2718819"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1778,8 +1759,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD100017986276",
+      "JD100197769762",
+      "JD100129381482-A"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1791,8 +1773,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1805,7 +1788,8 @@
     "expected_slots": {},
     "ground_truth_product_ids": [
       "JD100225615118",
-      "JD2718739"
+      "JD2718739",
+      "JD2718819"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1830,8 +1814,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD10050005",
+      "JD10070007",
+      "JD100099038454-S"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1843,8 +1828,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1856,8 +1842,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD100129381482",
+      "JD100209512296",
+      "JD174542270"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1869,8 +1856,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1883,7 +1871,8 @@
     "expected_slots": {},
     "ground_truth_product_ids": [
       "JD100225615118",
-      "JD2718739"
+      "JD2718739",
+      "JD2718819"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1895,8 +1884,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 1,
     "difficulty": "easy"
@@ -1908,8 +1898,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD10080008",
+      "JD100009073095",
+      "JD10090009"
     ],
     "min_expected_results": 1,
     "difficulty": "medium"
@@ -1921,8 +1912,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 1,
     "difficulty": "medium"
@@ -1947,8 +1939,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD100129381482",
+      "JD100209512296",
+      "JD174542270"
     ],
     "min_expected_results": 1,
     "difficulty": "medium"
@@ -1960,8 +1953,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 1,
     "difficulty": "medium"
@@ -1973,8 +1967,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD10050005",
+      "JD10070007",
+      "JD100099038454-S"
     ],
     "min_expected_results": 1,
     "difficulty": "medium"
@@ -1987,7 +1982,8 @@
     "expected_slots": {},
     "ground_truth_product_ids": [
       "JD100225615118",
-      "JD2718739"
+      "JD2718739",
+      "JD2718819"
     ],
     "min_expected_results": 1,
     "difficulty": "medium"
@@ -1999,8 +1995,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 1,
     "difficulty": "medium"
@@ -2012,8 +2009,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD100129381482",
+      "JD100209512296",
+      "JD174542270"
     ],
     "min_expected_results": 1,
     "difficulty": "medium"
@@ -2025,8 +2023,9 @@
     "expected_intent": "commodity_detail",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 1,
     "difficulty": "medium"
@@ -2038,9 +2037,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "TBa3a0add9",
+      "p_beauty_015",
+      "p_beauty_025"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -2052,9 +2051,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "TBb0adde4c",
+      "TB16892645",
+      "TB550f8056"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -2094,9 +2093,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -2108,9 +2107,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -2136,9 +2135,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100129381482",
+      "JD100209512296",
+      "JD174542270"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -2164,9 +2163,7 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "TBa9bb1f4b"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -2178,9 +2175,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD10050005",
+      "JD10070007",
+      "JD100099038454-S"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -2192,9 +2189,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -2206,9 +2203,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -2248,9 +2245,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -2262,9 +2259,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -2276,9 +2273,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD10080008",
+      "JD100009073095",
+      "JD10090009"
     ],
     "min_expected_results": 3,
     "difficulty": "easy"
@@ -2318,9 +2315,7 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "TB16a6002f"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -2332,9 +2327,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -2346,9 +2341,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100129381482",
+      "JD100209512296",
+      "JD174542270"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -2360,9 +2355,7 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "TB16a6002f"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -2388,9 +2381,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -2416,9 +2409,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -2430,9 +2423,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -2444,9 +2437,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "TBa990239e",
+      "TBcdf3e424",
+      "TBc0973fda"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -2458,9 +2451,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD10010001",
+      "JD10020002",
+      "TB10000003"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -2472,9 +2465,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD10080008",
+      "JD100009073095",
+      "JD10090009"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -2500,9 +2493,9 @@
     "expected_intent": "scenario_shopping",
     "expected_slots": {},
     "ground_truth_product_ids": [
-      "JD100225615118",
-      "JD2718739",
-      "JD2718819"
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
     ],
     "min_expected_results": 3,
     "difficulty": "medium"
@@ -2513,7 +2506,11 @@
     "query": "这耳机保修多久",
     "expected_intent": "after_sales",
     "expected_slots": {},
-    "ground_truth_product_ids": [],
+    "ground_truth_product_ids": [
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
+    ],
     "min_expected_results": 0,
     "difficulty": "easy"
   },
@@ -2633,7 +2630,11 @@
     "query": "这款耳机有国行保修吗",
     "expected_intent": "after_sales",
     "expected_slots": {},
-    "ground_truth_product_ids": [],
+    "ground_truth_product_ids": [
+      "JD100099038454",
+      "TB10000001",
+      "JD100038798465"
+    ],
     "min_expected_results": 0,
     "difficulty": "easy"
   },
@@ -2683,7 +2684,11 @@
     "query": "包装里包含充电器吗",
     "expected_intent": "after_sales",
     "expected_slots": {},
-    "ground_truth_product_ids": [],
+    "ground_truth_product_ids": [
+      "JD100017986276",
+      "JD100197769762",
+      "JD100129381482-A"
+    ],
     "min_expected_results": 0,
     "difficulty": "easy"
   },

@@ -5,12 +5,48 @@ LLM 调用封装 — Doubao (豆包) OpenAI-compatible，DeepSeek 降级回退
 优先级: Doubao (比赛指定) → DeepSeek (降级)
 可测试性: create_llm_client() 接受参数注入，测试时可传 mock client。
 """
+import asyncio
 import time
 import logging
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, APIStatusError, APITimeoutError, APIConnectionError
 from app.core.config import settings
 
 logger = logging.getLogger("llm_client")
+
+# ── 重试配置 ──
+MAX_RETRIES = 2
+RETRY_BASE_DELAY = 1.0  # 指数退避: 1s, 2s, 4s...
+RETRYABLE_STATUSES = {429, 500, 502, 503, 504}
+
+
+def _is_retryable(exc: Exception) -> bool:
+    """判断异常是否可以重试"""
+    if isinstance(exc, (APITimeoutError, APIConnectionError)):
+        return True
+    if isinstance(exc, APIStatusError):
+        return exc.status_code in RETRYABLE_STATUSES
+    # asyncio.TimeoutError 也重试
+    if isinstance(exc, asyncio.TimeoutError):
+        return True
+    return False
+
+
+async def _retry_with_backoff(fn, name: str = "llm") -> str:
+    """带指数退避的重试执行器，最多重试 MAX_RETRIES 次"""
+    last_exc = None
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            return await fn()
+        except Exception as exc:
+            last_exc = exc
+            if attempt < MAX_RETRIES and _is_retryable(exc):
+                delay = RETRY_BASE_DELAY * (2 ** attempt)
+                logger.warning("%s attempt %d/%d failed, retrying in %.1fs: %s",
+                             name, attempt + 1, MAX_RETRIES + 1, delay, exc)
+                await asyncio.sleep(delay)
+            else:
+                raise
+    raise last_exc  # type: ignore[misc]
 
 
 def create_llm_client(
@@ -42,14 +78,10 @@ def get_client() -> AsyncOpenAI:
 
 
 def get_fast_client() -> AsyncOpenAI:
-    """懒加载快速 LLM 客户端（DeepSeek，用于意图/槽位等轻量任务）"""
+    """懒加载快速 LLM 客户端（轻量任务：意图/槽位/反问/否定/查询扩展）"""
     global _fast_client
     if _fast_client is None:
-        _fast_client = AsyncOpenAI(
-            api_key=settings.DEEPSEEK_API_KEY,
-            base_url=settings.DEEPSEEK_BASE_URL,
-            timeout=15.0,
-        )
+        _fast_client = create_llm_client(timeout=15.0)
     return _fast_client
 
 
@@ -59,22 +91,40 @@ async def fast_chat_completion(
     max_tokens: int = 200,
 ) -> str:
     """
-    轻量任务快速 LLM 调用 — DeepSeek（无推理链，~0.5s）。
+    轻量任务快速 LLM 调用（~0.5s）。
     用于意图分类、槽位提取、查询改写等简单结构化输出任务。
+    支持自动重试：网络错误/超时/429/5xx 最多重试 2 次。
     """
     start = time.time()
-    try:
-        response = await get_fast_client().chat.completions.create(
-            model=settings.DEEPSEEK_MODEL,
+
+    async def _call():
+        client = get_fast_client()
+        model = settings.LLM_MODEL
+        # 自动匹配模型名：DeepSeek 用 deepseek-chat，Doubao 用 LLM_MODEL
+        _base = str(client.base_url)
+        _is_doubao = "volces.com" in _base or model.startswith("ep-")
+        if "deepseek.com" in _base and model.startswith("ep-"):
+            model = settings.DEEPSEEK_MODEL or "deepseek-chat"
+
+        extra_kwargs = {}
+        if _is_doubao:
+            extra_kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
+
+        response = await client.chat.completions.create(
+            model=model,
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
+            **extra_kwargs,
         )
         elapsed = time.time() - start
         content = response.choices[0].message.content or ""
         logger.info("Fast LLM: model=%s, tokens=%s, elapsed=%.1fs",
-                    settings.DEEPSEEK_MODEL, getattr(response, 'usage', '?'), elapsed)
+                    model, getattr(response, 'usage', '?'), elapsed)
         return content
+
+    try:
+        return await _retry_with_backoff(_call, name="fast_llm")
     except Exception as exc:
         elapsed = time.time() - start
         logger.error("Fast LLM failed after %.1fs: %s", elapsed, exc)
@@ -122,22 +172,34 @@ async def chat_completion(
         extra_kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
 
     try:
-        response = await _c.chat.completions.create(
-            model=_model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=stream,
-            **extra_kwargs,
-        )
-        elapsed = time.time() - start
-        if not stream:
-            content = response.choices[0].message.content or ""
-            logger.info("LLM call: model=%s, tokens=%s, elapsed=%.1fs",
-                        _model, getattr(response, 'usage', '?'), elapsed)
-            return content
-        logger.info("LLM stream started: model=%s", _model)
-        return response
+        if stream:
+            # 流式调用不重试（已开始发送数据）
+            response = await _c.chat.completions.create(
+                model=_model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=True,
+                **extra_kwargs,
+            )
+            logger.info("LLM stream started: model=%s", _model)
+            return response
+        else:
+            async def _call():
+                response = await _c.chat.completions.create(
+                    model=_model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    stream=False,
+                    **extra_kwargs,
+                )
+                elapsed = time.time() - start
+                content = response.choices[0].message.content or ""
+                logger.info("LLM call: model=%s, tokens=%s, elapsed=%.1fs",
+                            _model, getattr(response, 'usage', '?'), elapsed)
+                return content
+            return await _retry_with_backoff(_call, name="llm")
     except Exception as exc:
         elapsed = time.time() - start
         logger.error("LLM call failed after %.1fs: %s", elapsed, exc)

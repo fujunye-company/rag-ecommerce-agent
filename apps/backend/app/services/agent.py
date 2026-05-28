@@ -39,6 +39,7 @@ class AgentState(TypedDict, total=False):
     cart_product_id: str
     cart_quantity: int
     error: str
+    history: list  # 多轮对话历史 [{role, content}, ...]
 
 
 # ── Nodes ──
@@ -62,7 +63,13 @@ async def node_classify_intent(state: AgentState) -> AgentState:
     # 标记是否已扩展，供下游 clarify 判断跳过追问
     state["_query_was_expanded"] = (expanded != query)
 
-    intent_result = await classify_intent(expanded if expanded != query else query)
+    history = state.get("history", []) or []
+    ctx = ""
+    if history:
+        recent = history[-4:]  # 最近4条
+        lines = [f"{'用户' if m['role']=='user' else '助手'}：{m.get('content','')[:120]}" for m in recent]
+        ctx = "\n对话上文：\n" + "\n".join(lines)
+    intent_result = await classify_intent(expanded if expanded != query else query, context=ctx)
     state["intent"] = intent_result["intent"]
     state["confidence"] = intent_result["confidence"]
 
@@ -167,20 +174,44 @@ async def node_clarify(state: AgentState) -> AgentState:
     """反问节点：缺失关键信息时，生成追问问题"""
     slots = state.get("slots", {})
     missing = slots.get("missing_slots", [])
+    category = slots.get("category", "")
 
-    if not missing:
-        # 没有缺失信息，fallback 跳过
-        state["response"] = ""
+    if not missing and not category:
+        # 极短模糊词：无品类无缺失槽位，生成通用追问
+        query = state.get("query", "")
+        prompt = f"""你是一个电商导购助手。用户说：「{query}」，没有指定具体想买什么。
+
+请生成一个简短、友好的追问问题（1-2句话，不超过60字），引导用户说出想购买的商品品类或需求。
+只输出问题本身，不要加任何解释、不要打招呼。"""
+        try:
+            from app.services.llm_client import fast_chat_completion
+            raw = await fast_chat_completion(
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+                max_tokens=100,
+            )
+            state["response"] = raw.strip()
+            if state["response"]:
+                return state
+        except Exception as e:
+            logger.warning("Clarify LLM failed for ultra-vague: %s", e)
+        state["response"] = "能再具体说说您的需求吗？比如想买什么品类、预算多少呢？"
         return state
 
-    # 构造追问 prompt
     query = state["query"]
     intent = state.get("intent", "commodity_recommend")
-    missing_str = "、".join(missing)
 
-    prompt = f"""你是一个电商导购助手。用户刚才说：「{query}」，但缺少以下关键信息：{missing_str}。
+    if missing:
+        missing_str = "、".join(missing)
+        prompt = f"""你是一个电商导购助手。用户刚才说：「{query}」，但缺少以下关键信息：{missing_str}。
 
 请生成一个简短、友好的追问问题（1-2句话，不超过60字），引导用户补充缺失的信息。
+只输出问题本身，不要加任何解释、不要打招呼，不要使用"当然可以""好的"等开头。"""
+    else:
+        # missing 为空但有 category：仅含品类短词，追问细化需求
+        prompt = f"""你是一个电商导购助手。用户想买{category}类商品，但没说具体需求。
+
+请生成一个简短、友好的追问问题（1-2句话，不超过60字），引导用户细化需求（如预算、用途、偏好等）。
 只输出问题本身，不要加任何解释、不要打招呼，不要使用"当然可以""好的"等开头。"""
 
     try:
@@ -193,30 +224,48 @@ async def node_clarify(state: AgentState) -> AgentState:
         state["response"] = raw.strip()
     except Exception as e:
         logger.warning("Clarify LLM failed, using template: %s", e)
-        # LLM 降级：模板生成追问
-        clarify_map = {
-            "品类": f"请问您想购买什么品类的商品呢？",
-            "价格": f"请问您的预算大概是多少呢？",
-            "品牌": f"请问您有偏好的品牌吗？",
-            "场景": f"请问是买来做什么用的呢？",
-        }
-        # 尝试匹配
-        question = None
-        for key, tmpl in clarify_map.items():
-            if any(key in m for m in missing):
-                question = tmpl
-                break
-        state["response"] = question or f"能再具体说说您的需求吗？比如{'、'.join(missing)}。"
+        if missing:
+            clarify_map = {
+                "品类": "请问您想购买什么品类的商品呢？",
+                "价格": "请问您的预算大概是多少呢？",
+                "品牌": "请问您有偏好的品牌吗？",
+                "场景": "请问是买来做什么用的呢？",
+            }
+            question = None
+            for key, tmpl in clarify_map.items():
+                if any(key in m for m in missing):
+                    question = tmpl
+                    break
+            state["response"] = question or f"能再具体说说您的需求吗？比如{'、'.join(missing)}。"
+        else:
+            state["response"] = f"您想要什么类型的{category}呢？比如预算、用途方面有什么偏好吗？"
 
-    logger.info("Clarify: missing=%s → response=%s", missing, state["response"])
+    logger.info("Clarify: missing=%s category=%s → response=%s", missing, category, state["response"])
     return state
+
+
+# ── 常见场景 → 子品类映射（用于 LLM 失败时规则回退）──
+_SCENARIO_FALLBACK_MAP = {
+    "度假": ["防晒霜", "沙滩鞋", "墨镜", "泳衣", "遮阳帽"],
+    "旅行": ["双肩包", "行李箱", "旅行枕", "防晒霜"],
+    "三亚": ["防晒霜", "沙滩裙", "墨镜", "泳衣", "遮阳帽"],
+    "通勤": ["双肩包", "衬衫", "皮鞋", "外套"],
+    "露营": ["帐篷", "睡袋", "户外鞋", "头灯", "野餐垫"],
+    "户外": ["冲锋衣", "登山鞋", "双肩包", "水壶"],
+    "穿搭": ["T恤", "外套", "裤装", "运动鞋"],
+    "送礼": ["蓝牙耳机", "手表", "香薰", "巧克力"],
+    "办公": ["键盘", "台灯", "办公椅", "笔记本支架"],
+    "健身": ["瑜伽垫", "跑鞋", "运动服", "水壶"],
+    "出差": ["行李箱", "衬衫", "充电宝", "降噪耳机"],
+}
 
 
 async def _decompose_scenario(query: str, scenario: str) -> list[str]:
     """将场景化需求分解为 2-3 个商品子类别。"""
     prompt = f"""用户描述了这样一个场景：「{query}」。
 请将这个场景拆解为 2-3 个具体的商品搜索关键词，每行一个。
-只输出关键词，不要编号、不要解释。例如：
+只输出关键词，不要编号、不要解释。每个关键词应该是具体的商品品类。
+例如：
 输入"三亚度假穿搭"
 输出：
 防晒霜
@@ -230,12 +279,37 @@ async def _decompose_scenario(query: str, scenario: str) -> list[str]:
             max_tokens=80,
         )
         lines = [l.strip() for l in raw.strip().split("\n") if l.strip()]
-        lines = [l for l in lines if not l.startswith(("-", "•", "*", "1", "2", "3"))]
+        # Filter out numbered/bullet prefixes and markdown artifacts
+        import re
+        lines = [re.sub(r'^[\d]+[\.\)、\s]+', '', l).strip() for l in lines]
+        lines = [re.sub(r'^[-•\*●]\s*', '', l).strip() for l in lines]
+        lines = [l for l in lines if len(l) >= 1 and len(l) <= 30]
         logger.info("Scenario decomposed: %s → %s", query, lines[:3])
-        return lines[:3]
+        if lines:
+            return lines[:3]
     except Exception as e:
-        logger.warning("Scenario decomposition failed: %s", e)
-        return [query]
+        logger.warning("Scenario decomposition LLM failed: %s", e)
+
+    # Rule-based fallback: scan query for known scenarios
+    q_lower = query.lower()
+    merged = []
+    for keyword, categories in _SCENARIO_FALLBACK_MAP.items():
+        if keyword in q_lower:
+            merged.extend(categories)
+    if merged:
+        # Deduplicate preserving order, take first 3
+        seen = set()
+        result = []
+        for c in merged:
+            if c not in seen:
+                seen.add(c)
+                result.append(c)
+                if len(result) >= 3:
+                    break
+        logger.info("Scenario fallback decomposition: %s → %s", query, result)
+        return result
+
+    return [query]
 
 
 async def node_retrieve(state: AgentState) -> AgentState:
@@ -302,6 +376,24 @@ async def node_retrieve(state: AgentState) -> AgentState:
             logger.info("Text filter: dropped %d chunks containing %s", dropped, text_terms)
         state["retrieved_chunks"] = filtered
 
+    # ── Precision@K 监控 ──
+    chunks_before_rerank = len(state["retrieved_chunks"])
+    if state["retrieved_chunks"]:
+        scores = []
+        categories_seen = set()
+        for c in state["retrieved_chunks"][:10]:
+            p = c.get("payload", {})
+            s = c.get("score") or p.get("score", 0)
+            scores.append(round(float(s), 3))
+            cat = p.get("category", "")
+            if cat:
+                categories_seen.add(cat)
+        logger.info("Retrieval quality: n=%d top_score=%.3f avg_score=%.3f categories=%d",
+                    chunks_before_rerank,
+                    max(scores) if scores else 0,
+                    sum(scores) / len(scores) if scores else 0,
+                    len(categories_seen))
+
     # ── Reranker 精排（lifespan 已预加载模型，不再阻塞首请求） ──
     if state["retrieved_chunks"] and state.get("intent") != "chitchat":
         try:
@@ -361,8 +453,11 @@ def _extract_raw_products(chunks: list, limit: int = 10) -> list[dict]:
     raw = []
     for chunk in chunks[:limit]:
         p = chunk["payload"]
+        image_urls = p.get("image_urls") or []
+        if not image_urls and p.get("image_url"):
+            image_urls = [p["image_url"]]
         raw.append({
-            "product_id": str(chunk.get("id") or p.get("product_id", "")),
+            "product_id": p.get("product_id", ""),
             "title": p.get("title"),
             "price": p.get("price"),
             "rating": p.get("rating"),
@@ -371,7 +466,8 @@ def _extract_raw_products(chunks: list, limit: int = 10) -> list[dict]:
             "attributes": p.get("attributes", {}),
             "semantic_score": round(chunk.get("final_score", chunk.get("score", 0.5)), 4),
             "highlights": p.get("highlights", []),
-            "image_url": (p.get("image_urls", [None]) or [None])[0] if p.get("image_urls") else p.get("image_url"),
+            "image_url": image_urls[0] if image_urls else None,
+            "image_urls": image_urls,
         })
     return raw
 
@@ -408,8 +504,8 @@ def _assemble_cards(valid_ranked: list) -> list[dict]:
     return cards
 
 
-def _build_generation_prompt(message: str, slots: dict, valid_ranked: list, is_reliable: bool, intent: str) -> str:
-    """构建 LLM 生成推荐回复的 prompt（统一版本）"""
+def _build_generation_prompt(message: str, slots: dict, valid_ranked: list, is_reliable: bool, intent: str, history: list[dict] | None = None) -> str:
+    """构建 LLM 生成推荐回复的 prompt（统一版本，支持多轮上下文）"""
     reliability_hint = ""
     if not is_reliable:
         reliability_hint = "\n⚠️ 注意：以下商品与用户需求的匹配度较低，请在回复中诚实告知用户，建议其调整搜索条件。\n"
@@ -417,6 +513,15 @@ def _build_generation_prompt(message: str, slots: dict, valid_ranked: list, is_r
     scenario_hint = ""
     if intent == "scenario_shopping":
         scenario_hint = "⚠️ 场景化推荐模式：当前用户描述了一个完整场景，检索结果可能涵盖多个品类。请按品类分组推荐，说明每件商品在场景中的作用，并给出搭配建议。\n"
+
+    # 多轮对话历史
+    history_text = ""
+    if history:
+        history_lines = []
+        for h in history:
+            role_label = "用户" if h["role"] == "user" else "助手"
+            history_lines.append(f"{role_label}：{h['content']}")
+        history_text = "\n对话历史：\n" + "\n".join(history_lines) + "\n\n请结合以上对话历史理解当前用户需求。比如用户说「便宜一点的」是在前面推荐的基础上筛选，用户说「要红色的」是在补充颜色偏好。如果当前问题含义模糊，根据历史推断具体意图。\n"
 
     context_parts = []
     for i, r in enumerate(valid_ranked):
@@ -429,7 +534,7 @@ def _build_generation_prompt(message: str, slots: dict, valid_ranked: list, is_r
 
     return f"""你是一个电商导购助手。基于检索到的商品信息，为用户生成推荐回答。
 {reliability_hint}
-{scenario_hint}⚠️ 严禁事项（违反将导致推荐无效）:
+{scenario_hint}{history_text}⚠️ 严禁事项（违反将导致推荐无效）:
 1. 不得编造任何商品名称、型号、价格 — 只能引用上方[1][2]...标记的商品
 2. 不得编造优惠券、满减、折扣、赠品、限时活动
 3. 不得编造不存在的功能参数、认证标识
@@ -509,7 +614,7 @@ async def node_generate(state: AgentState) -> AgentState:
     state["product_cards"] = cards
     state["_is_reliable"] = is_reliable
 
-    prompt = _build_generation_prompt(state["query"], state.get("slots", {}), valid_ranked, is_reliable, state["intent"])
+    prompt = _build_generation_prompt(state["query"], state.get("slots", {}), valid_ranked, is_reliable, state["intent"], history=state.get("history", []))
 
     try:
         stream = await chat_completion(
@@ -725,23 +830,27 @@ async def node_cart(state: "AgentState") -> "AgentState":
                 # 判断是"查看订单"还是"确认下单"
                 is_confirm = any(kw in query for kw in ["确认下单", "确认", "是的", "确定", "没错"])
                 if is_confirm:
-                    # 执行下单确认：清空购物车，生成订单号
-                    order_id = f"ORD{hashlib.md5(session_id.encode()).hexdigest()[:8].upper()}"
+                    from app.services import order_service as osvc
+                    items_snapshot = [
+                        {"product_id": it.product_id, "title": it.title,
+                         "price": it.price, "quantity": it.quantity}
+                        for it in items
+                    ]
+                    order = await osvc.create_order(db, session_id, items_snapshot, total)
                     item_list = "\n".join(
                         [f"  {it.title} ×{it.quantity}  ¥{it.price * it.quantity:.0f}"
                          for it in items]
                     )
                     state["response"] = (
-                        f"✅ 下单成功！\n\n📦 订单号：{order_id}\n"
+                        f"✅ 下单成功！\n\n📦 订单号：{order.order_no}\n"
                         f"{item_list}\n"
                         f"━━━━━━━━━━━━━━\n"
                         f"💰 实付：¥{total:.0f}\n\n"
                         f"（演示环境，不会实际扣款。感谢您的购买！）"
                     )
                     await cart_service.clear_cart(db, session_id)
-                    logger.info("Order confirmed: %s, cart cleared for session %s", order_id, session_id[:8])
+                    logger.info("Order confirmed: %s, cart cleared for session %s", order.order_no, session_id[:8])
                 else:
-                    # 展示订单确认页
                     item_lines = [f"{i+1}. {it.title} ×{it.quantity} — ¥{it.price * it.quantity:.0f}"
                                   for i, it in enumerate(items)]
                     state["response"] = (
@@ -769,17 +878,26 @@ def route_after_intent(state: AgentState) -> str:
     if state.get("intent") == "cart_operation":
         return "cart"
 
-    # 检查是否有缺失的关键信息——仅当品类和场景都缺失时才追问
     slots = state.get("slots", {})
     missing = slots.get("missing_slots", [])
-    # 只有同时缺失品类和场景（完全不知道用户要什么）才触发 clarify
     has_category = bool(slots.get("category"))
     has_scenario = bool(slots.get("scenario"))
     has_budget = bool(slots.get("price_min") or slots.get("price_max"))
     has_attrs = bool(slots.get("attributes"))
-    # 至少有一个关键信息就不追问
-    if missing and not (has_category or has_scenario or has_budget or has_attrs) and state.get("intent") != "anti_selection":
-        # anti_selection 的 missing_slots 通常是 LLM 误判，不追问
+    confidence = state.get("confidence", 0.5)
+    intent_type = state.get("intent", "")
+    original_query = state.get("query", "").strip()
+
+    ultra_vague_words = {"推荐", "买东西", "推荐一下", "买什么", "买啥", "有什么", "推荐个"}
+    is_ultra_vague = len(original_query) <= 3 or original_query in ultra_vague_words
+
+    missing_everything = bool(missing) and not (has_category or has_scenario or has_budget or has_attrs)
+    short_category_only = len(original_query) <= 4 and has_category \
+        and not (has_scenario or has_budget or has_attrs)
+    low_confidence = confidence < 0.5 and intent_type == "commodity_recommend"
+
+    if (is_ultra_vague or missing_everything or short_category_only or low_confidence) \
+            and intent_type not in ("chitchat", "anti_selection", "cart_operation"):
         return "clarify"
 
     return "retrieve"
@@ -888,6 +1006,9 @@ async def _emit_interleaved(response_text: str, cards: list) -> AsyncGenerator:
                 match_score=card.get("match_score", card.get("score", 0.5)),
                 highlights=card.get("highlights", []),
                 image_url=card.get("image_url"),
+                image_urls=card.get("image_urls", []),
+                brand=card.get("brand"),
+                category=card.get("category", ""),
                 index=i + 1,
                 total=len(cards),
             )
@@ -912,6 +1033,9 @@ async def _emit_interleaved(response_text: str, cards: list) -> AsyncGenerator:
                 match_score=card.get("match_score", card.get("score", 0.5)),
                 highlights=card.get("highlights", []),
                 image_url=card.get("image_url"),
+                image_urls=card.get("image_urls", []),
+                brand=card.get("brand"),
+                category=card.get("category", ""),
                 index=i + 1,
                 total=len(parsed["products"]),
             )
@@ -963,10 +1087,15 @@ async def generate_response(
         # 阶段 1: 意图分类 + 检索（非流式，~0.8s）
         # ═══════════════════════════════════════════════════════
 
+        # 获取多轮对话历史
+        from app.services import state_manager as sm
+        conversation_history = await sm.get_recent_messages(conversation_id or "", limit=6)
+
         initial_state: AgentState = {
             "query": message,
             "session_id": conversation_id or "",
             "slots": state or {},
+            "history": conversation_history,
         }
 
         # ── Progress 1: 立即推送首屏反馈，让用户感知 TTFT ≈ 0 ──
@@ -982,6 +1111,20 @@ async def generate_response(
             yield {"event": "done", "data": DoneEvent().model_dump_json()}
             return
 
+        # ── 购物车上下文检测：上轮是订单确认页，本轮回复视为确认/取消 ──
+        cart_confirm_keywords = {"确认下单", "确认", "是的", "确定", "没错", "下单", "结算"}
+        if after_intent.get("intent") != "cart_operation" and conversation_history:
+            last_assistant = ""
+            for m in reversed(conversation_history):
+                if m.get("role") == "assistant":
+                    last_assistant = m.get("content", "")
+                    break
+            if ("订单确认" in last_assistant or "确认下单" in last_assistant) and \
+               any(kw in message for kw in cart_confirm_keywords):
+                logger.info("Cart context override: detected checkout confirmation reply")
+                after_intent["intent"] = "cart_operation"
+                after_intent["slots"] = after_intent.get("slots", {})
+
         # ── 购物车操作：走 cart node → 直接返回，不做 RAG ──
         if after_intent.get("intent") == "cart_operation":
             yield {"event": "progress", "data": ProgressEvent(message="正在处理您的购物车...").model_dump_json()}
@@ -991,28 +1134,56 @@ async def generate_response(
             yield {"event": "done", "data": DoneEvent().model_dump_json()}
             return
 
-        # ── clarify 反问：缺失关键信息 / 短词仅有品类 → 追问用户 ──
-        # 注意：短词已通过 _expand_short_query 扩展的不再追问，直接检索
+        # ── clarify 反问：缺失关键信息 / 短词仅有品类 / 低置信度 / 极短模糊词 → 追问用户 ──
         slots_check = after_intent.get("slots", {})
         missing_check = slots_check.get("missing_slots", [])
         has_cat = bool(slots_check.get("category"))
         has_scene = bool(slots_check.get("scenario"))
         has_budget = bool(slots_check.get("price_min") or slots_check.get("price_max"))
         has_attrs = bool(slots_check.get("attributes"))
-        is_short_query = len(message.strip()) <= 4
-        was_expanded = after_intent.get("_query_was_expanded", False)
-        # 仅品类无其他信息（且短词/LLM提示缺失）→ 追问细化
+        confidence = after_intent.get("confidence", 0.5)
+        intent_type = after_intent.get("intent", "")
+        original_query = message.strip()
+        is_short_query = len(original_query) <= 4
+
+        # 场景0：极短模糊词（≤2字且无具体商品名，"推荐"、"买东西"）→ 无论扩展与否都追问
+        ultra_vague_words = {"推荐", "买东西", "推荐一下", "买什么", "买啥", "有什么", "推荐个"}
+        is_ultra_vague = len(original_query) <= 3 or original_query in ultra_vague_words
+
+        # 场景1：完全缺失关键信息（无品类无场景无预算无属性）→ 必须追问
+        missing_everything = bool(missing_check) and not (has_cat or has_scene or has_budget or has_attrs)
+
+        # 场景2：短词仅含品类（如"耳机"、"手机"）→ 追问细化需求
         only_has_category = has_cat and not (has_scene or has_budget or has_attrs)
-        needs_clarify = (missing_check and not (has_cat or has_scene or has_budget or has_attrs)) \
-            or (is_short_query and only_has_category and not was_expanded)
-        if needs_clarify and after_intent.get("intent") != "anti_selection":
+        short_category_query = is_short_query and only_has_category
+
+        # 场景3：低置信度 → LLM不理解用户意图
+        low_confidence = confidence < 0.5 and intent_type == "commodity_recommend"
+
+        needs_clarify = (is_ultra_vague or missing_everything or short_category_query or low_confidence) \
+            and intent_type not in ("chitchat", "anti_selection", "cart_operation")
+        # 有多轮历史时，短查询很可能是在之前推荐基础上的细化（如"要轻量的"），跳过追问
+        has_history = len(conversation_history) >= 2
+        logger.info("Clarify check: needs=%s history=%d short=%s ultra=%s cat=%s",
+                    needs_clarify, len(conversation_history), is_short_query, is_ultra_vague, has_cat)
+        if needs_clarify and has_history and (is_short_query or is_ultra_vague):
+            logger.info("Clarify bypassed due to conversation history")
+            needs_clarify = False
+        if needs_clarify:
+            # 持久化当前槽位，下次用户回复时可合并继承
+            await sm.update_state(conversation_id or "", slots=slots_check)
             yield {"event": "progress", "data": ProgressEvent(message="正在分析您的需求细节...").model_dump_json()}
             after_clarify = await node_clarify(after_intent)
             clarify_text = after_clarify.get("response", "")
-            if clarify_text:
-                yield {"event": "text_delta", "data": TextDeltaEvent(content=clarify_text).model_dump_json()}
-            else:
-                yield {"event": "text_delta", "data": TextDeltaEvent(content="能再具体说说您的需求吗？").model_dump_json()}
+            missing_list = missing_check if isinstance(missing_check, list) else []
+            from app.schemas.sse_events import ClarifyEvent
+            yield {
+                "event": "clarify",
+                "data": ClarifyEvent(
+                    question=clarify_text or "能再具体说说您的需求吗？",
+                    missing_slots=missing_list,
+                ).model_dump_json()
+            }
             yield {"event": "done", "data": DoneEvent().model_dump_json()}
             return
 
@@ -1024,11 +1195,18 @@ async def generate_response(
         slots = after_retrieve.get("slots", {})
 
         if not chunks:
-            yield {"event": "progress", "data": ProgressEvent(message="未找到匹配商品").model_dump_json()}
-            text = "抱歉，暂时没有找到符合您要求的商品。可以试试调整条件重新搜索吗？"
-            yield {"event": "text_delta", "data": TextDeltaEvent(content=text).model_dump_json()}
-            yield {"event": "done", "data": DoneEvent().model_dump_json()}
-            return
+            # 兜底策略：无过滤检索 + 热门推荐词
+            logger.info("No results for '%s', trying hot fallback...", message[:40])
+            fallback_state = {**after_intent, "query": "热门推荐 热销商品", "rewritten_query": "热门推荐 热销商品", "slots": {}}
+            after_fallback = await node_retrieve(fallback_state)
+            chunks = after_fallback.get("retrieved_chunks", [])
+            if not chunks:
+                yield {"event": "progress", "data": ProgressEvent(message="未找到匹配商品").model_dump_json()}
+                text = "抱歉，暂时没有找到符合您要求的商品。可以试试调整条件重新搜索吗？"
+                yield {"event": "text_delta", "data": TextDeltaEvent(content=text).model_dump_json()}
+                yield {"event": "done", "data": DoneEvent().model_dump_json()}
+                return
+            yield {"event": "progress", "data": ProgressEvent(message="未精确匹配，为您推荐热销商品...").model_dump_json()}
 
         # ── Progress 3: 检索完成，告知命中数量 ──
         yield {"event": "progress", "data": ProgressEvent(message=f"📦 已匹配 {len(chunks)} 件商品，正在为您筛选...").model_dump_json()}
@@ -1055,7 +1233,7 @@ async def generate_response(
         yield {"event": "progress", "data": ProgressEvent(message="📊 正在生成推荐...").model_dump_json()}
 
         cards = _assemble_cards(valid_ranked)
-        prompt = _build_generation_prompt(message, slots, valid_ranked, is_reliable, after_retrieve.get("intent", ""))
+        prompt = _build_generation_prompt(message, slots, valid_ranked, is_reliable, after_retrieve.get("intent", ""), history=conversation_history)
 
         # ═══════════════════════════════════════════════════════
         # 阶段 4: 真流式 LLM — 边生成边推送 text_delta

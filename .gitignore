@@ -58,3 +58,10 @@ infrastructure/env/.env
 /apps/android/app/debug
 /apps/android/GENERATE_ERRORS.md
 /apps/android/CLAUDE.md
+
+# JVM crash logs
+hs_err_pid*.log
+replay_pid*.log
+
+# Kotlin compiler error logs
+apps/android/.kotlin/

@@ -1,14 +1,17 @@
 package com.shopping.agent.ui.components
 
+import android.graphics.BitmapFactory
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -21,11 +24,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.shopping.agent.data.local.UserRepository
 import com.shopping.agent.data.model.ConversationMeta
 import com.shopping.agent.ui.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -46,6 +55,7 @@ fun HistoryDrawer(
     onSessionClick: (String) -> Unit,
     onNewChat: () -> Unit,
     onDeleteConversation: (String) -> Unit,
+    onProfileClick: () -> Unit = {},
 ) {
     if (!visible) return
 
@@ -80,7 +90,7 @@ fun HistoryDrawer(
                 topStart = 0.dp, topEnd = 32.dp,
                 bottomStart = 0.dp, bottomEnd = 32.dp,
             ),
-            color = Neutral0,
+            color = MaterialTheme.colorScheme.surface,
             shadowElevation = 16.dp,
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -93,7 +103,7 @@ fun HistoryDrawer(
                     },
                 )
 
-                HorizontalDivider(color = Neutral100)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                 DrawerSessionList(
                     conversations = conversations,
@@ -107,8 +117,8 @@ fun HistoryDrawer(
                     modifier = Modifier.weight(1f),
                 )
 
-                HorizontalDivider(color = Neutral100)
-                DrawerUserFooter()
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                DrawerUserFooter(onProfileClick = onProfileClick)
             }
         }
     }
@@ -124,15 +134,15 @@ private fun DrawerTopSection(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = onSearchQueryChange,
-            placeholder = { Text("搜索历史会话", color = Neutral400) },
-            leadingIcon = { Icon(Icons.Default.Search, "搜索", tint = Neutral500) },
+            placeholder = { Text("搜索历史会话", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            leadingIcon = { Icon(Icons.Default.Search, "搜索", tint = MaterialTheme.colorScheme.onSurfaceVariant) },
             singleLine = true,
             shape = RadiusMd,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Primary,
-                unfocusedBorderColor = Neutral200,
-                focusedContainerColor = Neutral50,
-                unfocusedContainerColor = Neutral50,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedContainerColor = MaterialTheme.colorScheme.background,
+                unfocusedContainerColor = MaterialTheme.colorScheme.background,
             ),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -144,10 +154,10 @@ private fun DrawerTopSection(
             modifier = Modifier.fillMaxWidth(),
             shape = RadiusMd,
             colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Neutral0,
+                containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = Primary,
             ),
-            border = BorderStroke(1.dp, Neutral200),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         ) {
             Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
@@ -165,21 +175,26 @@ private fun DrawerSessionList(
     onDeleteConversation: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val filtered = if (searchQuery.isBlank()) conversations
-    else conversations.filter { it.title.contains(searchQuery, ignoreCase = true) }
+    val filtered = if (searchQuery.isBlank()) {
+        conversations
+    } else {
+        conversations.filter {
+            it.title.contains(searchQuery, ignoreCase = true) ||
+            it.lastMessage.contains(searchQuery, ignoreCase = true)
+        }
+    }
 
     if (filtered.isEmpty()) {
         Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                if (searchQuery.isNotBlank()) "未找到匹配的会话" else "暂无历史对话",
-                color = Neutral400,
+                if (searchQuery.isNotBlank()) "没有找到相关会话" else "暂无历史对话",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
         return
     }
 
-    // 按月份分组
     val dateFormat = SimpleDateFormat("yyyy年M月", Locale.CHINESE)
     val groups = filtered.groupBy { meta ->
         dateFormat.format(Date(meta.updatedAt))
@@ -191,7 +206,7 @@ private fun DrawerSessionList(
                 Text(
                     text = monthLabel,
                     style = MaterialTheme.typography.labelLarge,
-                    color = Neutral400,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 )
             }
@@ -213,7 +228,7 @@ private fun DrawerSessionList(
                         Text(
                             text = session.title.ifBlank { "新对话" },
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (isActive) Primary else Neutral800,
+                            color = if (isActive) Primary else MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Medium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -223,13 +238,13 @@ private fun DrawerSessionList(
                             Text(
                                 text = formatSessionTime(session.updatedAt),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Neutral500,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             if (session.messageCount > 0) {
                                 Text(
                                     text = "${session.messageCount} 条消息",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Neutral400,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }
@@ -238,7 +253,7 @@ private fun DrawerSessionList(
                         Icon(
                             Icons.Default.Delete,
                             "删除对话",
-                            tint = Neutral300,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp),
                         )
                     }
@@ -248,7 +263,7 @@ private fun DrawerSessionList(
             item(key = "div_$monthLabel") {
                 HorizontalDivider(
                     modifier = Modifier.padding(horizontal = 20.dp),
-                    color = Neutral100,
+                    color = MaterialTheme.colorScheme.outlineVariant,
                 )
             }
         }
@@ -270,33 +285,83 @@ private fun formatSessionTime(timestamp: Long): String {
 }
 
 @Composable
-private fun DrawerUserFooter() {
+private fun DrawerUserFooter(onProfileClick: () -> Unit) {
+    val context = LocalContext.current
+    val repository = remember { UserRepository(context) }
+
+    var nickname by remember { mutableStateOf("") }
+    var avatarBytes by remember { mutableStateOf<ByteArray?>(null) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val profile = withContext(Dispatchers.IO) { repository.getUserProfile() }
+            nickname = profile["nickname"] ?: ""
+        } catch (_: Exception) {
+            nickname = ""
+        }
+        try {
+            avatarBytes = withContext(Dispatchers.IO) { repository.getUserAvatar() }
+        } catch (_: Exception) {
+            avatarBytes = null
+        }
+    }
+
+    val avatarBitmap = avatarBytes?.let { bytes ->
+        try {
+            val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+            val sampleSize = run {
+                var s = 1
+                while (opts.outWidth / s > 80 || opts.outHeight / s > 80) s *= 2
+                s
+            }
+            opts.inSampleSize = sampleSize
+            opts.inJustDecodeBounds = false
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)?.asImageBitmap()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {}
+            .clickable { onProfileClick() }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Surface(
             modifier = Modifier.size(40.dp),
-            shape = RoundedCornerShape(50),
+            shape = CircleShape,
             color = Primary,
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Text(
-                    "f", color = OnPrimary, fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
+                if (avatarBitmap != null) {
+                    Image(
+                        bitmap = avatarBitmap!!,
+                        contentDescription = "头像",
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Text(
+                        text = nickname.firstOrNull()?.toString() ?: "",
+                        color = OnPrimary,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
             }
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                "fujunye", style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium, color = Neutral900,
+                text = nickname.ifBlank { "拾物用户" },
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
             )
-            Text("退出登录", style = MaterialTheme.typography.bodySmall, color = Neutral400)
+            Text("退出登录", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

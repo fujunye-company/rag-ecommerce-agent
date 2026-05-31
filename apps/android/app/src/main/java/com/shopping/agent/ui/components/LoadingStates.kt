@@ -86,13 +86,13 @@ fun EmptyState(
         Spacer(Modifier.height(Dimens.space10))
         Icon(
             Icons.Default.SearchOff, null,
-            tint = Neutral300,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(80.dp),
         )
         Spacer(Modifier.height(Dimens.space4))
-        Text(title, style = MaterialTheme.typography.headlineMedium, color = Neutral900)
+        Text(title, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.height(Dimens.space2))
-        Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Neutral500)
+        Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         if (onAction != null && actionLabel != null) {
             Spacer(Modifier.height(Dimens.space6))
             OutlinedButton(onClick = onAction, shape = RadiusFull) {
@@ -121,9 +121,9 @@ fun ErrorState(
             modifier = Modifier.size(80.dp),
         )
         Spacer(Modifier.height(Dimens.space4))
-        Text("网络连接已断开", style = MaterialTheme.typography.headlineMedium, color = Neutral900)
+        Text("网络连接已断开", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurface)
         Spacer(Modifier.height(Dimens.space2))
-        Text(message, style = MaterialTheme.typography.bodyMedium, color = Neutral500)
+        Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(Dimens.space6))
         Button(onClick = onRetry, shape = RadiusFull, colors = ButtonDefaults.buttonColors(containerColor = Primary)) {
             Text("重试", color = OnPrimary)

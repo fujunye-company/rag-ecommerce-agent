@@ -52,3 +52,9 @@ infrastructure/env/.env
 # Downloaded ML models (large files, download via SETUP.md)
 /apps/backend/data/models/bge-large-zh-v1.5
 /apps/backend/data/models/bge-reranker-v2-m3
+/apps/android/AGENTS.md
+/.agents/skills
+/skills-lock.json
+/apps/android/app/debug
+/apps/android/GENERATE_ERRORS.md
+/apps/android/CLAUDE.md

@@ -115,12 +115,12 @@ fun CompareTabScreen() {
         selectedCategory = "推荐"  // 自动切回推荐栏
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(Neutral50)) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // ===== 渐变条 =====
         GradientTopBar(
             icons = {
                 IconButton(onClick = LocalOnMenuClick.current, modifier = Modifier.size(34.dp)) {
-                    Icon(Icons.Default.Menu, "菜单", tint = Neutral700, modifier = Modifier.size(26.dp))
+                    Icon(Icons.Default.Menu, "菜单", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(26.dp))
                 }
                 Spacer(Modifier.width(4.dp))
                 FilledTonalButton(
@@ -135,7 +135,7 @@ fun CompareTabScreen() {
                         }
                     },
                     enabled = !aiCompareLoading && displayProducts.size >= 2,
-                    shape = RadiusFull,
+                    shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     modifier = Modifier.height(34.dp)
                 ) {
@@ -153,9 +153,9 @@ fun CompareTabScreen() {
         // ===== 分类标签 =====
         ScrollableTabRow(
             selectedTabIndex = categories.indexOf(selectedCategory).coerceAtLeast(0),
-            containerColor = Neutral0,
+            containerColor = MaterialTheme.colorScheme.surface,
             edgePadding = 16.dp,
-            divider = { HorizontalDivider(color = Neutral100) }) {
+            divider = { HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant) }) {
             categories.forEach { cat ->
                 val isSelected = cat == selectedCategory
                 Tab(selected = isSelected, onClick = {
@@ -166,7 +166,7 @@ fun CompareTabScreen() {
                         Text(cat,
                             style = if (isSelected) MaterialTheme.typography.titleMedium
                                     else MaterialTheme.typography.bodyMedium,
-                            color = if (isSelected) Primary else Neutral600)
+                            color = if (isSelected) Primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     })
             }
         }
@@ -213,29 +213,30 @@ private fun CompareSearchBar(
     onSend: () -> Unit,
     placeholder: String,
 ) {
-    Row(
-        Modifier
-            .padding(horizontal = Dimens.space3, vertical = 6.dp)
-            .padding(bottom = 4.dp)
-            .fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Surface(shadowElevation = 3.dp, color = MaterialTheme.colorScheme.surface) {
+        Row(
+            Modifier
+                .padding(horizontal = Dimens.space3, vertical = Dimens.space2)
+                .fillMaxWidth()
+                .navigationBarsPadding(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             // 拍照搜物图标
             IconButton(onClick = {}, modifier = Modifier.size(44.dp)) {
-                Icon(Icons.Default.CameraAlt, "拍照搜物", tint = Neutral500)
+                Icon(Icons.Default.CameraAlt, "拍照搜物", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             // 输入框
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                placeholder = { Text(placeholder, color = Neutral400) },
+                placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 textStyle = MaterialTheme.typography.bodyLarge,
                 shape = RadiusFull,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Neutral100,
-                    unfocusedContainerColor = Neutral100,
+                    focusedContainerColor = MaterialTheme.colorScheme.outlineVariant,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.outlineVariant,
                     focusedBorderColor = Primary,
-                    unfocusedBorderColor = Neutral100
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                 ),
                 modifier = Modifier.weight(1f),
                 maxLines = 4
@@ -265,7 +266,7 @@ private fun CompareSearchBar(
                 enabled = hasSpeech,
                 modifier = Modifier.size(44.dp)
             ) {
-                Icon(Icons.Default.Mic, "语音输入", tint = if (hasSpeech) Neutral500 else Neutral300)
+                Icon(Icons.Default.Mic, "语音输入", tint = if (hasSpeech) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.outline)
             }
             // 发送按钮
             FilledIconButton(
@@ -274,13 +275,14 @@ private fun CompareSearchBar(
                 shape = CircleShape,
                 colors = IconButtonDefaults.filledIconButtonColors(
                     containerColor = Primary,
-                    disabledContainerColor = Neutral200
+                    disabledContainerColor = MaterialTheme.colorScheme.outline
                 ),
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(Icons.AutoMirrored.Filled.Send, "发送", tint = OnPrimary)
             }
         }
+    }
 }
 
 // ===== 统一 2 列商品网格 =====
@@ -299,7 +301,7 @@ private fun CompareProductGrid(
             Card(onClick = { onProductTap(product.productId) },
                 modifier = Modifier.fillMaxWidth(), shape = RadiusLg,
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                colors = CardDefaults.cardColors(containerColor = Neutral0)) {
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                 Column {
                     AsyncImage(model = product.imageUrl,
                         contentDescription = product.title,
@@ -307,7 +309,7 @@ private fun CompareProductGrid(
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop)
                     Column(Modifier.padding(12.dp)) {
                         Text(product.title, style = MaterialTheme.typography.titleMedium,
-                            color = Neutral900, maxLines = 2)
+                            color = MaterialTheme.colorScheme.onSurface, maxLines = 2)
                         Spacer(Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.Bottom) {
                             Text("¥${"%.0f".format(product.price)}", style = PriceMedium,
@@ -315,7 +317,7 @@ private fun CompareProductGrid(
                             Spacer(Modifier.width(8.dp))
                             if (product.ratingCount > 0) {
                                 Text(formatSalesCount(product.ratingCount),
-                                    style = MaterialTheme.typography.bodySmall, color = Neutral500)
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -350,7 +352,7 @@ private fun CompareTrackingSheet(
                 )
             },
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
-        color = Neutral0,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 8.dp,
     ) {
         Column {
@@ -365,7 +367,7 @@ private fun CompareTrackingSheet(
                 Surface(
                     modifier = Modifier.width(48.dp).height(5.dp),
                     shape = RoundedCornerShape(3.dp),
-                    color = Neutral300,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 ) {}
             }
             // 价格趋势卡片列表
@@ -392,18 +394,18 @@ private fun PriceTrendCard(
     lowestPrice: Double,
     trend: List<Float>,
 ) {
-    Card(shape = RadiusLg, colors = CardDefaults.cardColors(containerColor = Neutral0),
+    Card(shape = RadiusLg, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(Modifier.size(60.dp), shape = RadiusMd, color = Neutral100) {}
+            Surface(Modifier.size(60.dp), shape = RadiusMd, color = MaterialTheme.colorScheme.outlineVariant) {}
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(platform, style = MaterialTheme.typography.titleMedium, color = Neutral900)
+                Text(platform, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.height(6.dp))
                 PriceTrendChart(trend = trend, modifier = Modifier.fillMaxWidth().height(60.dp))
                 Spacer(Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                    Text("最低价来源: $platform", style = MaterialTheme.typography.bodySmall, color = Neutral500)
+                    Text("最低价来源: $platform", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("最低价 ¥$lowestPrice", style = MaterialTheme.typography.bodySmall,
                         color = TextPrice, fontWeight = FontWeight.Bold)
                 }
@@ -422,6 +424,8 @@ private fun PriceTrendChart(
     val fillColor = BrandPink.copy(alpha = 0.12f)
     val dotColor = TextPrice
     val axisLabels = listOf("30天前", "15天前", "今天")
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(modifier = modifier) {
         Canvas(modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -447,7 +451,7 @@ private fun PriceTrendChart(
             drawPath(linePath, lineColor, style = Stroke(width = 2.5f * density))
             pts.forEachIndexed { i, pt ->
                 if (i == pts.size - 1) {
-                    drawCircle(color = Neutral0, radius = 5f * density, center = pt)
+                    drawCircle(color = surfaceColor, radius = 5f * density, center = pt)
                     drawCircle(color = dotColor, radius = 5f * density, center = pt,
                         style = Stroke(width = 2.5f * density))
                 } else drawCircle(color = lineColor, radius = 3f * density, center = pt)
@@ -456,7 +460,7 @@ private fun PriceTrendChart(
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween) {
             axisLabels.forEach { label ->
-                Text(label, style = MaterialTheme.typography.labelSmall, color = Neutral400)
+                Text(label, style = MaterialTheme.typography.labelSmall, color = onSurfaceVariant)
             }
         }
     }
@@ -471,11 +475,11 @@ private fun AiCompareDialog(result: com.shopping.agent.data.repository.CompareRe
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 result.dimensions.forEach { dim ->
-                    Card(colors = CardDefaults.cardColors(containerColor = Neutral50)) {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background)) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(dim.name, style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold, color = Neutral900)
+                                    fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                 if (dim.winner != null) {
                                     Spacer(Modifier.width(8.dp))
                                     Surface(shape = RoundedCornerShape(4.dp), color = PrimaryLight) {
@@ -486,7 +490,7 @@ private fun AiCompareDialog(result: com.shopping.agent.data.repository.CompareRe
                             }
                             Spacer(Modifier.height(4.dp))
                             dim.values.forEach { (product, value) ->
-                                Text("$product: $value", style = MaterialTheme.typography.bodySmall, color = Neutral600)
+                                Text("$product: $value", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }

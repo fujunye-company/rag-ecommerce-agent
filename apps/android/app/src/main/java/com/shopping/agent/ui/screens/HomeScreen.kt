@@ -32,11 +32,11 @@ fun HomeScreen(
     }
 
     // ── 统一 Column 布局（与比价页一致）──
-    Column(modifier = Modifier.fillMaxSize().background(Neutral50)) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // ===== 渐变条 (与比价页位置一致) =====
         GradientTopBar(icons = {
             IconButton(onClick = LocalOnMenuClick.current, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Default.Menu, "菜单", tint = Neutral700, modifier = Modifier.size(26.dp))
+                Icon(Icons.Default.Menu, "菜单", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(26.dp))
             }
             Row {
                 IconButton(
@@ -46,15 +46,15 @@ fun HomeScreen(
                     Icon(
                         imageVector = if (uiState.ttsEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
                         contentDescription = "语音播报",
-                        tint = if (uiState.ttsEnabled) Primary else Neutral400,
+                        tint = if (uiState.ttsEnabled) Primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(26.dp)
                     )
                 }
                 IconButton(onClick = {}, modifier = Modifier.size(34.dp)) {
-                    Icon(Icons.Default.Call, "电话", tint = Neutral700, modifier = Modifier.size(26.dp))
+                    Icon(Icons.Default.Call, "电话", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(26.dp))
                 }
                 IconButton(onClick = {}, modifier = Modifier.size(34.dp)) {
-                    Icon(Icons.Default.Notifications, "通知", tint = Neutral700, modifier = Modifier.size(26.dp))
+                    Icon(Icons.Default.Notifications, "通知", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(26.dp))
                 }
             }
         })
@@ -69,11 +69,11 @@ fun HomeScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("输入商品需求",
                         style = MaterialTheme.typography.headlineMedium,
-                        color = Neutral700)
+                        color = MaterialTheme.colorScheme.onSurface)
                     Spacer(Modifier.height(8.dp))
                     Text("AI 为你精准推荐",
                         style = MaterialTheme.typography.titleMedium,
-                        color = Neutral400)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(32.dp))
                     Surface(
                         onClick = {
@@ -138,7 +138,7 @@ private fun ChatMessageList(
                     if (uiState.clarifyQuestion.isNotEmpty()) {
                         Surface(
                             shape = AgentBubbleShape,
-                            color = Neutral0,
+                            color = MaterialTheme.colorScheme.surface,
                             shadowElevation = 2.dp,
                             modifier = Modifier.widthIn(max = Dimens.messageBubbleMaxWidth)
                         ) {
@@ -146,7 +146,7 @@ private fun ChatMessageList(
                                 Text(
                                     "🤔 ${uiState.clarifyQuestion}",
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = Neutral900,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.Medium,
                                 )
                             }

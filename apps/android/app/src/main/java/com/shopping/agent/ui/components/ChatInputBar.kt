@@ -1,6 +1,8 @@
 package com.shopping.agent.ui.components
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -25,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.shopping.agent.ui.theme.*
 import com.shopping.agent.viewmodel.ChatViewModel
@@ -73,6 +76,8 @@ fun ChatInputBar(
     }
 
     // 拍照
+    var cameraUriToLaunch by remember { mutableStateOf<Uri?>(null) }
+
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
@@ -90,6 +95,23 @@ fun ChatInputBar(
                     android.widget.Toast.makeText(context, "拍照处理失败，请重试", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
+        }
+    }
+
+    val launchTakePicture: (Uri) -> Unit = { uri ->
+        cameraUri = uri
+        cameraLauncher.launch(uri)
+    }
+
+    /** 相机权限请求 launcher — 用户授权后自动打开相机 */
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            cameraUriToLaunch?.let { launchTakePicture(it) }
+            cameraUriToLaunch = null
+        } else {
+            android.widget.Toast.makeText(context, "需要相机权限才能拍照", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -115,7 +137,7 @@ fun ChatInputBar(
         if (selectedImageUri != null && uiState.isStreaming) {
             Surface(
                 modifier = Modifier.fillMaxWidth().height(80.dp),
-                color = Neutral50
+                color = MaterialTheme.colorScheme.background
             ) {
                 Row(
                     modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 4.dp),
@@ -131,34 +153,34 @@ fun ChatInputBar(
                     Text(
                         uiState.searchStatus.ifBlank { "📷 正在拍照找货…" },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Neutral600,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f)
                     )
                     IconButton(
                         onClick = { selectedImageUri = null },
                         modifier = Modifier.size(32.dp)
                     ) {
-                        Icon(Icons.Default.Close, "取消", tint = Neutral500, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Close, "取消", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                     }
                 }
             }
         }
 
         // 输入栏
-        Row(
-            Modifier
-                .padding(horizontal = Dimens.space3, vertical = 6.dp)
-                .padding(bottom = 4.dp)
-                .fillMaxWidth()
-                .then(modifier),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Surface(shadowElevation = 3.dp, color = MaterialTheme.colorScheme.surface, modifier = modifier) {
+            Row(
+                Modifier
+                    .padding(horizontal = Dimens.space3, vertical = Dimens.space2)
+                    .fillMaxWidth()
+                    .navigationBarsPadding(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 if (showIcons) {
                     IconButton(
                         onClick = { showChooser = true },
                         modifier = Modifier.size(44.dp)
                     ) {
-                        Icon(Icons.Default.CameraAlt, "拍照找货", tint = Neutral500)
+                        Icon(Icons.Default.CameraAlt, "拍照找货", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 OutlinedTextField(
@@ -168,14 +190,14 @@ fun ChatInputBar(
                         chatViewModel.onInputChange(newText)
                     },
                     enabled = !uiState.isStreaming,
-                    placeholder = { Text(placeholder, color = Neutral400) },
+                    placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     textStyle = MaterialTheme.typography.bodyLarge,
                     shape = RadiusFull,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Neutral100,
-                        unfocusedContainerColor = Neutral100,
+                        focusedContainerColor = MaterialTheme.colorScheme.outlineVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.outlineVariant,
                         focusedBorderColor = Primary,
-                        unfocusedBorderColor = Neutral100
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                     ),
                     modifier = Modifier.weight(1f),
                     maxLines = 4
@@ -201,7 +223,7 @@ fun ChatInputBar(
                         enabled = hasSpeech,
                         modifier = Modifier.size(44.dp)
                     ) {
-                        Icon(Icons.Default.Mic, "语音输入", tint = if (hasSpeech) Neutral500 else Neutral300)
+                        Icon(Icons.Default.Mic, "语音输入", tint = if (hasSpeech) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.outline)
                     }
                 }
                 FilledIconButton(
@@ -213,12 +235,13 @@ fun ChatInputBar(
                     shape = CircleShape,
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = Primary,
-                        disabledContainerColor = Neutral200
+                        disabledContainerColor = MaterialTheme.colorScheme.outline
                     ),
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Send, "发送", tint = OnPrimary)
                 }
+            }
         }
 
         // 拍照/相册选择弹窗
@@ -241,8 +264,13 @@ fun ChatInputBar(
                                     "${context.packageName}.fileprovider",
                                     photoFile
                                 )
-                                cameraUri = uri
-                                cameraLauncher.launch(uri)
+                                val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+                                if (hasPermission) {
+                                    launchTakePicture(uri)
+                                } else {
+                                    cameraUriToLaunch = uri
+                                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                }
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {

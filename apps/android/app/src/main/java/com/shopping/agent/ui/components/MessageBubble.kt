@@ -35,14 +35,14 @@ fun MessageBubble(
         ) {
             Surface(
                 shape = if (isUser) UserBubbleShape else AgentBubbleShape,
-                color = if (isUser) UserBubbleBg else Neutral0,
+                color = if (isUser) UserBubbleBg else MaterialTheme.colorScheme.surface,
                 shadowElevation = if (isUser) 0.dp else 2.dp,
             ) {
                 Column(modifier = Modifier.padding(Dimens.space3)) {
                     Text(
                         text = message.content,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = if (isUser) Neutral800 else Neutral900,
+                        color = if (isUser) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface,
                     )
                     message.productCards.forEach { product ->
                         Spacer(Modifier.height(Dimens.space2))

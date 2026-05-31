@@ -2,6 +2,7 @@ package com.shopping.agent.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,5 +43,5 @@ fun GradientTopBar(
 
 @Composable
 fun PageBody(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    Box(modifier = modifier.fillMaxWidth().background(com.shopping.agent.ui.theme.Neutral50)) { content() }
+    Box(modifier = modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)) { content() }
 }

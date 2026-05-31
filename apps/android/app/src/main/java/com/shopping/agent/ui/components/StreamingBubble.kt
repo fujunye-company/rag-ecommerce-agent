@@ -50,11 +50,11 @@ fun StreamingBubble(
                     color = Primary,
                 )
                 Spacer(Modifier.width(Dimens.space2))
-                Text(searchStatus, style = MaterialTheme.typography.labelSmall, color = Neutral500)
+                Text(searchStatus, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
-        Surface(shape = AgentBubbleShape, color = Neutral0, shadowElevation = 2.dp) {
+        Surface(shape = AgentBubbleShape, color = MaterialTheme.colorScheme.surface, shadowElevation = 2.dp) {
             Column(modifier = Modifier.padding(Dimens.space3)) {
                 Text(
                     text = buildAnnotatedString {
@@ -66,7 +66,7 @@ fun StreamingBubble(
                         }
                     },
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Neutral900,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
                 productCards.forEachIndexed { index, product ->

@@ -12,6 +12,25 @@ from enum import Enum
 logger = logging.getLogger("product_ranker")
 
 
+def _safe_float(val, default: float = 0.0) -> float:
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        return default
+
+
+def _normalize_brand(val) -> str:
+    return str(val or "").strip().lower().replace(" ", "")
+
+
+def _brand_is_excluded(product_brand, excluded_brands: set[str]) -> bool:
+    normalized = _normalize_brand(product_brand)
+    return any(
+        excluded and (normalized == excluded or excluded in normalized or normalized in excluded)
+        for excluded in excluded_brands
+    )
+
+
 class Intent(str, Enum):
     RECOMMEND = "commodity_recommend"
     COMPARE = "commodity_compare"
@@ -97,13 +116,13 @@ class ProductRanker:
         preferred_attrs = user_prefs.get("attributes", {})
 
         # 排除项
-        exclude_brands = set(user_prefs.get("exclude_brands") or [])
+        exclude_brands = {_normalize_brand(b) for b in (user_prefs.get("exclude_brands") or []) if b}
         exclude_attrs = user_prefs.get("exclude_attributes", {})
 
         scored = []
         for prod in products:
             # 排除过滤
-            if exclude_brands and prod.get("brand") in exclude_brands:
+            if exclude_brands and _brand_is_excluded(prod.get("brand"), exclude_brands):
                 continue
             if exclude_attrs:
                 prod_attrs = prod.get("attributes", {})
@@ -117,18 +136,18 @@ class ProductRanker:
             dims = {}
 
             # 1. 语义匹配分（来自向量检索或 reranker）
-            dims["semantic"] = float(prod.get("semantic_score",
+            dims["semantic"] = _safe_float(prod.get("semantic_score",
                                        prod.get("rerank_score",
                                        prod.get("final_score",
-                                       prod.get("score", 0.5)))))
+                                       prod.get("score", 0.5)))), 0.5)
 
             # 2. 价格匹配分
             dims["price"] = self._price_score(
-                float(prod.get("price", 0)), budget_min, budget_max
+                _safe_float(prod.get("price", 0)), budget_min, budget_max
             )
 
             # 3. 评分
-            rating = float(prod.get("rating", 3.0))
+            rating = _safe_float(prod.get("rating", 3.0))
             dims["rating"] = min(rating / 5.0, 1.0)
 
             # 4. 品牌偏好
@@ -142,10 +161,6 @@ class ProductRanker:
 
             # 加权总分
             total = sum(weights[k] * dims[k] for k in weights)
-
-            # ANTI_SELECTION：反转评分 — 与偏好差异越大排名越高
-            if intent_enum == Intent.ANTI_SELECTION:
-                total = 1.0 - total
 
             # 生成排序理由
             reason = self._generate_reason(dims, weights, intent_enum)
@@ -211,7 +226,7 @@ class ProductRanker:
     def _generate_reason(self, dims: Dict, weights: Dict, intent_enum: Intent = None) -> str:
         """生成简短的排序理由"""
         if intent_enum == Intent.ANTI_SELECTION:
-            return "反向推荐：与偏好差异较大"
+            return "已按排除条件筛选"
         parts = []
         for dim, weight in sorted(weights.items(), key=lambda x: x[1], reverse=True):
             if weight < 0.1:

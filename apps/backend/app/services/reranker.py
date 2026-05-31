@@ -54,18 +54,10 @@ def _get_model():
             return _reranker_model if _reranker_model is not False else None
 
         from sentence_transformers import CrossEncoder
+        from app.core.config import settings
 
-        model_name = "BAAI/bge-reranker-v2-m3"
-        local_path = os.path.expanduser("~/.cache/huggingface/hub/models--BAAI--bge-reranker-v2-m3/snapshots")
-
-        # 优先用本地 snapshots 路径
-        if os.path.isdir(local_path):
-            snapshots = sorted(os.listdir(local_path))
-            if snapshots:
-                model_name = os.path.join(local_path, snapshots[-1])
-                logger.info("Loading reranker from local: %s", model_name)
-
-        logger.info("Loading reranker model...")
+        model_name = settings.RERANKER_MODEL
+        logger.info("Loading reranker model: %s", model_name)
         try:
             _reranker_model = CrossEncoder(model_name, device="cpu")
             logger.info("Reranker model loaded (CPU)")

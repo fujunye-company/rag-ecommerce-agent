@@ -76,57 +76,70 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
     }
 
     companion object {
-        fun buildMockDetail(productId: String): ProductDetailData = ProductDetailData(
-            productId = productId,
-            images = listOf(
-                "https://placehold.co/600x600/F0F4FF/4A90D9?text=Product+Main+01",
-                "https://placehold.co/600x600/FFF5F0/E8917E?text=Product+Main+02",
-                "https://placehold.co/600x600/F0FFF4/2ECC71?text=Product+Detail+03",
-            ),
-            campaign = CampaignInfo(
-                title = "618 抢先购",
-                subsidyText = "平台礼金补贴 7 元",
-                specBubble = "500ml 大容量",
-            ),
-            price = PriceInfo(
-                current = 42.9,
-                couponPrice = 35.9,
-                origin = 58.8,
-                savedAmount = 32,
-                salesText = "已售 100+",
-            ),
-            title = "山乘酿造 冰茶奇兰乌龙茶西瓜冬瓜茶椰香葡萄酒果酒精酿啤酒茶啤 500ml*3度",
-            tags = listOf("店铺新品", "一年回头客4千+", "超200人加购"),
-            coupons = listOf(
-                CouponInfo(type = "coupon", text = "满200减25"),
-                CouponInfo(type = "subsidy", text = "平台礼金补贴7元"),
-            ),
-            delivery = DeliveryInfo(
-                estimate = "预计 6 小时内发货",
-                location = "浙江绍兴",
-                shipping = "免运费",
-            ),
-            guarantee = listOf("拾物价保", "假一赔十", "7天无理由退货"),
-            specs = listOf(
-                SpecItem("酒精度数", "3度"),
-                SpecItem("产地", "绍兴市"),
-                SpecItem("净含量", "500ml"),
-                SpecItem("保质期", "12个月"),
-            ),
-            reviews = ReviewSummary(
-                count = 12,
-                goodRate = "100%",
-                keywords = listOf("回头客81", "颜值很高7", "甜而不腻2", "保质期长4"),
-            ),
-            shop = ShopInfo(
-                name = "山乘酿造旗舰店",
-                badge = "拾物认证",
-                score = 4.8,
-                fans = "1.5万粉丝",
-                qualityScore = "4.8 高",
-                deliveryScore = "4.8 高",
-                serviceScore = "4.9 高",
-            ),
-        )
+        fun buildMockDetail(productId: String): ProductDetailData {
+            val product = com.shopping.agent.data.mock.mockProducts.find { it.productId == productId }
+            if (product != null) {
+                return buildDetailFromProduct(product)
+            }
+            // 兜底：未找到商品时显示占位信息
+            return ProductDetailData(
+                productId = productId,
+                images = listOf("https://picsum.photos/seed/fallback/400/400"),
+                campaign = null,
+                price = PriceInfo(current = 0.0, origin = null),
+                title = "商品未找到 ($productId)",
+                tags = emptyList(),
+                coupons = emptyList(),
+                delivery = DeliveryInfo(estimate = "", location = "", shipping = ""),
+                guarantee = emptyList(),
+                specs = emptyList(),
+                reviews = ReviewSummary(count = 0, goodRate = "", keywords = emptyList()),
+                shop = ShopInfo(name = "未知店铺", badge = "", score = 0.0, fans = ""),
+            )
+        }
+
+        private fun buildDetailFromProduct(p: com.shopping.agent.data.model.Product): ProductDetailData {
+            val imgList = if (p.imageUrls.isNotEmpty()) p.imageUrls
+            else listOf(p.imageUrl ?: "https://picsum.photos/seed/${p.productId}/400/400")
+            val originPrice = if (p.price > 0) p.price * 1.3 else null
+            val salesCount = ((p.ratingCount * 1.2).toInt().coerceAtLeast(1) * 100) + (p.productId.hashCode() % 100)
+            val brandName = p.brand ?: "品牌"
+            return ProductDetailData(
+                productId = p.productId,
+                images = imgList,
+                campaign = null,
+                price = PriceInfo(
+                    current = p.price,
+                    couponPrice = null,
+                    origin = originPrice?.let { String.format("%.1f", it).toDouble() },
+                    savedAmount = originPrice?.let { ((it - p.price).toInt()) } ?: 0,
+                    salesText = "已售 ${salesCount}+",
+                ),
+                title = p.title,
+                tags = p.rankReason.split("|").map { it.trim() }.filter { it.isNotBlank() }.take(3),
+                coupons = emptyList(),
+                delivery = DeliveryInfo(
+                    estimate = "预计 48 小时内发货",
+                    location = "广东广州",
+                    shipping = if (p.price >= 99) "免运费" else "运费 ¥8",
+                ),
+                guarantee = listOf("假一赔十", "7天无理由退货", "正品保障"),
+                specs = p.attributes.map { (k, v) -> SpecItem(k, v) },
+                reviews = ReviewSummary(
+                    count = p.ratingCount,
+                    goodRate = "${((p.rating / 5.0) * 100).toInt()}%",
+                    keywords = p.rankReason.split("|").map { it.trim() }.filter { it.isNotBlank() }.take(4),
+                ),
+                shop = ShopInfo(
+                    name = "${brandName}官方旗舰店",
+                    badge = "品牌认证",
+                    score = p.rating.toDouble(),
+                    fans = "${(p.ratingCount * 0.3 * 1000).toInt()}粉丝",
+                    qualityScore = String.format("%.1f", p.rating.coerceAtMost(4.9f)),
+                    deliveryScore = String.format("%.1f", p.rating.coerceAtMost(4.8f)),
+                    serviceScore = String.format("%.1f", (p.rating + 0.1f).coerceAtMost(5.0f)),
+                ),
+            )
+        }
     }
 }

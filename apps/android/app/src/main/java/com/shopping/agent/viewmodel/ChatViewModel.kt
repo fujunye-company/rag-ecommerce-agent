@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.UUID
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 data class GuideUiState(
     val messages: List<ChatMessage> = emptyList(),
@@ -79,12 +81,21 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             // 加载对话列表
             val metas = userRepo.getConversationMetas()
 
+            // 恢复上次的排除 chips
+            val savedChipsJson = userRepo.getSetting("last_clarify_chips")
+            val savedChips: List<String> = if (savedChipsJson.isNotEmpty()) {
+                try {
+                    Gson().fromJson(savedChipsJson, object : TypeToken<List<String>>() {}.type)
+                } catch (_: Exception) { emptyList() }
+            } else emptyList()
+
             _uiState.update {
                 it.copy(
                     sessionId = sessionId,
                     currentConversationId = convId,
                     messages = messages,
                     conversations = metas,
+                    clarifyChips = savedChips,
                     screenState = if (messages.isNotEmpty()) ScreenState.Content(true) else ScreenState.Idle,
                 )
             }
@@ -106,22 +117,25 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // ═══════════════════════════════════════════════════════
-    // 每日问候（仅当日首次，且当前对话为空时发送）
+    // 每日问候（当日首次打开 App 时单开一个独立对话）
     // ═══════════════════════════════════════════════════════
 
     fun sendDailyGreeting() {
-        if (_uiState.value.messages.isNotEmpty()) return
-
         val today = java.time.LocalDate.now().toString()
         val lastGreetingDate = userRepo.getSettingSync("last_greeting_date")
         if (lastGreetingDate == today) return
 
+        // 有历史消息时不覆盖 — 用户可能在继续之前的对话
+        if (_uiState.value.messages.isNotEmpty()) return
+
         userRepo.setSettingSync("last_greeting_date", today)
 
+        // 使用当前 conversationId，不创建新会话覆盖 last_conversation_id
+        val convId = _uiState.value.currentConversationId
         val greeting = ChatMessage(
             id = UUID.randomUUID().toString(),
             role = MessageRole.Assistant,
-            content = "fujunye，早上好\n\n以下是今日推荐：",
+            content = "fujunye，早上好 ☀️\n\n以下是今日为你精选的推荐：",
             status = MessageStatus.Sent,
         )
         val products = mockProducts.take(3)
@@ -133,18 +147,18 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             status = MessageStatus.Sent,
         )
 
-        // 保存问候消息到当前对话
-        val convId = _uiState.value.currentConversationId
         viewModelScope.launch {
+            userRepo.createConversation(convId, "每日推荐")
             userRepo.saveMessage(greeting, convId)
             userRepo.saveMessage(productMsg, convId)
-            userRepo.updateConversationTitle(convId, "每日推荐")
             refreshConversationList()
         }
 
         _uiState.update {
-            it.copy(messages = listOf(greeting, productMsg),
-                screenState = ScreenState.Content(true))
+            it.copy(
+                messages = it.messages + greeting + productMsg,
+                screenState = ScreenState.Content(true),
+            )
         }
     }
 
@@ -270,7 +284,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val accText = StringBuilder()
             val accCards = mutableListOf<Product>()
+            val accWebResults = mutableListOf<WebSearchItem>()
             val convId = _uiState.value.currentConversationId
+
+            // 用户消息必须第一时间持久化，避免 SSE 流异常中断时丢失
+            userRepo.saveMessage(userMessage, convId)
 
             try {
                 chatRepository.sendMessage(text, _uiState.value.currentConversationId)
@@ -278,6 +296,15 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                         when (event) {
                             is SSEEvent.Progress -> {
                                 _uiState.update { it.copy(searchStatus = event.message) }
+                            }
+                            is SSEEvent.WebSearchResult -> {
+                                accWebResults.add(WebSearchItem(
+                                    title = event.title,
+                                    url = event.url,
+                                    snippet = event.snippet,
+                                    index = event.index,
+                                    total = event.total,
+                                ))
                             }
                             is SSEEvent.Clarify -> {
                                 _uiState.update {
@@ -318,10 +345,30 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                 // 提交当前累积文本 + 此卡片为独立消息（交错格式）
                                 val textSoFar = accText.toString().trim()
                                 if (textSoFar.isNotEmpty()) {
+                                    val (summaryText, productText) = if (event.index == 1) {
+                                        splitSummaryFromFirstProduct(textSoFar)
+                                    } else {
+                                        null to textSoFar
+                                    }
+
+                                    if (!summaryText.isNullOrBlank()) {
+                                        val summaryMsg = ChatMessage(
+                                            id = UUID.randomUUID().toString(),
+                                            role = MessageRole.Assistant,
+                                            content = summaryText.trim(),
+                                            productCards = emptyList(),
+                                            status = MessageStatus.Sent,
+                                        )
+                                        _uiState.update {
+                                            it.copy(messages = it.messages + summaryMsg)
+                                        }
+                                        userRepo.saveMessage(summaryMsg, convId)
+                                    }
+
                                     val partialMsg = ChatMessage(
                                         id = UUID.randomUUID().toString(),
                                         role = MessageRole.Assistant,
-                                        content = textSoFar,
+                                        content = productText.trim(),
                                         productCards = listOf(product),
                                         status = MessageStatus.Sent,
                                     )
@@ -335,19 +382,34 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                     userRepo.saveMessage(partialMsg, convId)
                                     accText.clear()
                                 } else {
-                                    // 无前置文本：卡片单独追加到 streamingCards
-                                    _uiState.update { it.copy(streamingCards = accCards.toList()) }
+                                    // 无前置文本：卡片也要落成独立消息，兼容后端“先流文本、后发卡片”的真流式模式。
+                                    val cardOnlyMsg = ChatMessage(
+                                        id = UUID.randomUUID().toString(),
+                                        role = MessageRole.Assistant,
+                                        content = "",
+                                        productCards = listOf(product),
+                                        status = MessageStatus.Sent,
+                                    )
+                                    _uiState.update {
+                                        it.copy(
+                                            messages = it.messages + cardOnlyMsg,
+                                            streamingCards = emptyList(),
+                                        )
+                                    }
+                                    userRepo.saveMessage(cardOnlyMsg, convId)
                                 }
                             }
                             is SSEEvent.Done -> {
-                                // 提交剩余文本（如结语）
+                                // 提交剩余文本（如结语），附联网搜索结果
                                 val remainingText = accText.toString().trim()
-                                if (remainingText.isNotEmpty()) {
+                                val finalWebResults = accWebResults.toList()
+                                if (remainingText.isNotEmpty() || finalWebResults.isNotEmpty()) {
                                     val closingMsg = ChatMessage(
                                         id = UUID.randomUUID().toString(),
                                         role = MessageRole.Assistant,
                                         content = remainingText,
                                         productCards = emptyList(),
+                                        webSearchResults = finalWebResults,
                                         status = MessageStatus.Sent,
                                     )
                                     _uiState.update {
@@ -365,9 +427,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                         screenState = ScreenState.Content(accCards.isNotEmpty()),
                                     )
                                 }
-
-                                // 持久化用户消息（AI 消息已逐卡片增量保存）
-                                userRepo.saveMessage(userMessage, convId)
 
                                 // 自动设置对话标题（首条用户消息截取）
                                 val currentTitle = userRepo.getConversationMetas()
@@ -388,6 +447,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                         .take(4)
                                     val excludeChips = brands.map { "排除 $it" }
                                     _uiState.update { it.copy(clarifyChips = excludeChips) }
+                                    // 持久化排除 chips，跨 App 重启恢复
+                                    userRepo.setSetting("last_clarify_chips", Gson().toJson(excludeChips))
                                 }
                             }
                             is SSEEvent.Error -> {
@@ -438,8 +499,16 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     // ── 拍照找货 ──────────────────────────────────────────
 
     fun sendImage(imageFile: File) {
+        val userMessage = ChatMessage(
+            id = UUID.randomUUID().toString(),
+            role = MessageRole.User,
+            content = "📷 拍照找货",
+            status = MessageStatus.Sent,
+        )
+
         _uiState.update {
             it.copy(
+                messages = it.messages + userMessage,
                 screenState = ScreenState.Streaming(""),
                 isStreaming = true,
                 streamingText = "",
@@ -454,6 +523,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             val accText = StringBuilder()
             val accCards = mutableListOf<Product>()
             val convId = _uiState.value.currentConversationId
+
+            // 持久化用户消息，避免异常中断时丢失
+            userRepo.saveMessage(userMessage, convId)
 
             try {
                 visionClient.connectVision(imageFile)
@@ -543,5 +615,21 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+}
+
+private fun splitSummaryFromFirstProduct(text: String): Pair<String?, String> {
+    val trimmed = text.trim()
+    val firstSentenceEnd = trimmed.indexOfFirst { it == '。' || it == '！' || it == '？' }
+    if (firstSentenceEnd < 0 || firstSentenceEnd >= trimmed.lastIndex) {
+        return null to trimmed
+    }
+
+    val summary = trimmed.substring(0, firstSentenceEnd + 1).trim()
+    val productText = trimmed.substring(firstSentenceEnd + 1).trim()
+    return if (summary.isBlank() || productText.isBlank()) {
+        null to trimmed
+    } else {
+        summary to productText
     }
 }

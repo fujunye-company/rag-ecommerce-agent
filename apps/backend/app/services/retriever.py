@@ -95,7 +95,7 @@ async def hybrid_search(
 
     elapsed_ms = (time.monotonic() - t0) * 1000
     items = [
-        {"id": hit.id, "score": hit.score, "payload": hit.payload}
+        {"id": hit.id, "score": hit.score, "payload": hit.payload or {}}
         for hit in results.points
     ]
 

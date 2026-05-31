@@ -1,5 +1,6 @@
 package com.shopping.agent.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -24,7 +25,8 @@ fun ProductCard(
     modifier: Modifier = Modifier,
 ) {
     Card(onClick = onTap, shape = RadiusLg,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(1.dp, Neutral100),
         colors = CardDefaults.cardColors(containerColor = Neutral0),
         modifier = modifier.fillMaxWidth()) {
         Column {
@@ -66,7 +68,7 @@ fun ProductCard(
                         Text(product.source, Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.bodySmall, color = Info)
                     }
-                    if (product.ratingCount != null) {
+                    if (product.ratingCount > 0) {
                         Text(formatSalesCount(product.ratingCount),
                             style = MaterialTheme.typography.bodySmall, color = Neutral500)
                     }

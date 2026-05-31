@@ -48,6 +48,10 @@ fun MessageBubble(
                         Spacer(Modifier.height(Dimens.space2))
                         ProductCardHorizontal(product = product, onTap = { onProductTap(product) })
                     }
+                    message.webSearchResults.forEach { item ->
+                        Spacer(Modifier.height(Dimens.space2))
+                        WebSearchResultCard(item = item)
+                    }
                 }
             }
             if (onRetry != null && message.status == MessageStatus.Error) {

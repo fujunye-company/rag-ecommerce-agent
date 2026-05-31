@@ -7,10 +7,22 @@
 
 .env 文件从 backend/.env.example 复制后填入真实值。
 """
+import os
 from pathlib import Path
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 CONFIG_DIR = Path(__file__).resolve().parents[2]  # backend/
+
+_HF_EMBEDDING = "BAAI/bge-large-zh-v1.5"
+_HF_RERANKER = "BAAI/bge-reranker-v2-m3"
+
+
+def resolve_model_path(local_path: str, hf_name: str) -> str:
+    """解析模型路径：本地目录存在则返回本地路径，否则降级为 HF 模型名"""
+    if os.path.isdir(local_path):
+        return local_path
+    return hf_name
 
 
 class Settings(BaseSettings):
@@ -37,7 +49,14 @@ class Settings(BaseSettings):
     DEEPSEEK_MODEL: str = "deepseek-chat"
 
     # ── Embedding ──
-    EMBEDDING_MODEL: str = "BAAI/bge-large-zh-v1.5"
+    # 默认: <backend>/data/models/bge-large-zh-v1.5
+    # 不存在时自动降级为 BAAI/bge-large-zh-v1.5 (HF)
+    EMBEDDING_MODEL: str = str(Path(__file__).resolve().parents[2] / "data" / "models" / "bge-large-zh-v1.5")
+
+    # ── Reranker ──
+    # 默认: <backend>/data/models/bge-reranker-v2-m3
+    # 不存在时自动降级为 BAAI/bge-reranker-v2-m3 (HF)
+    RERANKER_MODEL: str = str(Path(__file__).resolve().parents[2] / "data" / "models" / "bge-reranker-v2-m3")
 
     # ── 服务 ──
     LOG_LEVEL: str = "INFO"
@@ -45,6 +64,16 @@ class Settings(BaseSettings):
     APP_PORT: int = 8080
     CORS_ORIGINS: list[str] = ["*"]
     MAX_UPLOAD_SIZE_MB: int = 10
+
+    @field_validator("EMBEDDING_MODEL", mode="after")
+    @classmethod
+    def _resolve_embedding(cls, v: str) -> str:
+        return resolve_model_path(v, _HF_EMBEDDING)
+
+    @field_validator("RERANKER_MODEL", mode="after")
+    @classmethod
+    def _resolve_reranker(cls, v: str) -> str:
+        return resolve_model_path(v, _HF_RERANKER)
 
     model_config = {
         "env_file": str(CONFIG_DIR / ".env"),

@@ -15,11 +15,11 @@ val PrimaryLight  = Color(0xFFEBF3FC)
 val PrimaryDark   = Color(0xFF3A7BC8)
 
 // ===== 辅助色 =====
-val Success       = Color(0xFF2ECC71)
-val SuccessLight  = Color(0xFFE8F8EF)
-val Warning       = Color(0xFFF39C12)
-val WarningLight  = Color(0xFFFFF8E8)
-val Info          = Color(0xFF4A90D9)
+val Success       = Color(0xFF43B975)
+val SuccessLight  = Color(0xFFE6F4EA)
+val Warning       = Color(0xFFD3952E)
+val WarningLight  = Color(0xFFFDF3E1)
+val Info          = Color(0xFF588CC3)
 val InfoLight     = Color(0xFFEBF3FC)
 val ErrorColor    = Color(0xFFE74C3C)
 val ErrorLight    = Color(0xFFFDEDEC)
@@ -61,5 +61,5 @@ val PriceRed      = TextPrice
 
 // ===== 暗色模式预留 =====
 val DarkPrimary   = Color(0xFF7AB8FF)
-val DarkBackground = Color(0xFF1A1A1A)
-val DarkSurface   = Color(0xFF2C2C2C)
+val DarkBackground = Color(0xFF000000)
+val DarkSurface   = Color(0xFF121212)

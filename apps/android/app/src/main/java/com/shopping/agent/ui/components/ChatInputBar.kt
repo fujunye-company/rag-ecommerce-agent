@@ -145,14 +145,14 @@ fun ChatInputBar(
         }
 
         // 输入栏
-        Surface(shadowElevation = 3.dp, color = Neutral0, modifier = modifier) {
-            Row(
-                Modifier
-                    .padding(horizontal = Dimens.space3, vertical = Dimens.space2)
-                    .fillMaxWidth()
-                    .navigationBarsPadding(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        Row(
+            Modifier
+                .padding(horizontal = Dimens.space3, vertical = 6.dp)
+                .padding(bottom = 4.dp)
+                .fillMaxWidth()
+                .then(modifier),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
                 if (showIcons) {
                     IconButton(
                         onClick = { showChooser = true },
@@ -219,7 +219,6 @@ fun ChatInputBar(
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Send, "发送", tint = OnPrimary)
                 }
-            }
         }
 
         // 拍照/相册选择弹窗

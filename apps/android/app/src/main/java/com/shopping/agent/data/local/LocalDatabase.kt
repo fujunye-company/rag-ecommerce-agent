@@ -20,7 +20,7 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
 ) {
     companion object {
         const val DATABASE_NAME = "hermes_local.db"
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
 
         // 表名
         const val TABLE_USER = "user_profile"
@@ -73,6 +73,7 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
                 role            TEXT NOT NULL,
                 content         TEXT DEFAULT '',
                 product_cards   TEXT DEFAULT '[]',
+                web_search_results TEXT DEFAULT '[]',
                 status          TEXT DEFAULT 'sent',
                 created_at      INTEGER NOT NULL,
                 FOREIGN KEY (conversation_id) REFERENCES $TABLE_CONVERSATIONS(id)
@@ -119,6 +120,8 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        // v1: no migration needed yet
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE $TABLE_MESSAGES ADD COLUMN web_search_results TEXT DEFAULT '[]'")
+        }
     }
 }

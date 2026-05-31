@@ -1,6 +1,7 @@
 package com.shopping.agent.ui.screens
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,11 +25,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.shopping.agent.data.model.*
+import com.shopping.agent.ui.theme.*
 import com.shopping.agent.viewmodel.ProductDetailUiState
 import com.shopping.agent.viewmodel.ProductDetailViewModel
 
@@ -70,9 +73,6 @@ fun ProductDetailScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            ProductDetailTopBar(uiState = uiState, onBack = onBack)
-        },
         bottomBar = {
             ProductBottomActionBar(
                 isFavorited = uiState.isFavorited,
@@ -101,18 +101,26 @@ fun ProductDetailScreen(
             }
         } else {
             val product = uiState.product!!
+            // 底部内边距由 Scaffold 处理，顶部不留间距（图片贴顶）
+            val contentPadding = PaddingValues(
+                start = innerPadding.calculateStartPadding(LayoutDirection.Ltr),
+                end = innerPadding.calculateEndPadding(LayoutDirection.Ltr),
+                top = 0.dp,
+                bottom = innerPadding.calculateBottomPadding(),
+            )
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(contentPadding)
                     .verticalScroll(rememberScrollState())
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(BlueLight, Color.White, PinkAccent.copy(alpha = 0.05f))
-                        )
-                    ),
+                    .background(Neutral50),
             ) {
-                ProductHeroGallery(images = product.images, campaign = product.campaign)
+                // 图片贴顶 + 浮层控制栏
+                ProductHeroGallery(
+                    images = product.images,
+                    campaign = product.campaign,
+                    onBack = onBack,
+                )
                 ProductInfoCard(product = product)
                 CouponBenefitCard(coupons = product.coupons, savedAmount = product.price.savedAmount)
                 LogisticsGuaranteeCard(delivery = product.delivery, guarantee = product.guarantee)
@@ -129,47 +137,13 @@ fun ProductDetailScreen(
     }
 }
 
-// ─── Top Bar ────────────────────────────────────────────
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ProductDetailTopBar(
-    uiState: ProductDetailUiState,
-    onBack: () -> Unit,
-) {
-    TopAppBar(
-        title = {
-            Text(
-                uiState.product?.pageTitle ?: "拾物",
-                color = Color.White,
-                fontWeight = FontWeight.SemiBold,
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = Color.White)
-            }
-        },
-        actions = {
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.Share, "分享", tint = Color.White)
-            }
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.MoreHoriz, "更多", tint = Color.White)
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent,
-        ),
-    )
-}
-
 // ─── 1. Hero Gallery ────────────────────────────────────
 
 @Composable
 private fun ProductHeroGallery(
     images: List<String>,
     campaign: CampaignInfo?,
+    onBack: () -> Unit = {},
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
         if (images.isEmpty()) {
@@ -184,7 +158,7 @@ private fun ProductHeroGallery(
             Column {
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier.fillMaxWidth().height(340.dp),
+                    modifier = Modifier.fillMaxWidth().height(400.dp),
                 ) { page ->
                     AsyncImage(
                         model = images[page],
@@ -214,10 +188,54 @@ private fun ProductHeroGallery(
             }
         }
 
+        // ── Overlaid controls ──
+        // 顶部渐变遮罩
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+                .align(Alignment.TopCenter)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Black.copy(alpha = 0.35f), Color.Transparent)
+                    )
+                ),
+        )
+
+        // 返回按钮
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = 4.dp, start = 4.dp)
+                .size(40.dp),
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                "返回",
+                tint = Color.White,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+
+        // 右侧操作按钮
+        Row(
+            Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 8.dp, end = 8.dp),
+        ) {
+            IconButton(onClick = {}, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Default.Share, "分享", tint = Color.White, modifier = Modifier.size(22.dp))
+            }
+            IconButton(onClick = {}, modifier = Modifier.size(40.dp)) {
+                Icon(Icons.Default.MoreHoriz, "更多", tint = Color.White, modifier = Modifier.size(22.dp))
+            }
+        }
+
         // Campaign overlay badges
         if (campaign != null) {
             Column(
-                Modifier.align(Alignment.TopStart).padding(12.dp),
+                Modifier.align(Alignment.TopStart).padding(top = 48.dp, start = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 // Campaign title badge
@@ -279,7 +297,8 @@ private fun ProductInfoCard(product: ProductDetailData) {
             .padding(horizontal = 12.dp, vertical = 6.dp),
         shape = RoundedCornerShape(12.dp),
         color = Color.White,
-        shadowElevation = 1.dp,
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, Neutral100),
     ) {
         Column(Modifier.padding(14.dp)) {
             // Price row
@@ -369,7 +388,8 @@ private fun CouponBenefitCard(coupons: List<CouponInfo>, savedAmount: Int) {
             .padding(horizontal = 12.dp, vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
         color = Color.White,
-        shadowElevation = 1.dp,
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, Neutral100),
     ) {
         Column(Modifier.padding(14.dp)) {
             Text("优惠", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF333333))
@@ -427,7 +447,8 @@ private fun LogisticsGuaranteeCard(delivery: DeliveryInfo, guarantee: List<Strin
             .padding(horizontal = 12.dp, vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
         color = Color.White,
-        shadowElevation = 1.dp,
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, Neutral100),
     ) {
         Column(Modifier.padding(14.dp)) {
             // Delivery section
@@ -476,7 +497,8 @@ private fun ProductSpecGrid(specs: List<SpecItem>) {
             .padding(horizontal = 12.dp, vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
         color = Color.White,
-        shadowElevation = 1.dp,
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, Neutral100),
     ) {
         Column(Modifier.padding(14.dp)) {
             Text("规格参数", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF333333))
@@ -513,7 +535,8 @@ private fun ReviewSummarySection(reviews: ReviewSummary) {
             .padding(horizontal = 12.dp, vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
         color = Color.White,
-        shadowElevation = 1.dp,
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, Neutral100),
     ) {
         Column(Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -581,7 +604,8 @@ private fun ShopInfoCard(
             .padding(horizontal = 12.dp, vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
         color = Color.White,
-        shadowElevation = 1.dp,
+        shadowElevation = 0.dp,
+        border = BorderStroke(1.dp, Neutral100),
     ) {
         Column(Modifier.padding(14.dp)) {
             // Shop header

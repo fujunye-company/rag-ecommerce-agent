@@ -11,7 +11,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_001", title = "优衣库 U AIRism 棉质宽松圆领短袖T恤 男装 基础纯色上衣",
             price = 99.0,
-            imageUrl = "/images/T恤/p_clothes_001_live.jpg", imageUrls = listOf("/images/T恤/p_clothes_001_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_001/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_001/400/400"),
             category = "T恤", brand = "优衣库", source = "",
             ratingCount = 5, rating = 3.8f,
             rankReason = "AIRism凉感 | 吸湿速干 | 贴身穿完全不扎",
@@ -20,7 +20,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_021", title = "Nike Dri-FIT Miler 男子速干短袖跑步上衣轻薄透气公路训练T恤",
             price = 249.0,
-            imageUrl = "/images/T恤/p_clothes_021_live.jpg", imageUrls = listOf("/images/T恤/p_clothes_021_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_021/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_021/400/400"),
             category = "T恤", brand = "耐克", source = "",
             ratingCount = 5, rating = 2.4f,
             rankReason = "吸湿速干",
@@ -29,7 +29,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_003", title = "Nike Dri-FIT 男子训练短袖T恤 速干透气运动上衣",
             price = 199.0,
-            imageUrl = "/images/T恤/p_clothes_003_live.jpg", imageUrls = listOf("/images/T恤/p_clothes_003_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_003/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_003/400/400"),
             category = "T恤", brand = "耐克", source = "",
             ratingCount = 6, rating = 3.2f,
             rankReason = "吸湿速干 | 十几分钟就能自然风干不黏身",
@@ -39,7 +39,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_025", title = "Osprey DAYLITE PLUS 日光+ 20L 户外多功能双肩背包轻量通勤包",
             price = 699.0,
-            imageUrl = "/images/双肩包/p_clothes_025_live.jpg", imageUrls = listOf("/images/双肩包/p_clothes_025_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_025/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_025/400/400"),
             category = "双肩包", brand = "Osprey", source = "",
             ratingCount = 6, rating = 2.8f,
             rankReason = "500ml | 主身用的高密度防泼水面料 | 整包自重才不到0.7kg",
@@ -48,7 +48,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_018", title = "The North Face Borealis 28L 多功能通勤户外双肩背包",
             price = 1098.0,
-            imageUrl = "/images/双肩包/p_clothes_018_live.jpg", imageUrls = listOf("/images/双肩包/p_clothes_018_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_018/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_018/400/400"),
             category = "双肩包", brand = "The North Face", source = "",
             ratingCount = 4, rating = 3.5f,
             rankReason = "500ml | 透气舒适 | 溅到雨天积水",
@@ -58,7 +58,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_beauty_015", title = "完美日记仿生膜精华唇釉丝绒哑光滋润显色持妆唇部彩妆3g",
             price = 120.0,
-            imageUrl = "/images/口红/p_beauty_015_live.jpg", imageUrls = listOf("/images/口红/p_beauty_015_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_beauty_015/400/400", imageUrls = listOf("https://picsum.photos/seed/p_beauty_015/400/400"),
             category = "口红", brand = "完美日记", source = "",
             ratingCount = 3, rating = 4.0f,
             rankReason = "透明质酸保湿 | 透气舒适 | 天然成分",
@@ -67,7 +67,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_beauty_025", title = "花西子螺黛生花眉笔细节点描顺滑显色防晕染持久双头眉笔0.08g",
             price = 89.0,
-            imageUrl = "/images/口红/p_beauty_025_live.jpg", imageUrls = listOf("/images/口红/p_beauty_025_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_beauty_025/400/400", imageUrls = listOf("https://picsum.photos/seed/p_beauty_025/400/400"),
             category = "口红", brand = "花西子", source = "",
             ratingCount = 6, rating = 2.8f,
             rankReason = "就像用毛笔勾线一样丝滑不卡壳",
@@ -77,7 +77,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_food_001", title = "三顿半 数字星球系列 超即溶精品咖啡1-6号 18颗装精品速溶咖啡",
             price = 138.0,
-            imageUrl = "/images/咖啡/p_food_001_live.jpg", imageUrls = listOf("/images/咖啡/p_food_001_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_food_001/400/400", imageUrls = listOf("https://picsum.photos/seed/p_food_001/400/400"),
             category = "咖啡", brand = "三顿半", source = "",
             ratingCount = 5, rating = 3.0f,
             rankReason = "冻干锁鲜技术 | 3秒超即溶 | 拿铁口感",
@@ -86,7 +86,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_food_022", title = "三顿半 冷萃超即溶 黑咖啡 6颗装 冷泡即溶精品速溶咖啡",
             price = 58.0,
-            imageUrl = "/images/咖啡/p_food_022_live.jpg", imageUrls = listOf("/images/咖啡/p_food_022_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_food_022/400/400", imageUrls = listOf("https://picsum.photos/seed/p_food_022/400/400"),
             category = "咖啡", brand = "三顿半", source = "",
             ratingCount = 3, rating = 3.3f,
             rankReason = "300ml | 3秒超即溶 | 无添加",
@@ -95,7 +95,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_food_023", title = "雀巢 金牌 冻干速溶咖啡 100g 瓶装 黑咖啡",
             price = 42.0,
-            imageUrl = "/images/咖啡/p_food_023_live.jpg", imageUrls = listOf("/images/咖啡/p_food_023_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_food_023/400/400", imageUrls = listOf("https://picsum.photos/seed/p_food_023/400/400"),
             category = "咖啡", brand = "雀巢", source = "",
             ratingCount = 3, rating = 4.0f,
             rankReason = "冻干锁鲜技术 | 金牌冻干速溶黑咖啡 | 用的先进的低温冻干锁香技术",
@@ -105,7 +105,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_food_019", title = "百草味 每日坚果A款 750g/30袋 混合坚果零食礼盒",
             price = 118.0,
-            imageUrl = "/images/坚果/p_food_019_live.jpg", imageUrls = listOf("/images/坚果/p_food_019_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_food_019/400/400", imageUrls = listOf("https://picsum.photos/seed/p_food_019/400/400"),
             category = "坚果", brand = "百草味", source = "",
             ratingCount = 4, rating = 3.2f,
             rankReason = "里面包含巴旦木仁 | 夏威夷果仁 | 核桃仁4种纯坚果",
@@ -114,7 +114,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_food_010", title = "良品铺子 肉松饼1000g/箱 松软糕点休闲零食早餐代餐点心",
             price = 59.0,
-            imageUrl = "/images/坚果/p_food_010_live.jpg", imageUrls = listOf("/images/坚果/p_food_010_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_food_010/400/400", imageUrls = listOf("https://picsum.photos/seed/p_food_010/400/400"),
             category = "坚果", brand = "良品铺子", source = "",
             ratingCount = 5, rating = 3.2f,
             rankReason = "肉松饼实打实的国民解馋小点心 | 皮薄得能透出内里满满的肉松 | 咬一口外层酥软掉渣",
@@ -123,7 +123,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_food_009", title = "三只松鼠 每日坚果750g/30袋 混合坚果仁干果礼盒独立小包装",
             price = 99.0,
-            imageUrl = "/images/坚果/p_food_009_live.jpg", imageUrls = listOf("/images/坚果/p_food_009_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_food_009/400/400", imageUrls = listOf("https://picsum.photos/seed/p_food_009/400/400"),
             category = "坚果", brand = "三只松鼠", source = "",
             ratingCount = 3, rating = 4.0f,
             rankReason = "750g | 每日坚果专门懒得搭配坚果 | 整整30袋总重750g",
@@ -133,7 +133,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_005", title = "李宁 运动生活系列 男子连帽套头卫衣 基础Logo印花上衣",
             price = 259.0,
-            imageUrl = "/images/外套/p_clothes_005_live.jpg", imageUrls = listOf("/images/外套/p_clothes_005_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_005/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_005/400/400"),
             category = "外套", brand = "李宁", source = "",
             ratingCount = 3, rating = 4.0f,
             rankReason = "运动生活系列男连帽套头卫衣 | 日常出街 | 轻运动穿都完全不违和",
@@ -142,7 +142,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_022", title = "adidas Originals 三叶草 男子连帽卫衣 经典logo套头上衣",
             price = 459.0,
-            imageUrl = "/images/外套/p_clothes_022_live.jpg", imageUrls = listOf("/images/外套/p_clothes_022_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_022/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_022/400/400"),
             category = "外套", brand = "阿迪达斯", source = "",
             ratingCount = 3, rating = 4.3f,
             rankReason = "街头潮流爱好者的刚需 | 复古辨识度拉满不撞",
@@ -152,7 +152,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_017", title = "Arc'teryx Gamma Pant 男子软壳长裤耐磨弹力户外徒步攀爬长裤",
             price = 1290.0,
-            imageUrl = "/images/户外/p_clothes_017_live.jpg", imageUrls = listOf("/images/户外/p_clothes_017_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_017/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_017/400/400"),
             category = "户外", brand = "始祖鸟", source = "",
             ratingCount = 5, rating = 4.2f,
             rankReason = "吸湿速干 | 耐磨耐用 | Gamma男软壳长裤",
@@ -161,7 +161,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_024", title = "The North Face Horizon 轻量速干运动鸭舌帽防晒透气户外遮阳帽",
             price = 199.0,
-            imageUrl = "/images/户外/p_clothes_024_live.jpg", imageUrls = listOf("/images/户外/p_clothes_024_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_024/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_024/400/400"),
             category = "户外", brand = "北面", source = "",
             ratingCount = 4, rating = 3.0f,
             rankReason = "80g | 吸湿速干 | 高倍防晒",
@@ -170,7 +170,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_019", title = "Nike Heritage86 Futura Logo 经典刺绣棒球帽 可调节帽围",
             price = 169.0,
-            imageUrl = "/images/户外/p_clothes_019_live.jpg", imageUrls = listOf("/images/户外/p_clothes_019_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_019/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_019/400/400"),
             category = "户外", brand = "Nike", source = "",
             ratingCount = 6, rating = 3.0f,
             rankReason = "帽身用的重磅水洗棉面料",
@@ -180,7 +180,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_digital_016", title = "OPPO Reno 16 Pro 轻薄人像摄影高刷屏快充5G智能手机12+256GB",
             price = 3299.0,
-            imageUrl = "/images/手机/p_digital_016_live.jpg", imageUrls = listOf("/images/手机/p_digital_016_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_digital_016/400/400", imageUrls = listOf("https://picsum.photos/seed/p_digital_016/400/400"),
             category = "手机", brand = "OPPO", source = "",
             ratingCount = 3, rating = 3.0f,
             rankReason = "轻薄便携 | 快充技术 | 高刷屏幕",
@@ -189,7 +189,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_digital_008", title = "小米 17 Ultra 2K高刷屏潜望长焦澎湃芯片影像旗舰5G手机12+256GB",
             price = 7499.0,
-            imageUrl = "/images/手机/p_digital_008_live.jpg", imageUrls = listOf("/images/手机/p_digital_008_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_digital_008/400/400", imageUrls = listOf("https://picsum.photos/seed/p_digital_008/400/400"),
             category = "手机", brand = "小米", source = "",
             ratingCount = 3, rating = 4.3f,
             rankReason = "快充技术 | 高刷屏幕 | 17Ultra专影像发烧友",
@@ -198,7 +198,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_digital_014", title = "OPPO Find N6 内折柔性大屏旗舰折叠屏手机多任务办公影音体验",
             price = 9699.0,
-            imageUrl = "/images/手机/p_digital_014_live.jpg", imageUrls = listOf("/images/手机/p_digital_014_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_digital_014/400/400", imageUrls = listOf("https://picsum.photos/seed/p_digital_014/400/400"),
             category = "手机", brand = "OPPO", source = "",
             ratingCount = 6, rating = 2.8f,
             rankReason = "12GB | 1TB | 搭载经过多次迭代的精工铰链",
@@ -208,7 +208,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_beauty_011", title = "珊珂洗颜专科绵润泡沫洁面乳细腻丰富泡沫温和清洁洁面120g",
             price = 52.0,
-            imageUrl = "/images/洗发水/p_beauty_011_live.jpg", imageUrls = listOf("/images/洗发水/p_beauty_011_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_beauty_011/400/400", imageUrls = listOf("https://picsum.photos/seed/p_beauty_011/400/400"),
             category = "洗发水", brand = "珊珂", source = "",
             ratingCount = 3, rating = 3.3f,
             rankReason = "透明质酸保湿 | 深层保湿 | 敏感肌适用",
@@ -217,7 +217,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_beauty_017", title = "芳珂纳米温和净化卸妆油深层清洁毛孔无添加卸妆液120ml",
             price = 178.0,
-            imageUrl = "/images/洗发水/p_beauty_017_live.jpg", imageUrls = listOf("/images/洗发水/p_beauty_017_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_beauty_017/400/400", imageUrls = listOf("https://picsum.photos/seed/p_beauty_017/400/400"),
             category = "洗发水", brand = "芳珂", source = "",
             ratingCount = 5, rating = 3.4f,
             rankReason = "120ml | 无添加 | 便携设计",
@@ -227,7 +227,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_016", title = "Lululemon Align 高腰紧身裤 25英寸 女士瑜伽裤柔软裸感运动裤",
             price = 880.0,
-            imageUrl = "/images/瑜伽/p_clothes_016_live.jpg", imageUrls = listOf("/images/瑜伽/p_clothes_016_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_016/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_016/400/400"),
             category = "瑜伽", brand = "露露乐蒙", source = "",
             ratingCount = 3, rating = 4.0f,
             rankReason = "Nulu裸感面料 | 裸感面料 | 高腰收腹",
@@ -237,7 +237,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_digital_025", title = "Apple iPad Air 11英寸 2026款 M4 芯片 128GB Wi‑Fi 轻薄学习娱乐平板电脑",
             price = 4799.0,
-            imageUrl = "/images/电脑/p_digital_025_live.jpg", imageUrls = listOf("/images/电脑/p_digital_025_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_digital_025/400/400", imageUrls = listOf("https://picsum.photos/seed/p_digital_025/400/400"),
             category = "电脑", brand = "Apple 苹果", source = "",
             ratingCount = 4, rating = 3.8f,
             rankReason = "455g | 4K画质 | 机身薄至5.9mm",
@@ -246,7 +246,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_digital_004", title = "华为HUAWEI MateBook 14 鸿蒙版 14英寸轻薄高性能生产力笔记本",
             price = 6299.0,
-            imageUrl = "/images/电脑/p_digital_004_live.jpg", imageUrls = listOf("/images/电脑/p_digital_004_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_digital_004/400/400", imageUrls = listOf("https://picsum.photos/seed/p_digital_004/400/400"),
             category = "电脑", brand = "华为", source = "",
             ratingCount = 6, rating = 3.3f,
             rankReason = "16GB | 1TB | 轻薄便携",
@@ -255,7 +255,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_digital_006", title = "Apple MacBook Pro 14英寸 M5 芯片 16GB 512GB 专业高性能笔记本电脑",
             price = 13499.0,
-            imageUrl = "/images/电脑/p_digital_006_live.jpg", imageUrls = listOf("/images/电脑/p_digital_006_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_digital_006/400/400", imageUrls = listOf("https://picsum.photos/seed/p_digital_006/400/400"),
             category = "电脑", brand = "Apple 苹果", source = "",
             ratingCount = 5, rating = 3.8f,
             rankReason = "18小时续航 | 16GB | 1TB",
@@ -265,7 +265,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_beauty_016", title = "AHC塑颜修护全脸眼霜紧致淡纹保湿提亮多效眼周护理30ml",
             price = 139.0,
-            imageUrl = "/images/精华液/p_beauty_016_live.jpg", imageUrls = listOf("/images/精华液/p_beauty_016_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_beauty_016/400/400", imageUrls = listOf("https://picsum.photos/seed/p_beauty_016/400/400"),
             category = "精华液", brand = "AHC", source = "",
             ratingCount = 6, rating = 3.2f,
             rankReason = "30ml | 淡纹紧致 | 敏感肌适用",
@@ -274,7 +274,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_beauty_009", title = "珀莱雅弹润透亮青春精华液双抗精华提亮肤色淡纹保湿精华50ml",
             price = 280.0,
-            imageUrl = "/images/精华液/p_beauty_009_live.jpg", imageUrls = listOf("/images/精华液/p_beauty_009_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_beauty_009/400/400", imageUrls = listOf("https://picsum.photos/seed/p_beauty_009/400/400"),
             category = "精华液", brand = "珀莱雅", source = "",
             ratingCount = 6, rating = 3.3f,
             rankReason = "50ml | 敏感肌适用 | 修护肌肤",
@@ -283,7 +283,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_beauty_005", title = "科颜氏新集焕白均衡亮肤淡斑精华液提亮肤色淡化斑点精华30ml",
             price = 520.0,
-            imageUrl = "/images/精华液/p_beauty_005_live.jpg", imageUrls = listOf("/images/精华液/p_beauty_005_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_beauty_005/400/400", imageUrls = listOf("https://picsum.photos/seed/p_beauty_005/400/400"),
             category = "精华液", brand = "科颜氏", source = "",
             ratingCount = 4, rating = 3.0f,
             rankReason = "透明质酸保湿 | 深层保湿 | 高倍防晒",
@@ -293,7 +293,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_digital_007", title = "华为HUAWEI FreeBuds Pro 5 主动降噪真无线蓝牙耳机高解析音质",
             price = 1699.0,
-            imageUrl = "/images/耳机/p_digital_007_live.jpg", imageUrls = listOf("/images/耳机/p_digital_007_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_digital_007/400/400", imageUrls = listOf("https://picsum.photos/seed/p_digital_007/400/400"),
             category = "耳机", brand = "华为", source = "",
             ratingCount = 5, rating = 3.0f,
             rankReason = "6小时续航 | 主动降噪 | 快充技术",
@@ -302,7 +302,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_digital_018", title = "Apple AirPods Pro 3 主动降噪真无线蓝牙耳机 心率监测版",
             price = 1899.0,
-            imageUrl = "/images/耳机/p_digital_018_live.jpg", imageUrls = listOf("/images/耳机/p_digital_018_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_digital_018/400/400", imageUrls = listOf("https://picsum.photos/seed/p_digital_018/400/400"),
             category = "耳机", brand = "Apple 苹果", source = "",
             ratingCount = 5, rating = 3.0f,
             rankReason = "6小时续航 | 主动降噪 | 空间音频",
@@ -312,7 +312,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_006", title = "Nike Sportswear Club 男子针织运动长裤 基础休闲束脚裤",
             price = 349.0,
-            imageUrl = "/images/裤装/p_clothes_006_live.jpg", imageUrls = listOf("/images/裤装/p_clothes_006_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_006/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_006/400/400"),
             category = "裤装", brand = "Nike", source = "",
             ratingCount = 6, rating = 3.8f,
             rankReason = "采用细腻重磅针织毛圈面料 | 软而不塌上身不易起皱 | 侧边小绣标低调不浮夸",
@@ -321,7 +321,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_004", title = "adidas Essentials 三条纹 男子针织运动长裤 日常休闲收口裤",
             price = 299.0,
-            imageUrl = "/images/裤装/p_clothes_004_live.jpg", imageUrls = listOf("/images/裤装/p_clothes_004_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_004/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_004/400/400"),
             category = "裤装", brand = "阿迪达斯", source = "",
             ratingCount = 5, rating = 3.0f,
             rankReason = "透气舒适 | 纯棉面料 | 摸起来软而不塌不容易起球",
@@ -330,7 +330,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_023", title = "优衣库 男装 DRY 速干运动短裤 轻薄透气训练裤",
             price = 149.0,
-            imageUrl = "/images/裤装/p_clothes_023_live.jpg", imageUrls = listOf("/images/裤装/p_clothes_023_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_023/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_023/400/400"),
             category = "裤装", brand = "优衣库", source = "",
             ratingCount = 6, rating = 3.3f,
             rankReason = "吸湿速干 | 轻薄便携 | 透气舒适",
@@ -340,7 +340,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_010", title = "特步 160X 6.0 PRO 碳板竞速跑鞋马拉松训练比赛轻量跑步鞋",
             price = 999.0,
-            imageUrl = "/images/跑鞋/p_clothes_010_live.jpg", imageUrls = listOf("/images/跑鞋/p_clothes_010_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_010/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_010/400/400"),
             category = "跑鞋", brand = "特步", source = "",
             ratingCount = 4, rating = 3.8f,
             rankReason = "185g | 透气舒适 | 耐磨耐用",
@@ -349,7 +349,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_007", title = "Nike Air Zoom Pegasus 41 男子缓震跑步鞋日常训练公路跑鞋",
             price = 899.0,
-            imageUrl = "/images/跑鞋/p_clothes_007_live.jpg", imageUrls = listOf("/images/跑鞋/p_clothes_007_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_007/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_007/400/400"),
             category = "跑鞋", brand = "耐克", source = "",
             ratingCount = 4, rating = 3.8f,
             rankReason = "透气舒适 | 缓震回弹 | 飞马系列迭代到第41代的训练",
@@ -358,7 +358,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_008", title = "adidas Ultraboost 5 男子缓震跑步鞋针织鞋面日常慢跑训练鞋",
             price = 1399.0,
-            imageUrl = "/images/跑鞋/p_clothes_008_live.jpg", imageUrls = listOf("/images/跑鞋/p_clothes_008_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_008/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_008/400/400"),
             category = "跑鞋", brand = "阿迪达斯", source = "",
             ratingCount = 4, rating = 4.2f,
             rankReason = "缓震回弹 | 温和配方 | 专慢跑爱好者打造的年度升级",
@@ -368,7 +368,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_013", title = "李宁 韦德之道 全城12 实战篮球专业比赛鞋缓震支撑后卫前锋鞋",
             price = 1199.0,
-            imageUrl = "/images/运动鞋/p_clothes_013_live.jpg", imageUrls = listOf("/images/运动鞋/p_clothes_013_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_013/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_013/400/400"),
             category = "运动鞋", brand = "李宁", source = "",
             ratingCount = 5, rating = 3.4f,
             rankReason = "缓震回弹 | 耐磨耐用 | 落地时的反馈软弹不卸力",
@@ -377,7 +377,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_015", title = "Merrell MOAB 3 GTX 男子防水登山徒步鞋稳定支撑户外多地形鞋",
             price = 1099.0,
-            imageUrl = "/images/运动鞋/p_clothes_015_live.jpg", imageUrls = listOf("/images/运动鞋/p_clothes_015_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_015/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_015/400/400"),
             category = "运动鞋", brand = "迈乐", source = "",
             ratingCount = 4, rating = 3.8f,
             rankReason = "缓震回弹 | 防水防汗 | MOAB3GTX男徒步鞋",
@@ -386,7 +386,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_clothes_011", title = "Nike LeBron XXI EP 男子中帮实战篮球鞋全掌缓震室内外场地训练鞋",
             price = 1599.0,
-            imageUrl = "/images/运动鞋/p_clothes_011_live.jpg", imageUrls = listOf("/images/运动鞋/p_clothes_011_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_clothes_011/400/400", imageUrls = listOf("https://picsum.photos/seed/p_clothes_011/400/400"),
             category = "运动鞋", brand = "耐克", source = "",
             ratingCount = 3, rating = 2.3f,
             rankReason = "缓震回弹 | 起跳落地时能快速卸掉冲击力 | 变相突破时也能保持鞋底贴地感",
@@ -396,7 +396,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_beauty_023", title = "理肤泉特护清盈防晒乳高倍防晒清爽控油易敏肌适用面部防晒50ml",
             price = 268.0,
-            imageUrl = "/images/防晒/p_beauty_023_live.jpg", imageUrls = listOf("/images/防晒/p_beauty_023_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_beauty_023/400/400", imageUrls = listOf("https://picsum.photos/seed/p_beauty_023/400/400"),
             category = "防晒", brand = "理肤泉", source = "",
             ratingCount = 6, rating = 2.8f,
             rankReason = "50ml | 高倍防晒 | 轻薄便携",
@@ -405,7 +405,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_beauty_010", title = "安热沙金灿倍护防晒乳高倍防水防汗清爽户外面部身体防晒60ml",
             price = 298.0,
-            imageUrl = "/images/防晒/p_beauty_010_live.jpg", imageUrls = listOf("/images/防晒/p_beauty_010_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_beauty_010/400/400", imageUrls = listOf("https://picsum.photos/seed/p_beauty_010/400/400"),
             category = "防晒", brand = "安热沙", source = "",
             ratingCount = 3, rating = 3.7f,
             rankReason = "深层保湿 | 高倍防晒 | 敏感肌适用",
@@ -414,7 +414,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_beauty_006", title = "巴黎欧莱雅新多重防护隔离露水感轻薄高倍防晒修护提亮30ml",
             price = 170.0,
-            imageUrl = "/images/防晒/p_beauty_006_live.jpg", imageUrls = listOf("/images/防晒/p_beauty_006_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_beauty_006/400/400", imageUrls = listOf("https://picsum.photos/seed/p_beauty_006/400/400"),
             category = "防晒", brand = "巴黎欧莱雅", source = "",
             ratingCount = 6, rating = 3.7f,
             rankReason = "高倍防晒 | 轻薄便携 | 敏感肌适用",
@@ -424,7 +424,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_food_018", title = "李锦记 特级草菇老抽 1.65L 瓶装酱油 家庭厨房调味品",
             price = 29.0,
-            imageUrl = "/images/零食/p_food_018_live.jpg", imageUrls = listOf("/images/零食/p_food_018_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_food_018/400/400", imageUrls = listOf("https://picsum.photos/seed/p_food_018/400/400"),
             category = "零食", brand = "李锦记", source = "",
             ratingCount = 5, rating = 3.6f,
             rankReason = "特级草菇老抽 | 晒足180天的传统工艺酿造 | 上色红亮挂壁不发苦",
@@ -433,7 +433,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_food_011", title = "康师傅 经典红烧牛肉面110g*12桶装方便面泡面速食面整箱装",
             price = 45.0,
-            imageUrl = "/images/零食/p_food_011_live.jpg", imageUrls = listOf("/images/零食/p_food_011_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_food_011/400/400", imageUrls = listOf("https://picsum.photos/seed/p_food_011/400/400"),
             category = "零食", brand = "康师傅", source = "",
             ratingCount = 5, rating = 3.0f,
             rankReason = "搭配专属熬制的红烧牛肉酱包 | 金黄脱水蔬菜包和鲜香风味粉包 | 泡开后牛肉香直钻鼻子",
@@ -442,7 +442,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_food_013", title = "海天 金标生抽1.9L 瓶装酱油 家用厨房调味料酱香鲜味佐餐蘸料",
             price = 22.0,
-            imageUrl = "/images/零食/p_food_013_live.jpg", imageUrls = listOf("/images/零食/p_food_013_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_food_013/400/400", imageUrls = listOf("https://picsum.photos/seed/p_food_013/400/400"),
             category = "零食", brand = "海天", source = "",
             ratingCount = 3, rating = 3.3f,
             rankReason = "500ml | 金标生抽1.9L大瓶装 | 无数家庭厨房的常驻调味王牌",
@@ -452,7 +452,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_beauty_022", title = "薇诺娜极润保湿面膜密集补水舒缓修护肌肤屏障涂抹式面膜75g",
             price = 199.0,
-            imageUrl = "/images/面霜/p_beauty_022_live.jpg", imageUrls = listOf("/images/面霜/p_beauty_022_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_beauty_022/400/400", imageUrls = listOf("https://picsum.photos/seed/p_beauty_022/400/400"),
             category = "面霜", brand = "薇诺娜", source = "",
             ratingCount = 6, rating = 3.2f,
             rankReason = "25g | 深层保湿 | 便携设计",
@@ -461,7 +461,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_beauty_020", title = "雅诗兰黛持妆粉底液SPF10PA持久遮瑕控油抗汗清透底妆30ml",
             price = 440.0,
-            imageUrl = "/images/面霜/p_beauty_020_live.jpg", imageUrls = listOf("/images/面霜/p_beauty_020_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_beauty_020/400/400", imageUrls = listOf("https://picsum.photos/seed/p_beauty_020/400/400"),
             category = "面霜", brand = "雅诗兰黛", source = "",
             ratingCount = 5, rating = 3.6f,
             rankReason = "30ml | 深层保湿 | 高倍防晒",
@@ -470,7 +470,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_beauty_014", title = "花西子空气蜜粉轻盈定妆控油提亮肤色细腻粉质散粉8.5g",
             price = 169.0,
-            imageUrl = "/images/面霜/p_beauty_014_live.jpg", imageUrls = listOf("/images/面霜/p_beauty_014_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_beauty_014/400/400", imageUrls = listOf("https://picsum.photos/seed/p_beauty_014/400/400"),
             category = "面霜", brand = "花西子", source = "",
             ratingCount = 4, rating = 3.5f,
             rankReason = "5g | 天然成分 | 敏感肌适用",
@@ -480,7 +480,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_food_008", title = "蒙牛 纯甄 常温风味酸牛奶经典原味200g*10盒发酵乳饮品",
             price = 55.0,
-            imageUrl = "/images/饮料/p_food_008_live.jpg", imageUrls = listOf("/images/饮料/p_food_008_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_food_008/400/400", imageUrls = listOf("https://picsum.photos/seed/p_food_008/400/400"),
             category = "饮料", brand = "纯甄", source = "",
             ratingCount = 5, rating = 3.2f,
             rankReason = "经典原味常温酸牛奶 | 生牛乳发酵出的口感绵密丝滑 | 酸香里裹着淡淡的自然乳甜",
@@ -489,7 +489,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_food_017", title = "伊利 安慕希 希腊风味常温酸奶 原味 205g×10 盒装",
             price = 68.0,
-            imageUrl = "/images/饮料/p_food_017_live.jpg", imageUrls = listOf("/images/饮料/p_food_017_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_food_017/400/400", imageUrls = listOf("https://picsum.photos/seed/p_food_017/400/400"),
             category = "饮料", brand = "伊利", source = "",
             ratingCount = 3, rating = 3.0f,
             rankReason = "天然成分 | 安慕希原味希腊风味常温酸奶 | 采用甄选优质生牛乳发酵",
@@ -498,7 +498,7 @@ val mockProducts = listOf(
         Product(
             productId = "p_food_006", title = "红牛 维生素功能饮料250ml*24罐整箱补充能量含牛磺酸咖啡因",
             price = 120.0,
-            imageUrl = "/images/饮料/p_food_006_live.jpg", imageUrls = listOf("/images/饮料/p_food_006_live.jpg"),
+            imageUrl = "https://picsum.photos/seed/p_food_006/400/400", imageUrls = listOf("https://picsum.photos/seed/p_food_006/400/400"),
             category = "饮料", brand = "红牛", source = "",
             ratingCount = 6, rating = 2.7f,
             rankReason = "250ml | 维生素功能饮料 | 每罐250ml科学配比牛磺酸",

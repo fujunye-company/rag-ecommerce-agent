@@ -2,12 +2,14 @@ package com.shopping.agent.data.local
 
 import android.content.ContentValues
 import android.content.Context
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.shopping.agent.data.model.CartItem
 import com.shopping.agent.data.model.ChatMessage
 import com.shopping.agent.data.model.MessageRole
 import com.shopping.agent.data.model.Product
+import com.shopping.agent.data.model.WebSearchItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -54,16 +56,23 @@ class UserRepository(context: Context) {
     // ═══════════════════════════════════════════════════════
 
     suspend fun createConversation(id: String, title: String = "") = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
         val cv = ContentValues().apply {
             put("id", id)
             put("title", title)
-            put("created_at", System.currentTimeMillis())
-            put("updated_at", System.currentTimeMillis())
+            put("created_at", now)
+            put("updated_at", now)
         }
+        // INSERT OR IGNORE preserves existing rows (and their created_at)
         db.writableDatabase.insertWithOnConflict(
             LocalDatabase.TABLE_CONVERSATIONS, null, cv,
             android.database.sqlite.SQLiteDatabase.CONFLICT_IGNORE
         )
+        // Always refresh updated_at so the conversation moves to top of list
+        val updateCv = ContentValues().apply {
+            put("updated_at", now)
+        }
+        db.writableDatabase.update(LocalDatabase.TABLE_CONVERSATIONS, updateCv, "id=?", arrayOf(id))
     }
 
     suspend fun getConversations(limit: Int = 20): List<Map<String, String>> = withContext(Dispatchers.IO) {
@@ -127,6 +136,7 @@ class UserRepository(context: Context) {
             put("role", message.role.name)
             put("content", message.content)
             put("product_cards", gson.toJson(message.productCards))
+            put("web_search_results", gson.toJson(message.webSearchResults))
             put("status", message.status.name)
             put("created_at", System.currentTimeMillis())
         }
@@ -135,9 +145,9 @@ class UserRepository(context: Context) {
             android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE
         )
 
-        // 更新会话元数据
+        // 更新会话元数据 (COUNT(*) 已含本消息，不再 +1)
         val convCv = ContentValues().apply {
-            put("message_count", getMessageCount(conversationId) + 1)
+            put("message_count", getMessageCount(conversationId))
             put("last_message", message.content.take(100))
             put("updated_at", System.currentTimeMillis())
         }
@@ -157,13 +167,25 @@ class UserRepository(context: Context) {
             val cardsJson = cursor.getString(cursor.getColumnIndexOrThrow("product_cards")) ?: "[]"
             val cards: List<Product> = try {
                 gson.fromJson(cardsJson, object : TypeToken<List<Product>>() {}.type)
-            } catch (_: Exception) { emptyList() }
+            } catch (e: Exception) {
+                Log.e("UserRepository", "Failed to deserialize product cards", e)
+                emptyList()
+            }
+
+            val webJson = cursor.getString(cursor.getColumnIndexOrThrow("web_search_results")) ?: "[]"
+            val webResults: List<WebSearchItem> = try {
+                gson.fromJson(webJson, object : TypeToken<List<WebSearchItem>>() {}.type)
+            } catch (e: Exception) {
+                Log.e("UserRepository", "Failed to deserialize web search results", e)
+                emptyList()
+            }
 
             list.add(ChatMessage(
                 id = cursor.getString(cursor.getColumnIndexOrThrow("id")),
                 role = MessageRole.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("role"))),
                 content = cursor.getString(cursor.getColumnIndexOrThrow("content")) ?: "",
                 productCards = cards,
+                webSearchResults = webResults,
                 status = com.shopping.agent.data.model.MessageStatus.valueOf(
                     cursor.getString(cursor.getColumnIndexOrThrow("status")) ?: "Sent"
                 ),

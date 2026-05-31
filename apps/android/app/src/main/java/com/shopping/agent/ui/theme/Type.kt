@@ -11,13 +11,20 @@ val NumberFontFamily = FontFamily.Monospace
 val AppTypography = Typography(
     displayLarge = TextStyle(
         fontSize = 28.sp,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Light,
         lineHeight = 34.sp,
+        letterSpacing = (-0.5).sp,
+    ),
+    headlineLarge = TextStyle(
+        fontSize = 22.sp,
+        fontWeight = FontWeight.Normal,
+        lineHeight = 28.sp,
+        letterSpacing = (-0.25).sp,
     ),
     headlineMedium = TextStyle(
-        fontSize = 22.sp,
-        fontWeight = FontWeight.SemiBold,
-        lineHeight = 28.sp,
+        fontSize = 20.sp,
+        fontWeight = FontWeight.Normal,
+        lineHeight = 26.sp,
     ),
     titleMedium = TextStyle(
         fontSize = 18.sp,
@@ -25,7 +32,7 @@ val AppTypography = Typography(
         lineHeight = 24.sp,
     ),
     bodyLarge = TextStyle(
-        fontSize = 16.sp,
+        fontSize = 17.sp,
         fontWeight = FontWeight.Normal,
         lineHeight = 24.sp,
     ),

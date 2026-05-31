@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -22,14 +21,8 @@ import androidx.compose.ui.unit.dp
 import com.shopping.agent.ui.theme.*
 import com.shopping.agent.data.mock.MockProfile
 
-// ===== ProfileHeader 渐变 =====
-private val ProfileGradient = Brush.horizontalGradient(
-    colorStops = arrayOf(
-        0.0f to Color(0xFFC5D9F0),
-        0.5f to Color(0xFFEDE7F0),
-        1.0f to Color(0xFFF5D5D8),
-    ),
-)
+// ===== ProfileHeader 背景色 =====
+private val ProfileHeaderBg = Color(0xFFEBF3FC)
 
 /**
  * 用户头部区域 — 蓝粉渐变 + 头像 + 用户名 fujunye + 官方客服 + 设置
@@ -41,7 +34,7 @@ private fun ProfileHeader(onSettingsClick: () -> Unit = {}) {
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
-            .background(ProfileGradient),
+            .background(ProfileHeaderBg),
     ) {
         // 右侧: 客服 + 设置
         Row(

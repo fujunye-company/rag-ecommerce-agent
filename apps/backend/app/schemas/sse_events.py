@@ -43,6 +43,7 @@ class DoneEvent(BaseModel, SSEMixin):
     total_cards: int = 0
     latency_ms: int = 0
     message: str = ""
+    slots: dict = {}  # 当前会话状态，含 exclude_by_category 等
 
 
 class ProgressEvent(BaseModel, SSEMixin):
@@ -82,5 +83,15 @@ class ClarifyEvent(BaseModel, SSEMixin):
     options: list[str] = []  # 可选引导选项，如 ["拍照", "续航", "性价比"]
 
 
+class WebSearchResultEvent(BaseModel, SSEMixin):
+    """联网搜索结果 — 单条搜索结果的标题+链接+摘要"""
+    type: str = "web_search_result"
+    title: str
+    url: str
+    snippet: str
+    index: int = 0
+    total: int = 0
+
+
 # ── 联合类型 ──
-SSEEvent = TextDeltaEvent | ProductCardEvent | DoneEvent | ErrorEvent | ProgressEvent | ClarifyEvent
+SSEEvent = TextDeltaEvent | ProductCardEvent | DoneEvent | ErrorEvent | ProgressEvent | ClarifyEvent | WebSearchResultEvent

@@ -49,6 +49,8 @@ fun HistoryDrawer(
 ) {
     if (!visible) return
 
+    var searchQuery by remember { mutableStateOf("") }
+
     val drawerOffsetX by animateDpAsState(
         targetValue = if (visible) 0.dp else (-320).dp,
         animationSpec = tween(300),
@@ -82,15 +84,20 @@ fun HistoryDrawer(
             shadowElevation = 16.dp,
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                DrawerTopSection(onNewChat = {
-                    onNewChat()
-                    onDismiss()
-                })
+                DrawerTopSection(
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = { searchQuery = it },
+                    onNewChat = {
+                        onNewChat()
+                        onDismiss()
+                    },
+                )
 
                 HorizontalDivider(color = Neutral100)
 
                 DrawerSessionList(
                     conversations = conversations,
+                    searchQuery = searchQuery,
                     currentConversationId = currentConversationId,
                     onSessionClick = { id ->
                         onSessionClick(id)
@@ -108,13 +115,15 @@ fun HistoryDrawer(
 }
 
 @Composable
-private fun DrawerTopSection(onNewChat: () -> Unit) {
-    var searchQuery by remember { mutableStateOf("") }
-
+private fun DrawerTopSection(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onNewChat: () -> Unit,
+) {
     Column(modifier = Modifier.padding(16.dp)) {
         OutlinedTextField(
             value = searchQuery,
-            onValueChange = { searchQuery = it },
+            onValueChange = onSearchQueryChange,
             placeholder = { Text("搜索历史会话", color = Neutral400) },
             leadingIcon = { Icon(Icons.Default.Search, "搜索", tint = Neutral500) },
             singleLine = true,
@@ -150,21 +159,29 @@ private fun DrawerTopSection(onNewChat: () -> Unit) {
 @Composable
 private fun DrawerSessionList(
     conversations: List<ConversationMeta>,
+    searchQuery: String,
     currentConversationId: String,
     onSessionClick: (String) -> Unit,
     onDeleteConversation: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (conversations.isEmpty()) {
+    val filtered = if (searchQuery.isBlank()) conversations
+    else conversations.filter { it.title.contains(searchQuery, ignoreCase = true) }
+
+    if (filtered.isEmpty()) {
         Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("暂无历史对话", color = Neutral400, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                if (searchQuery.isNotBlank()) "未找到匹配的会话" else "暂无历史对话",
+                color = Neutral400,
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
         return
     }
 
     // 按月份分组
     val dateFormat = SimpleDateFormat("yyyy年M月", Locale.CHINESE)
-    val groups = conversations.groupBy { meta ->
+    val groups = filtered.groupBy { meta ->
         dateFormat.format(Date(meta.updatedAt))
     }
 

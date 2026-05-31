@@ -114,7 +114,7 @@ fun CartScreen(
                     }
                     Button(
                         onClick = { viewModel.placeOrder() },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RadiusFull,
                         colors = ButtonDefaults.buttonColors(containerColor = Primary),
                         modifier = Modifier.height(48.dp),
                         enabled = !uiState.isLoading,
@@ -150,7 +150,7 @@ fun CartScreen(
                         Spacer(Modifier.height(16.dp))
                         Button(
                             onClick = { viewModel.dismissOrderResult() },
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RadiusFull,
                             colors = ButtonDefaults.buttonColors(containerColor = Primary),
                         ) {
                             Text("完成", color = OnPrimary)

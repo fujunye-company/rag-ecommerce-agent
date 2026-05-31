@@ -135,7 +135,7 @@ fun CompareTabScreen() {
                         }
                     },
                     enabled = !aiCompareLoading && displayProducts.size >= 2,
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RadiusFull,
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     modifier = Modifier.height(34.dp)
                 ) {
@@ -213,14 +213,13 @@ private fun CompareSearchBar(
     onSend: () -> Unit,
     placeholder: String,
 ) {
-    Surface(shadowElevation = 3.dp, color = Neutral0) {
-        Row(
-            Modifier
-                .padding(horizontal = Dimens.space3, vertical = Dimens.space2)
-                .fillMaxWidth()
-                .navigationBarsPadding(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    Row(
+        Modifier
+            .padding(horizontal = Dimens.space3, vertical = 6.dp)
+            .padding(bottom = 4.dp)
+            .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
             // 拍照搜物图标
             IconButton(onClick = {}, modifier = Modifier.size(44.dp)) {
                 Icon(Icons.Default.CameraAlt, "拍照搜物", tint = Neutral500)
@@ -282,7 +281,6 @@ private fun CompareSearchBar(
                 Icon(Icons.AutoMirrored.Filled.Send, "发送", tint = OnPrimary)
             }
         }
-    }
 }
 
 // ===== 统一 2 列商品网格 =====
@@ -315,7 +313,7 @@ private fun CompareProductGrid(
                             Text("¥${"%.0f".format(product.price)}", style = PriceMedium,
                                 color = TextPrice, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.width(8.dp))
-                            if (product.ratingCount != null) {
+                            if (product.ratingCount > 0) {
                                 Text(formatSalesCount(product.ratingCount),
                                     style = MaterialTheme.typography.bodySmall, color = Neutral500)
                             }

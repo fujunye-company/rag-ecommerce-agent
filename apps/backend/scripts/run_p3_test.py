@@ -4,7 +4,7 @@ P@3 Retrieval Precision Test — post UUID5 fix verification
 Directly queries Qdrant with embedded test queries, computes Precision@3
 against ground truth product IDs. Does NOT require the backend server.
 
-Usage: python scripts/run_p3_test.py [--limit N] [--update-ground-truth]
+Usage: python scripts/run_p3_test.py [--limit N] [--update-ground-truth] [--with-reranker]
 """
 import argparse
 import json
@@ -18,6 +18,7 @@ import requests
 from sentence_transformers import SentenceTransformer
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, BASE_DIR)
 EVAL_CASES_PATH = os.path.join(BASE_DIR, "data", "test_cases", "eval_cases.json")
 OUTPUT_PATH = os.path.join(BASE_DIR, "data", "test_cases", "p3_results.json")
 QDRANT_URL = "http://localhost:6333"
@@ -49,15 +50,30 @@ def load_all_products() -> list[dict]:
     return products
 
 
-def search_qdrant(model, query: str, top_k: int = 10) -> list[str]:
-    """Embed query and search Qdrant, return list of product_ids."""
+def search_qdrant_hits(model, query: str, top_k: int = 10) -> list[dict]:
+    """Embed query and search Qdrant, return raw hits with payload."""
     vec = model.encode(query, normalize_embeddings=True).tolist()
     url = f"{QDRANT_URL}/collections/{COLLECTION}/points/search"
     body = {"vector": vec, "limit": top_k, "with_payload": True}
     resp = requests.post(url, json=body, timeout=30)
     resp.raise_for_status()
-    results = resp.json()["result"]
-    return [r["payload"].get("product_id", "") for r in results]
+    return resp.json()["result"]
+
+
+def search_qdrant(model, query: str, top_k: int = 10, with_reranker: bool = False) -> list[str]:
+    """Embed query and search Qdrant, optionally rerank top-10 before P@3."""
+    hits = search_qdrant_hits(model, query, top_k=top_k)
+    if with_reranker and hits:
+        from app.services.reranker import rerank
+
+        docs = [
+            {"id": h.get("id"), "score": h.get("score", 0), "payload": h.get("payload", {})}
+            for h in hits
+        ]
+        docs = rerank(query, docs, top_k=top_k)
+        return [d["payload"].get("product_id", "") for d in docs]
+
+    return [r["payload"].get("product_id", "") for r in hits]
 
 
 def build_ground_truth_map(products: list[dict]) -> dict[str, list[str]]:
@@ -210,7 +226,7 @@ def update_eval_cases_ground_truth(cat_map: dict[str, list]):
     return cases
 
 
-def main(limit: int = 0, update_gt: bool = False):
+def main(limit: int = 0, update_gt: bool = False, with_reranker: bool = False):
     print("=" * 60)
     print("P@3 Retrieval Precision Test")
     print("=" * 60)
@@ -254,7 +270,8 @@ def main(limit: int = 0, update_gt: bool = False):
         cases = cases[:limit]
 
     # 4. Run retrieval test
-    print(f"\n[4/4] Running P@3 test on {len(cases)} cases...")
+    mode = "vector+reranker" if with_reranker else "vector-only"
+    print(f"\n[4/4] Running P@3 test on {len(cases)} cases ({mode})...")
     results = []
     p3_scores = []
     recall_scores = []
@@ -265,7 +282,7 @@ def main(limit: int = 0, update_gt: bool = False):
         gt_ids = case.get("ground_truth_product_ids", [])
 
         t0 = time.time()
-        retrieved = search_qdrant(model, query, top_k=10)
+        retrieved = search_qdrant(model, query, top_k=10, with_reranker=with_reranker)
         latency = (time.time() - t0) * 1000
 
         p3 = compute_precision_at_k(retrieved, gt_ids, k=3)
@@ -327,6 +344,7 @@ def main(limit: int = 0, update_gt: bool = False):
             "total_cases": len(cases),
             "embedding_model": EMBEDDING_MODEL,
             "qdrant_collection": COLLECTION,
+            "retrieval_mode": mode,
         },
         "summary": {
             "mean_p3": round(avg_p3, 4),
@@ -371,5 +389,7 @@ if __name__ == "__main__":
     parser.add_argument("--limit", type=int, default=0, help="Limit number of cases")
     parser.add_argument("--update-ground-truth", action="store_true",
                         help="Auto-generate ground truth from product data")
+    parser.add_argument("--with-reranker", action="store_true",
+                        help="Apply app.services.reranker to the top-10 hits before scoring")
     args = parser.parse_args()
-    main(limit=args.limit, update_gt=args.update_ground_truth)
+    main(limit=args.limit, update_gt=args.update_ground_truth, with_reranker=args.with_reranker)

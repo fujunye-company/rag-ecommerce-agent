@@ -2,11 +2,11 @@
 # ============================================================
 # 拾物 E2E 场景测试 — 覆盖竞赛 9 场景 + 加分项
 # 用法: bash tests/e2e_scenarios.sh [BASE_URL]
-# 默认: http://localhost:8082/api/v1
+# 默认: http://localhost:8080/api/v1
 # ============================================================
 set -euo pipefail
 
-BASE="${1:-http://localhost:8082/api/v1}"
+BASE="${1:-http://localhost:8080/api/v1}"
 PASS=0; FAIL=0; TOTAL=0
 SESSION=""
 

@@ -44,3 +44,24 @@ apps/backend/data/qdrant_storage/
 # Environment files with real keys (templates use .env.example)
 apps/backend/.env
 infrastructure/env/.env
+
+# Android release binaries + local config
+/apps/android/app/release
+/apps/android/gradle.properties
+
+# Downloaded ML models (large files, download via SETUP.md)
+/apps/backend/data/models/bge-large-zh-v1.5
+/apps/backend/data/models/bge-reranker-v2-m3
+/apps/android/AGENTS.md
+/.agents/skills
+/skills-lock.json
+/apps/android/app/debug
+/apps/android/GENERATE_ERRORS.md
+/apps/android/CLAUDE.md
+
+# JVM crash logs
+hs_err_pid*.log
+replay_pid*.log
+
+# Kotlin compiler error logs
+apps/android/.kotlin/

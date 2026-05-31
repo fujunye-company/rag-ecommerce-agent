@@ -19,4 +19,17 @@ sealed class Screen(val route: String) {
     data object CompareScreen : Screen("compare_screen")
     data object Settings : Screen("settings")
     data object History : Screen("history")
+
+    // 设置子页面
+    data object ShippingAddress : Screen("shipping_address")
+    data object PaymentSettings : Screen("payment_settings")
+    data object CountryRegion : Screen("country_region")
+
+    // 认证相关页面
+    data object Login : Screen("login")
+    data object Register : Screen("register")
+    data object ForgotPassword : Screen("forgot_password")
+    data object PasswordReset : Screen("password_reset/{account}") {
+        fun createRoute(account: String) = "password_reset/$account"
+    }
 }

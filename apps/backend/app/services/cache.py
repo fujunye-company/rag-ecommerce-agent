@@ -17,14 +17,15 @@ MAX_SIZE = 100
 TTL_SECONDS = 300
 
 # 缓存版本 — 参数变更时递增，自动失效旧缓存（top_k=3 修复等）
-CACHE_VERSION = 2
+CACHE_VERSION = 3
 
 # 动态查询关键词 — 命中则不缓存
 SKIP_CACHE_KEYWORDS = ["购物车", "加购", "加到购物车", "加入购物车", "查看购物车", "清空购物车", "下单"]
 
 
-def _key(query: str) -> str:
-    return hashlib.md5(query.strip().lower().encode()).hexdigest()
+def _key(query: str, cache_key: str | None = None) -> str:
+    raw = cache_key if cache_key is not None else query
+    return hashlib.md5(raw.strip().lower().encode()).hexdigest()
 
 
 def _is_dynamic(query: str) -> bool:
@@ -32,11 +33,11 @@ def _is_dynamic(query: str) -> bool:
     return any(kw in query for kw in SKIP_CACHE_KEYWORDS)
 
 
-async def get(query: str) -> dict | None:
+async def get(query: str, cache_key: str | None = None) -> dict | None:
     """查询缓存，返回 {response, cards, _v} 或 None"""
     if _is_dynamic(query):
         return None
-    k = _key(query)
+    k = _key(query, cache_key)
     async with _lock:
         if k in _cache:
             ts, value = _cache[k]
@@ -54,11 +55,11 @@ async def get(query: str) -> dict | None:
     return None
 
 
-async def set(query: str, response: str, cards: list):
+async def set(query: str, response: str, cards: list, cache_key: str | None = None):
     """写入缓存"""
     if _is_dynamic(query):
         return
-    k = _key(query)
+    k = _key(query, cache_key)
     async with _lock:
         if len(_cache) >= MAX_SIZE:
             _cache.popitem(last=False)

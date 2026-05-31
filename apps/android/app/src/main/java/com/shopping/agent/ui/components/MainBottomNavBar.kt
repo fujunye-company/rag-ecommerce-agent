@@ -15,11 +15,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.shopping.agent.ui.theme.Neutral500
-import com.shopping.agent.ui.theme.Neutral0
 
 data class BottomNavItem(
     val route: String,
@@ -42,7 +41,7 @@ fun MainBottomNavBar(
     onNavigate: (String) -> Unit
 ) {
     NavigationBar(
-        containerColor = Neutral0,
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
         bottomNavItems.forEach { item ->
             val isSelected = currentRoute == item.route
@@ -57,8 +56,8 @@ fun MainBottomNavBar(
                 },
                 label = { Text(item.label) },
                 colors = NavigationBarItemDefaults.colors(
-                    unselectedIconColor  = Neutral500,
-                    unselectedTextColor  = Neutral500,
+                    unselectedIconColor  = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor  = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
             )
         }

@@ -6,6 +6,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -26,7 +27,8 @@ val LocalOnMenuClick = staticCompositionLocalOf<() -> Unit> { {} }
 
 @Composable
 fun AppNavGraph(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    startDestination: String = "home",
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -53,7 +55,7 @@ fun AppNavGraph(
                     }
                 }
             ) { innerPadding ->
-                NavHost(navController = navController, startDestination = "home",
+                NavHost(navController = navController, startDestination = startDestination,
                     modifier = Modifier.padding(innerPadding)) {
                     composable("home") {
                         HomeScreen(
@@ -78,10 +80,131 @@ fun AppNavGraph(
                         )
                     }
                     composable("profile") {
-                        ProfileScreen(onSettingsClick = { navController.navigate("settings") })
+                        ProfileScreen(
+                            onSettingsClick = { navController.navigate("settings") },
+                            onCustomerServiceClick = { navController.navigate("customer_service") },
+                        )
                     }
                     composable("cart") { CartScreen(onBack = { navController.popBackStack() }) }
-                    composable("settings") { SettingsScreen(onBack = { navController.popBackStack() }) }
+                    composable("settings") {
+                        val ctx = androidx.compose.ui.platform.LocalContext.current
+                        val repo = remember { com.shopping.agent.data.local.UserRepository(ctx) }
+                        val scope = rememberCoroutineScope()
+
+                        /** 检查游客状态，游客则跳转登录页，否则执行目标导航 */
+                        fun guardedNavigate(route: String) {
+                            scope.launch {
+                                val isGuest = try {
+                                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                        repo.isGuestUser()
+                                    }
+                                } catch (_: Exception) { true }
+                                if (isGuest) {
+                                    android.widget.Toast.makeText(ctx, "请先登录后再使用此功能", android.widget.Toast.LENGTH_SHORT).show()
+                                    navController.navigate("login")
+                                } else {
+                                    navController.navigate(route)
+                                }
+                            }
+                        }
+
+                        SettingsScreen(
+                            onBack = { navController.popBackStack() },
+                            onNavigateToProfileEdit = { navController.navigate("profile_edit") },
+                            onNavigateToShippingAddress = { guardedNavigate("shipping_address") },
+                            onNavigateToPaymentSettings = { guardedNavigate("payment_settings") },
+                            onNavigateToCountryRegion = { guardedNavigate("country_region") },
+                            onSwitchAccount = {
+                                scope.launch {
+                                    try {
+                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                            repo.deleteCredentials()
+                                        }
+                                    } catch (_: Exception) {}
+                                    navController.navigate("login")
+                                }
+                            },
+                            onLogout = {
+                                scope.launch {
+                                    try {
+                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                            repo.deleteCredentials()
+                                        }
+                                    } catch (_: Exception) {}
+                                    navController.navigate("login") {
+                                        popUpTo("home") { inclusive = true }
+                                        launchSingleTop = true
+                                    }
+                                }
+                            },
+                        )
+                    }
+                    composable("profile_edit") {
+                        ProfileEditScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable("customer_service") {
+                        CustomerServiceScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable("shipping_address") {
+                        ShippingAddressScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable("payment_settings") {
+                        PaymentSettingsScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable("country_region") {
+                        CountryRegionScreen(onBack = { navController.popBackStack() })
+                    }
+                    composable("login") {
+                        LoginScreen(
+                            onBack = {
+                                // 如果登录页是启动目标（首次启动未登录），不允许通过返回键离开
+                                if (navController.previousBackStackEntry != null) {
+                                    navController.popBackStack()
+                                }
+                            },
+                            onLoginSuccess = {
+                                navController.navigate("home") {
+                                    popUpTo("login") { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            },
+                            onNavigateToRegister = { navController.navigate("register") },
+                            onNavigateToForgotPassword = { navController.navigate("forgot_password") },
+                            onGuestLogin = {
+                                navController.navigate("home") {
+                                    popUpTo("login") { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            },
+                        )
+                    }
+                    composable("register") {
+                        RegisterScreen(
+                            onBack = { navController.popBackStack() },
+                            onRegisterSuccess = { navController.popBackStack() },
+                        )
+                    }
+                    composable("forgot_password") {
+                        ForgotPasswordScreen(
+                            onBack = { navController.popBackStack() },
+                            onNavigateToPasswordReset = { account ->
+                                navController.navigate("password_reset/$account")
+                            },
+                        )
+                    }
+                    composable("password_reset/{account}",
+                        arguments = listOf(navArgument("account") { type = NavType.StringType })) { entry ->
+                        PasswordResetScreen(
+                            onBack = { navController.popBackStack() },
+                            onResetSuccess = {
+                                navController.navigate("login") {
+                                    popUpTo("login") { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            },
+                            account = entry.arguments?.getString("account") ?: "",
+                        )
+                    }
                     composable("category_list") { CategoryListScreen(navController = navController) }
                     composable("explore_post/{postId}",
                         arguments = listOf(navArgument("postId") { type = NavType.StringType })) { entry ->
@@ -115,6 +238,14 @@ fun AppNavGraph(
                 },
                 onDeleteConversation = { convId ->
                     chatViewModel.deleteConversation(convId)
+                },
+                onProfileClick = {
+                    drawerVisible = false
+                    navController.navigate("profile") {
+                        popUpTo("home") { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 },
             )
         }

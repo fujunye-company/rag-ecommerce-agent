@@ -86,19 +86,19 @@ fun ExploreScreen(
         sv.scrollTo((midR * gp).coerceAtLeast(0))
     }
 
-    Column(Modifier.fillMaxSize().background(Neutral50)) {
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         GradientTopBar(icons = {
             IconButton(onClick = LocalOnMenuClick.current, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Default.Menu, "菜单", tint = Neutral700, modifier = Modifier.size(26.dp))
+                Icon(Icons.Default.Menu, "菜单", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(26.dp))
             }
             Text("发布", modifier = Modifier.padding(end = 12.dp),
-                style = MaterialTheme.typography.titleMedium, color = Neutral700, fontWeight = FontWeight.Medium)
+                style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
         })
 
         // 随机卡片网格
         Box(
             Modifier.weight(1f).horizontalScroll(sh).verticalScroll(sv)
-                .background(Color(0xFFF0F0F3))
+                .background(MaterialTheme.colorScheme.outlineVariant)
         ) {
             val gridW = STEP * COLS
             val gridH = STEP * ROWS
@@ -118,7 +118,7 @@ fun ExploreScreen(
                             onClick = { onPostClick(post.postId) },
                             shape = RadiusMd,
                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                            colors = CardDefaults.cardColors(containerColor = Neutral0)
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                         ) {
                             Column {
                                 // 商品图
@@ -150,7 +150,7 @@ fun ExploreScreen(
                                         Text(
                                             post.author.name,
                                             style = MaterialTheme.typography.labelSmall,
-                                            color = Neutral600,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis,
                                         )
@@ -159,7 +159,7 @@ fun ExploreScreen(
                                     Text(
                                         post.product.title.take(8),
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = Neutral800,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                     )

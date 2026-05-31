@@ -4,7 +4,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
 from app.schemas.common import ApiResponse
 from app.services.image_parser import (
-    parse_product_image, save_upload_image,
+    parse_product_image, save_upload_image, get_vision_readiness,
 )
 from app.services.retriever import search_similar_products
 from app.schemas.sse_events import ProductCardEvent, ErrorEvent, DoneEvent
@@ -12,6 +12,12 @@ import json
 
 logger = logging.getLogger("upload")
 router = APIRouter()
+
+
+@router.get("/upload/vision-status")
+async def vision_status():
+    """视觉检索 readiness，不触发大模型加载。"""
+    return get_vision_readiness()
 
 
 @router.post("/upload/image")

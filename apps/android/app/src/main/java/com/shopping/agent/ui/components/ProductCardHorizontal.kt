@@ -22,7 +22,7 @@ fun ProductCardHorizontal(
         onClick = onTap,
         shape = RadiusLg,
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Neutral0),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = modifier.fillMaxWidth().height(120.dp),
     ) {
         Row(modifier = Modifier.padding(Dimens.cardPadding)) {
@@ -39,7 +39,7 @@ fun ProductCardHorizontal(
                 Text(
                     text = product.title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = Neutral900,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -51,16 +51,16 @@ fun ProductCardHorizontal(
                 Row(horizontalArrangement = Arrangement.spacedBy(Dimens.space2)) {
                     ProductSourceBadge(source = product.source)
                     if (product.matchScore > 0) {
-                        Surface(shape = RadiusSm, color = Neutral100) {
+                        Surface(shape = RadiusSm, color = MaterialTheme.colorScheme.outlineVariant) {
                             Text(
                                 "匹配 ${(product.matchScore * 100).toInt()}%",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Neutral600,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                             )
                         }
                     }
-                    if (product.rankReason != null) {
+                    if (product.rankReason != "") {
                         Text(
                             "✓ ${product.rankReason}",
                             style = MaterialTheme.typography.bodySmall,

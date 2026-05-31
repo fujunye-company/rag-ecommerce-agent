@@ -38,7 +38,7 @@ fun CartScreen(
 
     LaunchedEffect(Unit) { viewModel.loadCart() }
 
-    Column(modifier = Modifier.fillMaxSize().background(Neutral50)) {
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         // 顶栏
         GradientTopBar {
             Row(
@@ -46,7 +46,7 @@ fun CartScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("购物车", style = MaterialTheme.typography.titleMedium, color = Neutral900)
+                Text("购物车", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
                 if (uiState.items.isNotEmpty()) {
                     TextButton(onClick = { viewModel.clearCart() }) {
                         Text("清空", color = ErrorColor)
@@ -65,11 +65,11 @@ fun CartScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         Icons.Default.ShoppingCart, "空购物车",
-                        tint = Neutral300, modifier = Modifier.size(64.dp)
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(64.dp)
                     )
                     Spacer(Modifier.height(12.dp))
-                    Text("购物车为空", color = Neutral400, style = MaterialTheme.typography.bodyLarge)
-                    Text("去首页逛逛 AI 导购推荐吧", color = Neutral400, style = MaterialTheme.typography.bodySmall)
+                    Text("购物车为空", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
+                    Text("去首页逛逛 AI 导购推荐吧", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                 }
             }
         } else {
@@ -92,7 +92,7 @@ fun CartScreen(
             // 底部结算栏
             Surface(
                 shadowElevation = 8.dp,
-                color = Neutral0,
+                color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -104,7 +104,7 @@ fun CartScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("合计", color = Neutral500, style = MaterialTheme.typography.bodySmall)
+                        Text("合计", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                         Text(
                             "¥%.2f".format(uiState.totalPrice),
                             color = Primary,
@@ -114,7 +114,7 @@ fun CartScreen(
                     }
                     Button(
                         onClick = { viewModel.placeOrder() },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RadiusFull,
                         colors = ButtonDefaults.buttonColors(containerColor = Primary),
                         modifier = Modifier.height(48.dp),
                         enabled = !uiState.isLoading,
@@ -132,7 +132,7 @@ fun CartScreen(
         // 下单成功弹窗
         if (uiState.orderResult != null) {
             Dialog(onDismissRequest = { viewModel.dismissOrderResult() }) {
-                Surface(shape = RoundedCornerShape(16.dp), color = Neutral0) {
+                Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
                     Column(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -144,13 +144,13 @@ fun CartScreen(
                         Text(
                             uiState.orderResult!!,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Neutral700,
+                            color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center,
                         )
                         Spacer(Modifier.height(16.dp))
                         Button(
                             onClick = { viewModel.dismissOrderResult() },
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RadiusFull,
                             colors = ButtonDefaults.buttonColors(containerColor = Primary),
                         ) {
                             Text("完成", color = OnPrimary)
@@ -172,7 +172,7 @@ private fun CartItemCard(
 ) {
     Surface(
         shape = RoundedCornerShape(12.dp),
-        color = Neutral0,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 1.dp,
     ) {
         Row(
@@ -192,7 +192,7 @@ private fun CartItemCard(
                 Text(
                     item.product.title,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Neutral900,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                 )
                 Spacer(Modifier.height(4.dp))
@@ -208,7 +208,7 @@ private fun CartItemCard(
                         Text(
                             "×${item.quantity}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Neutral500,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -220,12 +220,12 @@ private fun CartItemCard(
                     onClick = onRemove,
                     modifier = Modifier.size(32.dp),
                 ) {
-                    Icon(Icons.Default.Remove, "减少", tint = Neutral500, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Remove, "减少", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                 }
                 Text(
                     "${item.quantity}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Neutral900,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.width(28.dp),
                     textAlign = TextAlign.Center,
                 )
@@ -239,7 +239,7 @@ private fun CartItemCard(
 
             // 删除
             IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.Delete, "删除", tint = Neutral400, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Delete, "删除", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
             }
         }
     }

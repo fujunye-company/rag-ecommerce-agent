@@ -12,7 +12,8 @@ from app.services.intent import classify_intent, extract_slots, rewrite_query, e
 from app.services.rag import retrieve as rag_retrieve
 from app.services.reranker import rerank_async
 from app.services.llm_client import chat_completion
-from app.schemas.sse_events import TextDeltaEvent, ProductCardEvent, DoneEvent, ErrorEvent, ProgressEvent
+from app.schemas.sse_events import TextDeltaEvent, ProductCardEvent, DoneEvent, ErrorEvent, ProgressEvent, WebSearchResultEvent
+from app.services.web_search import search_web, format_search_results, WEB_SEARCH_PROMPT, WEB_SEARCH_FALLBACK_PROMPT
 from app.services import cache
 from app.services import state_manager as sm
 from app.services import cart_service
@@ -67,18 +68,18 @@ async def node_classify_intent(state: AgentState) -> AgentState:
     ctx = ""
     if history:
         recent = history[-4:]  # 最近4条
-        lines = [f"{'用户' if m['role']=='user' else '助手'}：{m.get('content','')[:120]}" for m in recent]
+        lines = [f"{'用户' if m.get('role')=='user' else '助手'}：{(m.get('content') or '')[:120]}" for m in recent]
         ctx = "\n对话上文：\n" + "\n".join(lines)
     intent_result = await classify_intent(expanded if expanded != query else query, context=ctx)
     state["intent"] = intent_result["intent"]
     state["confidence"] = intent_result["confidence"]
 
-    # 非闲聊意图才提取槽位
+    # 非闲聊意图才提取槽位（用原始查询，关键词堆会污染 LLM 槽位提取）
     if state["intent"] != "chitchat":
-        slots = await extract_slots(expanded if expanded != query else query, state["intent"])
+        slots = await extract_slots(query, state["intent"])
 
         # 合并历史上下文：保留上一轮的排除条件，本轮的偏好覆盖历史
-        prev_slots = state.get("slots", {})
+        prev_slots = _previous_slots_from_state(state)
         merged = {}
         # 排除类字段：累积（不丢失上一轮的排除条件）
         for key in ("exclude_brands", "exclude_categories", "exclude_attributes"):
@@ -106,9 +107,18 @@ async def node_classify_intent(state: AgentState) -> AgentState:
         has_negation = any(kw in query for kw in neg_keywords)
         if state["intent"] == "anti_selection" or has_negation:
             negation = await extract_negation_slots(query)
-            state["slots"]["exclude_brands"] = negation.get("exclude_brands", [])
-            state["slots"]["exclude_categories"] = negation.get("exclude_categories", [])
-            state["slots"]["exclude_attributes"] = negation.get("exclude_attributes", {})
+            # 合并而非覆盖 — 保留 merge loop 已累积的历史排除条件
+            neg_brands = negation.get("exclude_brands") or []
+            existing_brands = state["slots"].get("exclude_brands") or []
+            state["slots"]["exclude_brands"] = list(set(existing_brands + neg_brands))
+
+            neg_cats = negation.get("exclude_categories") or []
+            existing_cats = state["slots"].get("exclude_categories") or []
+            state["slots"]["exclude_categories"] = list(set(existing_cats + neg_cats))
+
+            neg_attrs = negation.get("exclude_attributes") or {}
+            existing_attrs = state["slots"].get("exclude_attributes") or {}
+            state["slots"]["exclude_attributes"] = {**existing_attrs, **neg_attrs}
 
             # 补充关键词提取的文本级排除词（LLM 可能不返回此字段）
             from app.services.intent import _keyword_extract_negation
@@ -116,19 +126,21 @@ async def node_classify_intent(state: AgentState) -> AgentState:
             state["slots"]["exclude_text_terms"] = kw_neg.get("exclude_text_terms", [])
             # LLM 未覆盖的排除项，用关键词结果补充
             if not state["slots"]["exclude_brands"] and kw_neg.get("exclude_brands"):
-                state["slots"]["exclude_brands"] = kw_neg["exclude_brands"]
+                state["slots"]["exclude_brands"] = list(set(state["slots"]["exclude_brands"] + kw_neg["exclude_brands"]))
             if not state["slots"]["exclude_attributes"] and kw_neg.get("exclude_attributes"):
-                state["slots"]["exclude_attributes"] = kw_neg["exclude_attributes"]
+                state["slots"]["exclude_attributes"] = {**state["slots"]["exclude_attributes"], **kw_neg["exclude_attributes"]}
 
             logger.info("Negation extracted: brands=%s, attrs=%s, text_terms=%s",
                         state["slots"]["exclude_brands"],
                         state["slots"]["exclude_attributes"],
                         state["slots"].get("exclude_text_terms"))
 
-        # 改写查询（用 positive_query 或扩展后的查询）
-        positive_q = negation.get("positive_query", "") if has_negation else ""
-        base = positive_q or expanded or query
-        rewritten = await rewrite_query(base, slots)
+        # 品类隔离：排除品牌只影响当前品类，不越界到其他品类
+        _normalize_exclusions(state["slots"])
+
+        # 改写查询：排除类多轮请求使用继承后的品类召回，避免被排除品牌词牵引向量检索。
+        base = _build_rewrite_base(query, expanded, state["slots"], has_negation, negation if has_negation else {})
+        rewritten = await rewrite_query(base, state["slots"])
         state["rewritten_query"] = rewritten
     else:
         state["slots"] = {}
@@ -354,16 +366,31 @@ async def node_retrieve(state: AgentState) -> AgentState:
             category=slots.get("category"),
             price_min=slots.get("price_min"),
             price_max=slots.get("price_max"),
-            exclude_brands=slots.get("exclude_brands"),
+            exclude_brands=_scoped_exclude_brands(slots),
             exclude_categories=slots.get("exclude_categories"),
             exclude_attributes=slots.get("exclude_attributes"),
+            strict_category=bool(slots.get("category") and (
+                _scoped_exclude_brands(slots)
+                or slots.get("exclude_categories")
+                or slots.get("exclude_attributes")
+                or state.get("history")
+            )),
         )
 
         state["retrieved_chunks"] = result["chunks"]
         state["latency_ms"] = result["latency_ms"]
 
+    if slots.get("category") and state["retrieved_chunks"]:
+        state["retrieved_chunks"] = _filter_chunks_by_requested_category(
+            state["retrieved_chunks"], slots.get("category")
+        )
+
     # 文本级兜底过滤：排除 title/highlights 中含否定词的商品
-    text_terms = slots.get("exclude_text_terms", [])
+    excluded_brand_terms = {str(b).strip().lower() for b in _scoped_exclude_brands(slots)}
+    text_terms = [
+        t for t in (slots.get("exclude_text_terms", []) or [])
+        if str(t).strip().lower() not in excluded_brand_terms
+    ]
     if text_terms and state["retrieved_chunks"]:
         filtered = []
         for chunk in state["retrieved_chunks"]:
@@ -426,9 +453,12 @@ def _validate_ranked_products(ranked: list) -> tuple[list, bool]:
         if not r.get("title") or not r.get("product_id"):
             logger.warning("Skipping product with missing title or product_id: %s", r)
             continue
-        # 价格合理性
-        price = r.get("price", 0)
-        if price is not None and price <= 0:
+        # 价格合理性 (安全转换，兼容字符串型价格)
+        try:
+            price = float(r.get("price", 0))
+        except (TypeError, ValueError):
+            price = 0.0
+        if price <= 0:
             logger.warning("Skipping product with invalid price: %s (¥%s)", r.get("title"), price)
             continue
         valid.append(r)
@@ -472,6 +502,149 @@ def _extract_raw_products(chunks: list, limit: int = 10) -> list[dict]:
     return raw
 
 
+_SLOT_KEYS = {
+    "category", "price_min", "price_max", "brand_preference", "attributes",
+    "scenario", "exclude_brands", "exclude_categories", "exclude_attributes",
+    "exclude_text_terms", "exclude_by_category", "missing_slots",
+}
+
+
+def _build_rewrite_base(query: str, expanded: str, slots: dict, has_negation: bool, negation: dict) -> str:
+    if has_negation and slots.get("category"):
+        return f"{slots['category']} 热门推荐 同类商品"
+    positive_q = (negation or {}).get("positive_query", "") if has_negation else ""
+    return positive_q or expanded or query
+
+
+def _previous_slots_from_state(state: dict) -> dict:
+    """Read slots from current nested state and legacy top-level session fields."""
+    nested = state.get("slots")
+    if isinstance(nested, dict):
+        prev = dict(nested)
+    else:
+        prev = {}
+    for key in _SLOT_KEYS:
+        if key not in prev and state.get(key) is not None:
+            prev[key] = state[key]
+    return prev
+
+
+def _product_key_from_chunk(chunk: dict) -> str:
+    payload = chunk.get("payload", {}) or {}
+    return str(payload.get("product_id") or chunk.get("id") or payload.get("title") or "")
+
+
+def _merge_product_chunks(primary: list[dict], supplements: list[dict]) -> list[dict]:
+    merged = []
+    seen = set()
+    for chunk in (primary or []) + (supplements or []):
+        key = _product_key_from_chunk(chunk)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        merged.append(chunk)
+    return merged
+
+
+def _category_matches_request(product_category: str, requested_category: str) -> bool:
+    if not requested_category:
+        return True
+    product_category = (product_category or "").strip()
+    requested_category = requested_category.strip()
+    if product_category == requested_category:
+        return True
+    aliases = {
+        "平板": {"平板", "平板电脑"},
+        "平板电脑": {"平板", "平板电脑"},
+    }
+    return product_category in aliases.get(requested_category, {requested_category})
+
+
+def _needs_strict_category_guard(requested_category: str) -> bool:
+    return (requested_category or "").strip() in {"平板", "平板电脑"}
+
+
+def _filter_chunks_by_requested_category(chunks: list[dict], requested_category: str) -> list[dict]:
+    if not _needs_strict_category_guard(requested_category):
+        return chunks or []
+    filtered = [
+        chunk for chunk in (chunks or [])
+        if _category_matches_request((chunk.get("payload", {}) or {}).get("category", ""), requested_category)
+    ]
+    dropped = len(chunks or []) - len(filtered)
+    if dropped:
+        logger.info("Category guard: dropped %d non-%s candidates", dropped, requested_category)
+    return filtered
+
+
+def _filter_products_by_requested_category(products: list[dict], requested_category: str) -> list[dict]:
+    if not _needs_strict_category_guard(requested_category):
+        return products or []
+    return [
+        product for product in (products or [])
+        if _category_matches_request(product.get("category", ""), requested_category)
+    ]
+
+
+async def _retrieve_same_category_supplements(query: str, slots: dict, existing_chunks: list[dict]) -> list[dict]:
+    """Expand the candidate pool inside the current category after exclusions."""
+    category = slots.get("category")
+    if not category:
+        return existing_chunks or []
+
+    result = await rag_retrieve(
+        query=f"{category} 热门 推荐 {query}",
+        top_k=30,
+        category=category,
+        price_min=slots.get("price_min"),
+        price_max=slots.get("price_max"),
+        exclude_brands=_scoped_exclude_brands(slots),
+        exclude_categories=slots.get("exclude_categories"),
+        exclude_attributes=slots.get("exclude_attributes"),
+        strict_category=True,
+    )
+    merged = _merge_product_chunks(existing_chunks or [], result.get("chunks", []))
+    return _filter_chunks_by_requested_category(merged, category)
+
+
+def _scoped_exclude_brands(slots: dict) -> list:
+    """Return exclude_brands scoped to the current category, so brand exclusion
+    doesn't leak across different categories."""
+    category = slots.get("category", "")
+    if category:
+        by_cat = slots.get("exclude_by_category", {})
+        if by_cat and category in by_cat:
+            return by_cat[category]
+    return slots.get("exclude_brands") or []
+
+
+def _normalize_exclusions(slots: dict) -> None:
+    """Move flat exclude_brands into category-scoped exclude_by_category dict."""
+    category = slots.get("category", "")
+    flat = slots.pop("exclude_brands", None)
+    if not flat or not category:
+        return
+    by_cat = dict(slots.get("exclude_by_category") or {})
+    existing = set(by_cat.get(category, []))
+    existing.update(b for b in flat if b)
+    by_cat[category] = list(existing)
+    slots["exclude_by_category"] = by_cat
+
+
+def _build_exclusion_hint(slots: dict) -> str:
+    """Build a prompt hint about excluded brands/categories so the LLM can acknowledge them."""
+    parts = []
+    excluded_brands = _scoped_exclude_brands(slots)
+    if excluded_brands:
+        parts.append(f"用户已排除品牌：{'、'.join(excluded_brands)}")
+    excluded_cats = slots.get("exclude_categories") or []
+    if excluded_cats:
+        parts.append(f"用户已排除品类：{'、'.join(excluded_cats)}")
+    if parts:
+        return "用户约束（必须在回复中体现）：" + "；".join(parts) + "\n   → 不要在「结语」中追问已排除的品牌或品类，如需调整建议提醒用户当前已排除的品牌。\n"
+    return ""
+
+
 def _build_user_prefs(slots: dict) -> dict:
     """从 slots 构造用户偏好字典"""
     return {
@@ -479,7 +652,7 @@ def _build_user_prefs(slots: dict) -> dict:
         "price_max": slots.get("price_max"),
         "brand_preference": slots.get("brand_preference"),
         "attributes": slots.get("attributes", {}),
-        "exclude_brands": slots.get("exclude_brands") or [],
+        "exclude_brands": _scoped_exclude_brands(slots),
         "exclude_attributes": slots.get("exclude_attributes", {}),
     }
 
@@ -549,34 +722,49 @@ def _build_generation_prompt(message: str, slots: dict, valid_ranked: list, is_r
 用户需求：{message}
 用户预算：{slots.get('price_min', '不限')}-{slots.get('price_max', '不限')}
 用户品类偏好：{slots.get('category', '未指定')}
-
+{_build_exclusion_hint(slots)}
 检索到的商品（共{n}款，必须全部推荐，不可遗漏）：
 {context}
 
-输出格式要求（严格遵守）：
-- 用一句话总结推荐逻辑，以 [SUMMARY] 开头
-- 每款商品以 [PRODUCT_N] 作为分隔标记（N=1,2,3...）
-- 每款商品第一行写商品全名，第二行写综合匹配度，然后按三段式展开
-- 最后以 [CLOSING] 开头，可追问用户偏好以进一步筛选
+输出格式要求（严格遵守，违反将导致推荐无效）：
 
-格式示例：
-[SUMMARY]为您找到3款最适合的降噪耳机：
+第一步：开头用一句话总结，列出全部商品名称（用顿号分隔），以句号结尾。
+第二步：紧接着依次用「商品1」「商品2」「商品3」分别展开每款商品，每款商品用「商品N」独占一行作为标题。
+第三步：以「结语」收尾，简短追问用户偏好（1句话，不超过20字）。
 
-[PRODUCT_1]
-索尼 WH-1000XM5
-综合匹配度：92%
+每款商品的展开格式：
+「商品N」
+商品全名 | 综合匹配度 XX%
 ① 匹配依据：...
 ② 品质亮点：...
 ③ 适用场景：...
 
-[PRODUCT_2]
-（同上格式）
+格式示例：
+为您找到3款降噪耳机：索尼WH-1000XM5、Bose QC45、AirPods Pro，分别适合不同场景。
 
-[CLOSING]需要进一步筛选品牌或预算吗？
+「商品1」
+索尼 WH-1000XM5 | 综合匹配度 92%
+① 匹配依据：顶级降噪，适合通勤与办公
+② 品质亮点：30小时续航、LDAC高清音频、多点连接
+③ 适用场景：地铁通勤、办公室专注工作
+
+「商品2」
+Bose QC45 | 综合匹配度 88%
+① 匹配依据：性价比突出的降噪标杆，通勤续航双优
+② 品质亮点：24小时续航、TriPort声学结构、蓝牙5.1
+③ 适用场景：日常通勤与长时间佩戴
+
+「商品3」
+AirPods Pro | 综合匹配度 85%
+① 匹配依据：苹果生态无缝切换，自适应降噪
+② 品质亮点：H2芯片、个性化空间音频、IPX4防水
+③ 适用场景：苹果用户日常全场景使用
+
+「结语」需要进一步筛选品牌或预算吗？
 
 要求：
 - 必须逐一推荐以上全部 {n} 款商品，不可跳过任何一款
-- 每款商品必须使用 [PRODUCT_N] 标记
+- 每款商品必须独占一行使用「商品N」标记
 - 总字数控制在300字以内
 - 禁止使用"非常好""很不错"等模糊词，必须引用具体数字"""
 
@@ -601,6 +789,7 @@ async def node_generate(state: AgentState) -> AgentState:
     from app.services.product_ranker import rank_products
 
     raw_products = _extract_raw_products(chunks)
+    raw_products = _filter_products_by_requested_category(raw_products, state.get("slots", {}).get("category", ""))
     user_prefs = _build_user_prefs(state.get("slots", {}))
     ranked = rank_products(raw_products, user_prefs, state["intent"], top_k=3)
     valid_ranked, is_reliable = _validate_ranked_products(ranked)
@@ -639,6 +828,8 @@ async def node_generate(state: AgentState) -> AgentState:
 def _extract_cart_action(query: str) -> str:
     """从用户查询中提取购物车操作类型"""
     q = query.lower()
+    if any(kw in q for kw in ["数量", "改成", "改为", "设为", "设置为"]):
+        return "quantity"
     if any(kw in q for kw in ["清空", "全部删除", "全部移除"]):
         return "clear"
     if any(kw in q for kw in ["下单", "结算", "结账", "支付", "买单", "确认下单"]):
@@ -650,6 +841,21 @@ def _extract_cart_action(query: str) -> str:
     if any(kw in q for kw in ["加入", "加购", "加到", "添加", "放入", "加一个", "加第"]):
         return "add"
     return "view"  # 默认查看
+
+
+def _parse_quantity(query: str) -> int | None:
+    """解析自然语言数量，如“数量改成2”“改为两个”“×3”."""
+    cn_nums = {
+        "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5,
+        "六": 6, "七": 7, "八": 8, "九": 9, "十": 10,
+    }
+    m = re.search(r"(?:数量|改成|改为|设为|设置为|加到|减到|x|×)\s*([0-9]+|[一二两三四五六七八九十])", query, re.I)
+    if not m:
+        return None
+    raw = m.group(1)
+    if raw.isdigit():
+        return max(0, int(raw))
+    return cn_nums.get(raw)
 
 
 async def _find_product_for_cart(query: str, state: "AgentState") -> dict | None:
@@ -755,6 +961,46 @@ async def _remove_from_cart(query: str, session_id: str, db) -> str:
     return f"没有找到要删除的商品。当前购物车有 {len(items)} 件商品，请指定序号或商品名。"
 
 
+async def _update_cart_quantity(query: str, session_id: str, db) -> str:
+    """按序号或商品名修改购物车数量。"""
+    quantity = _parse_quantity(query)
+    if quantity is None:
+        return "请告诉我想改成几件，例如「把第一个数量改成 2」。"
+
+    items = await cart_service.get_cart(db, session_id)
+    if not items:
+        return "购物车是空的，暂时没有可修改数量的商品。"
+
+    ordinal_map = {
+        "一": 1, "二": 2, "三": 3, "四": 4, "五": 5,
+        "1": 1, "2": 2, "3": 3, "4": 4, "5": 5,
+    }
+    target = None
+    for word in sorted(ordinal_map.keys(), key=len, reverse=True):
+        if word in query:
+            idx = ordinal_map[word]
+            if idx <= len(items):
+                target = items[idx - 1]
+                break
+            return f"购物车只有 {len(items)} 件商品，没有第 {idx} 个。"
+
+    if target is None:
+        for item in items:
+            if item.title and len(item.title) >= 3 and item.title[:4] in query:
+                target = item
+                break
+
+    if target is None:
+        return "没有找到要修改数量的商品，请指定序号或商品名。"
+
+    if quantity == 0:
+        await cart_service.remove_from_cart(db, session_id, str(target.product_id))
+        return f"已将「{target.title}」数量改为 0，并从购物车移除。"
+
+    await cart_service.update_quantity(db, session_id, str(target.product_id), quantity)
+    return f"已将「{target.title}」数量改为 {quantity} 件。"
+
+
 # ── Cart Node ──
 
 async def node_cart(state: "AgentState") -> "AgentState":
@@ -803,6 +1049,7 @@ async def node_cart(state: "AgentState") -> "AgentState":
                         f"✅ 已将「{product['title']}」(¥{product['price']:.0f}) 加入购物车。\n"
                         f"当前购物车共 {len(items)} 件，合计 ¥{total:.0f}。"
                     )
+                    await db.commit()
                 else:
                     state["response"] = (
                         "抱歉，没有找到要添加的商品。请先搜索商品（如「推荐蓝牙耳机」），"
@@ -810,12 +1057,19 @@ async def node_cart(state: "AgentState") -> "AgentState":
                     )
                 state["product_cards"] = []
 
+            elif cart_action == "quantity":
+                state["response"] = await _update_cart_quantity(query, session_id, db)
+                await db.commit()
+                state["product_cards"] = []
+
             elif cart_action == "remove":
                 state["response"] = await _remove_from_cart(query, session_id, db)
+                await db.commit()
                 state["product_cards"] = []
 
             elif cart_action == "clear":
                 await cart_service.clear_cart(db, session_id)
+                await db.commit()
                 state["response"] = "🗑️ 购物车已清空。"
                 state["product_cards"] = []
 
@@ -849,6 +1103,7 @@ async def node_cart(state: "AgentState") -> "AgentState":
                         f"（演示环境，不会实际扣款。感谢您的购买！）"
                     )
                     await cart_service.clear_cart(db, session_id)
+                    await db.commit()
                     logger.info("Order confirmed: %s, cart cleared for session %s", order.order_no, session_id[:8])
                 else:
                     item_lines = [f"{i+1}. {it.title} ×{it.quantity} — ¥{it.price * it.quantity:.0f}"
@@ -868,12 +1123,53 @@ async def node_cart(state: "AgentState") -> "AgentState":
     return state
 
 
+async def node_web_search(state: AgentState) -> AgentState:
+    """联网搜索节点 — DuckDuckGo 搜索 + LLM 知识兜底"""
+    query = state.get("rewritten_query") or state.get("query", "")
+    try:
+        results = await search_web(query)
+        if results:
+            formatted = format_search_results(results)
+            prompt = WEB_SEARCH_PROMPT.format(query=query, search_results=formatted)
+            from app.services.llm_client import chat_completion as cc
+            response = await cc(messages=[{"role": "user", "content": prompt}], temperature=0.7, max_tokens=300, stream=False)
+            state["response"] = response
+            state["_web_results"] = results
+            state["_is_fallback"] = False
+        else:
+            # DuckDuckGo 不可用，使用 LLM 训练知识兜底
+            logger.info("Web search returned 0 results, using LLM knowledge fallback")
+            prompt = WEB_SEARCH_FALLBACK_PROMPT.format(query=query)
+            from app.services.llm_client import chat_completion as cc
+            response = await cc(messages=[{"role": "user", "content": prompt}], temperature=0.7, max_tokens=300, stream=False)
+            state["response"] = response
+            state["_web_results"] = []
+            state["_is_fallback"] = True
+    except Exception as e:
+        logger.warning("Web search node failed: %s", e)
+        # 最底层兜底
+        prompt = WEB_SEARCH_FALLBACK_PROMPT.format(query=query)
+        try:
+            from app.services.llm_client import chat_completion as cc
+            response = await cc(messages=[{"role": "user", "content": prompt}], temperature=0.7, max_tokens=200, stream=False)
+            state["response"] = response
+        except Exception:
+            state["response"] = "抱歉，联网搜索暂时不可用。你可以试试在本地商品库中搜索具体的商品需求。"
+        state["_web_results"] = []
+        state["_is_fallback"] = True
+    state["product_cards"] = []
+    return state
+
+
 # ── Router ──
 
 def route_after_intent(state: AgentState) -> str:
-    """意图路由：闲聊 → generate, 缺失信息 → clarify, 购物车 → cart, 其他 → retrieve"""
+    """意图路由：闲聊 → generate, 联网搜索 → web_search, 缺失信息 → clarify, 购物车 → cart, 其他 → retrieve"""
     if state.get("intent") == "chitchat":
         return "generate"
+
+    if state.get("intent") == "web_search":
+        return "web_search"
 
     if state.get("intent") == "cart_operation":
         return "cart"
@@ -912,6 +1208,7 @@ def build_agent_graph() -> StateGraph:
     workflow.add_node("clarify", node_clarify)
     workflow.add_node("retrieve", node_retrieve)
     workflow.add_node("cart", node_cart)
+    workflow.add_node("web_search", node_web_search)
     workflow.add_node("generate", node_generate)
 
     workflow.set_entry_point("classify_intent")
@@ -919,11 +1216,13 @@ def build_agent_graph() -> StateGraph:
         "retrieve": "retrieve",
         "clarify": "clarify",
         "cart": "cart",
+        "web_search": "web_search",
         "generate": "generate",
     })
     workflow.add_edge("clarify", "generate")
     workflow.add_edge("retrieve", "generate")
     workflow.add_edge("cart", "generate")
+    workflow.add_edge("web_search", "generate")
     workflow.add_edge("generate", END)
 
     return workflow
@@ -946,104 +1245,364 @@ async def run_agent(query: str, session_id: str = "") -> dict:
     return final_state
 
 
-# ── Streaming Entry Point ──
+def _safe_emit_boundary(unemitted: str) -> int:
+    """返回 unemitted 中可以安全输出的位置 — 保留最后一句完整句子用于三特征检测。"""
+    if len(unemitted) < 40:
+        return 0
+    boundaries = []
+    for sep in ("。", "！", "？"):
+        pos = -1
+        while True:
+            pos = unemitted.find(sep, pos + 1)
+            if pos < 0:
+                break
+            boundaries.append(pos + 1)  # 包含标点
+    if len(boundaries) < 2:
+        return 0
+    boundaries.sort()
+    return boundaries[-2]  # 保留最后一句，输出倒数第二句之前的所有内容
 
-def _parse_response_text(response_text: str, cards: list) -> dict | None:
-    """解析 LLM 输出，按 [PRODUCT_N] 分隔符拆分为逐商品段落。
 
-    Returns: {"summary": str, "products": [{"text": str, "card": dict}], "closing": str}
-    若无新格式标记（旧缓存），返回 None，由调用方降级为旧行为。
+async def _stream_interleaved(stream, cards: list) -> AsyncGenerator:
+    """真流式交错输出 — 逐 token 发送文字，边收边检测卡片插入点。
+
+    检测策略：
+    1. 「商品N」标记扫描 — 最精确，立即在标记处插入卡片
+    2. 三特征检测 — 匹配依据/品质亮点/适用场景 全部出现在第N款商品时，
+       等待适用场景句号到达后插入第N张卡片
+    3. 安全输出：只输出倒数第二句号之前的文本，保留最后一句在缓冲区中
+       以确保卡片边界检测能完整捕获"适用场景。"的句号。
     """
-    if "[PRODUCT_" not in response_text:
+    buffer = ""           # 全部已接收文本
+    emitted_pos = 0       # 已发送到客户端的缓冲位置
+    emitted_indices = set()
+    closing_seen = False
+
+    marker_re = re.compile(r"「商品\s*(\d+)\s*」|\[PRODUCT_(\d+)\]|【PRODUCT_(\d+)】")
+    tag_re = re.compile(r"「(?:商品\s*\d+\s*」|结语」)|\[(?:SUMMARY|PRODUCT_\d+|CLOSING)\]|【(?:SUMMARY|PRODUCT_\d+|CLOSING)】", re.IGNORECASE)
+    closing_re = re.compile(r"「结语」|\[CLOSING\]|【CLOSING】", re.IGNORECASE)
+
+    def _card(idx: int):
+        if idx >= len(cards):
+            return None
+        c = cards[idx]
+        return {
+            "event": "product_cards",
+            "data": ProductCardEvent(
+                product_id=c.get("product_id", c.get("id", "")),
+                title=c.get("title", ""), price=c.get("price", 0),
+                rating=c.get("rating", 0),
+                match_score=c.get("match_score", c.get("score", 0.5)),
+                highlights=c.get("highlights", []),
+                image_url=c.get("image_url"), image_urls=c.get("image_urls", []),
+                brand=c.get("brand"), category=c.get("category", ""),
+                index=idx + 1, total=len(cards),
+            ).model_dump_json(),
+        }
+
+    def _emit_up_to(pos: int):
+        """输出 emitted_pos 到 pos 之间的文本（清理标记后）。"""
+        nonlocal emitted_pos
+        if pos <= emitted_pos:
+            return
+        seg = buffer[emitted_pos:pos]
+        clean = tag_re.sub("", seg)
+        if clean.strip():
+            yield_me = {"event": "text_delta", "data": TextDeltaEvent(content=clean).model_dump_json()}
+            emitted_pos = pos
+            return yield_me
+        emitted_pos = pos
         return None
 
-    # 按 [PRODUCT_N] 拆分段落
-    blocks = re.split(r"\[PRODUCT_\d+\]", response_text)
-    # blocks[0] = [SUMMARY] + 开篇总结
-    # blocks[1..N] = 各商品描述（最后一块可能含 [CLOSING]）
+    async for chunk in stream:
+        delta = chunk.choices[0].delta
+        if not delta.content:
+            continue
 
-    summary = blocks[0].replace("[SUMMARY]", "").strip() if blocks else ""
+        buffer += delta.content
 
-    products = []
-    closing = ""
+        # ── Closing 之后：直接透传 ──
+        if closing_seen:
+            evt = _emit_up_to(len(buffer))
+            if evt:
+                yield evt
+            continue
 
-    for i, block in enumerate(blocks[1:], 1):
-        # 分离 [CLOSING] 尾段
-        closing_m = re.search(r"\[CLOSING\](.*)", block, re.DOTALL)
-        if closing_m:
-            product_text = block[: closing_m.start()].strip()
-            closing = closing_m.group(1).strip()
+        # ── Closing 检测 ──
+        cm = closing_re.search(buffer, emitted_pos)
+        if cm:
+            evt = _emit_up_to(cm.start())
+            if evt:
+                yield evt
+            next_idx = len(emitted_indices)
+            if next_idx < len(cards):
+                ce = _card(next_idx)
+                if ce:
+                    emitted_indices.add(next_idx)
+                    yield ce
+            emitted_pos = cm.end()
+            closing_seen = True
+            continue
+
+        # ── 策略1: 「商品N」标记 ──
+        # 标记表示下一款商品的开头，不是当前卡片的插入点。
+        # 因此在「商品2」处发送商品1卡片，在「商品3」处发送商品2卡片。
+        m = marker_re.search(buffer, emitted_pos)
+        if m:
+            evt = _emit_up_to(m.start())
+            if evt:
+                yield evt
+            card_num = int(m.group(1) or m.group(2) or m.group(3))
+            prev_idx = card_num - 2
+            if 0 <= prev_idx < len(cards) and prev_idx not in emitted_indices:
+                ce = _card(prev_idx)
+                if ce:
+                    emitted_indices.add(prev_idx)
+                    yield ce
+            elif card_num > 1:
+                next_idx = len(emitted_indices)
+                if next_idx < min(card_num - 1, len(cards)):
+                    ce = _card(next_idx)
+                    if ce:
+                        emitted_indices.add(next_idx)
+                        yield ce
+            emitted_pos = m.end()
+            continue
+
+        # ── 策略2: 三特征检测（匹配依据 + 品质亮点 + 适用场景） ──
+        count_a = buffer.count("匹配依据")
+        count_b = buffer.count("品质亮点")
+        count_c = buffer.count("适用场景")
+        min_count = min(count_a, count_b, count_c)
+
+        while min_count > len(emitted_indices):
+            # 找到第 len(emitted_indices)+1 次"适用场景"后的句号位置
+            target = len(emitted_indices) + 1
+            nth = _nth_occurrence(buffer, "适用场景", target)
+            end = buffer.find("。", nth)
+            if end < 0:
+                break  # 句号还没到，继续等
+
+            card_pos = end + 1  # 卡片插在句号之后
+            evt = _emit_up_to(card_pos)
+            if evt:
+                yield evt
+
+            # 按顺序发下一张未发送的卡片
+            next_idx = len(emitted_indices)
+            if next_idx < len(cards):
+                ce = _card(next_idx)
+                if ce:
+                    emitted_indices.add(next_idx)
+                    yield ce
+            else:
+                break
+
+        # ── 安全输出：只发倒数第二句号之前的文本，保留最后一句在缓冲中 ──
+        unemitted = buffer[emitted_pos:]
+        safe = _safe_emit_boundary(unemitted)
+        if safe > 0:
+            evt = _emit_up_to(emitted_pos + safe)
+            if evt:
+                yield evt
+
+    # ── 流结束：输出剩余文本 + 兜底卡片 ──
+    evt = _emit_up_to(len(buffer))
+    if evt:
+        yield evt
+
+    for idx in range(len(cards)):
+        if idx not in emitted_indices:
+            ce = _card(idx)
+            if ce:
+                yield ce
+
+
+def _find_card_boundaries(text: str, cards: list) -> list:
+    """在完整响应文本中定位每张卡片的插入点，返回 [(position, card_idx), ...] 按位置排序。
+
+    策略优先级：
+    1. 「商品N」标记 — 最精确
+    2. 三特征检测（匹配依据 + 品质亮点 + 适用场景）— LLM 几乎一定会输出
+    3. 标题模糊匹配 — 兜底
+    """
+    marker_re = re.compile(r"「商品\s*(\d+)\s*」|\[PRODUCT_(\d+)\]|【PRODUCT_(\d+)】")
+
+    # 策略1: 标记
+    # 「商品N」是第 N 款商品详情的开头。卡片应出现在上一款详情文本之后：
+    # 「商品2」前插商品1卡，「商品3」前插商品2卡，最后一款放在正文末尾。
+    boundaries = []
+    marker_matches = list(marker_re.finditer(text))
+    for m in marker_matches:
+        card_num = int(m.group(1) or m.group(2) or m.group(3))
+        card_idx = card_num - 2
+        if 0 <= card_idx < len(cards):
+            boundaries.append((m.start(), card_idx))
+    if marker_matches:
+        last_card_num = int(marker_matches[-1].group(1) or marker_matches[-1].group(2) or marker_matches[-1].group(3))
+        last_card_idx = last_card_num - 1
+        if 0 <= last_card_idx < len(cards):
+            boundaries.append((len(text), last_card_idx))
+    if boundaries:
+        boundaries.sort(key=lambda x: x[0])
+        return boundaries
+
+    # 策略2: 三特征检测 — 匹配依据、品质亮点、适用场景 同时出现第N次 → 第N张卡片
+    # 卡片放在适用场景段落末尾（句号之后）
+    for card_idx in range(len(cards)):
+        target = card_idx + 1
+        pos_a = _nth_occurrence(text, "匹配依据", target)
+        pos_b = _nth_occurrence(text, "品质亮点", target)
+        pos_c = _nth_occurrence(text, "适用场景", target)
+        if pos_a < 0 or pos_b < 0 or pos_c < 0:
+            break
+        # 卡片插入点：适用场景后第一个句号之后
+        end = text.find("。", pos_c)
+        if end >= 0:
+            boundaries.append((end + 1, card_idx))
         else:
-            product_text = block.strip()
+            boundaries.append((pos_c + 4, card_idx))  # len("适用场景") = 4
 
-        card = cards[i - 1] if i <= len(cards) else None
-        if product_text or card:
-            products.append({"text": product_text, "card": card})
+    if boundaries:
+        boundaries.sort(key=lambda x: x[0])
+        return boundaries
 
-    # 若未从块中提取到 closing，从全文尾部提取
-    if not closing:
-        closing_m = re.search(r"\[CLOSING\](.*)", response_text, re.DOTALL)
-        if closing_m:
-            closing = closing_m.group(1).strip()
+    # 策略3: 标题模糊匹配
+    for card_idx, card in enumerate(cards):
+        title = card.get("title", "").strip()
+        if not title or len(title) < 3:
+            continue
+        pos = text.find(title)
+        if pos < 0:
+            tokens = re.findall(r'[一-鿿]+|[a-zA-Z0-9]+', title)
+            if len(tokens) >= 2:
+                for start in range(1, min(3, len(tokens))):
+                    sub = ''.join(tokens[start:])
+                    if len(sub) >= 4:
+                        pos = text.find(sub)
+                        if pos >= 0:
+                            break
+        if pos < 0:
+            prefix = title[:6].strip()
+            if len(prefix) >= 4:
+                pos = text.find(prefix)
+        if pos >= 0:
+            boundaries.append((pos, card_idx))
 
-    return {"summary": summary, "products": products, "closing": closing}
+    boundaries.sort(key=lambda x: x[0])
+    return boundaries
+
+
+def _nth_occurrence(text: str, pattern: str, n: int) -> int:
+    """返回 pattern 在 text 中第 n 次出现的位置（0-indexed），未找到返回 -1。"""
+    pos = -1
+    for _ in range(n):
+        pos = text.find(pattern, pos + 1)
+        if pos == -1:
+            return -1
+    return pos
 
 
 async def _emit_interleaved(response_text: str, cards: list) -> AsyncGenerator:
-    """以交错顺序产出 SSE 事件：摘要 → (商品文本 + 卡片) × N → 结语"""
-    parsed = _parse_response_text(response_text, cards)
-    if parsed is None:
-        # 旧格式降级：全文先发送，再发送全部卡片
-        for i in range(0, len(response_text), 20):
-            chunk = response_text[i : i + 20]
+    """基于完整文本的交错输出：文本分段 → 清理标记 → 16字符分块输出 → 插入卡片。
+
+    卡片位置由 _find_card_boundaries 预计算，基于完整文本，定位准确。
+    """
+    tag_re = re.compile(r"「(?:商品\s*\d+\s*」|结语」)|\[(?:SUMMARY|PRODUCT_\d+|CLOSING)\]|【(?:SUMMARY|PRODUCT_\d+|CLOSING)】", re.IGNORECASE)
+    closing_re = re.compile(r"「结语」|\[CLOSING\]|【CLOSING】", re.IGNORECASE)
+
+    def _card(idx: int) -> dict:
+        if idx >= len(cards):
+            return None
+        c = cards[idx]
+        return {
+            "event": "product_cards",
+            "data": ProductCardEvent(
+                product_id=c.get("product_id", c.get("id", "")),
+                title=c.get("title", ""), price=c.get("price", 0),
+                rating=c.get("rating", 0),
+                match_score=c.get("match_score", c.get("score", 0.5)),
+                highlights=c.get("highlights", []),
+                image_url=c.get("image_url"), image_urls=c.get("image_urls", []),
+                brand=c.get("brand"), category=c.get("category", ""),
+                index=idx + 1, total=len(cards),
+            ).model_dump_json(),
+        }
+
+    # 1. 分离结语：结语标记之后的内容不再插入卡片
+    body_text = response_text
+    closing_text = ""
+    cm_body = closing_re.search(response_text)
+    if cm_body:
+        body_text = response_text[: cm_body.start()]
+        closing_text = response_text[cm_body.start():]
+
+    # 2. 找到每张卡片的插入点
+    boundaries = _find_card_boundaries(body_text, cards)
+
+    # 3. 按卡片边界切分文本 → 逐段输出文本 + 卡片
+    emitted = set()
+    prev_pos = 0
+    for pos, card_idx in boundaries:
+        if card_idx in emitted:
+            continue
+        seg_text = tag_re.sub("", body_text[prev_pos:pos])
+        # 输出文本
+        for i in range(0, len(seg_text), 16):
+            chunk = seg_text[i : i + 16]
+            if chunk:
+                yield {"event": "text_delta", "data": TextDeltaEvent(content=chunk).model_dump_json()}
+        # 输出卡片
+        evt = _card(card_idx)
+        if evt:
+            emitted.add(card_idx)
+            yield evt
+        prev_pos = pos
+
+    # 4. 剩余正文文本（卡片之后、结语之前）
+    remaining_body = tag_re.sub("", body_text[prev_pos:])
+    for i in range(0, len(remaining_body), 16):
+        chunk = remaining_body[i : i + 16]
+        if chunk:
             yield {"event": "text_delta", "data": TextDeltaEvent(content=chunk).model_dump_json()}
-        for i, card in enumerate(cards):
-            event = ProductCardEvent(
-                product_id=card.get("product_id", card.get("id", "")),
-                title=card.get("title", ""),
-                price=card.get("price", 0),
-                rating=card.get("rating", 0),
-                match_score=card.get("match_score", card.get("score", 0.5)),
-                highlights=card.get("highlights", []),
-                image_url=card.get("image_url"),
-                image_urls=card.get("image_urls", []),
-                brand=card.get("brand"),
-                category=card.get("category", ""),
-                index=i + 1,
-                total=len(cards),
-            )
-            yield {"event": "product_cards", "data": event.model_dump_json()}
-        return
 
-    # 1) 开篇总结
-    if parsed["summary"]:
-        yield {"event": "text_delta", "data": TextDeltaEvent(content=parsed["summary"] + "\n\n").model_dump_json()}
+    # 5. 结语文本
+    closing_text = tag_re.sub("", closing_text)
+    for i in range(0, len(closing_text), 16):
+        chunk = closing_text[i : i + 16]
+        if chunk:
+            yield {"event": "text_delta", "data": TextDeltaEvent(content=chunk).model_dump_json()}
 
-    # 2) 逐商品：文本 → 卡片
-    for i, item in enumerate(parsed["products"]):
-        if item["text"]:
-            yield {"event": "text_delta", "data": TextDeltaEvent(content=item["text"] + "\n\n").model_dump_json()}
-        if item["card"]:
-            card = item["card"]
-            event = ProductCardEvent(
-                product_id=card.get("product_id", card.get("id", "")),
-                title=card.get("title", ""),
-                price=card.get("price", 0),
-                rating=card.get("rating", 0),
-                match_score=card.get("match_score", card.get("score", 0.5)),
-                highlights=card.get("highlights", []),
-                image_url=card.get("image_url"),
-                image_urls=card.get("image_urls", []),
-                brand=card.get("brand"),
-                category=card.get("category", ""),
-                index=i + 1,
-                total=len(parsed["products"]),
-            )
-            yield {"event": "product_cards", "data": event.model_dump_json()}
+    # 6. 兜底：未发送的卡片附在末尾
+    for idx in range(len(cards)):
+        if idx not in emitted:
+            evt = _card(idx)
+            if evt:
+                yield evt
 
-    # 3) 结语
-    if parsed["closing"]:
-        yield {"event": "text_delta", "data": TextDeltaEvent(content=parsed["closing"]).model_dump_json()}
+
+def _build_cache_key(message: str, conversation_id: str | None, history: list[dict]) -> str:
+    """Build a context-aware cache key so short multi-turn replies do not collide."""
+    recent = [
+        {"role": h.get("role", ""), "content": (h.get("content", "") or "")[:200]}
+        for h in history[-4:]
+    ]
+    return json.dumps(
+        {
+            "v": cache.CACHE_VERSION,
+            "conversation_id": conversation_id or "",
+            "message": message.strip(),
+            "history": recent,
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+
+
+def _clean_stream_text(text: str) -> str:
+    """Remove internal structure markers before streaming text to the client."""
+    text = re.sub(r"「(?:商品\s*\d+\s*」|结语」)|\[(?:SUMMARY|PRODUCT_\d+|CLOSING)\]|【(?:SUMMARY|PRODUCT_\d+|CLOSING)】", "", text, flags=re.IGNORECASE)
+    return text
 
 
 async def generate_response(
@@ -1069,8 +1628,13 @@ async def generate_response(
     """
     t_start = time.monotonic()
     try:
+        # 获取多轮对话历史。缓存 key 也必须包含上下文，避免“便宜一点”等短句误命中。
+        from app.services import state_manager as sm
+        conversation_history = await sm.get_recent_messages(conversation_id or "", limit=6)
+        cache_key = _build_cache_key(message, conversation_id, conversation_history)
+
         # ── 缓存检查 ──
-        cached = await cache.get(message)
+        cached = await cache.get(message, cache_key=cache_key)
         if cached:
             response_text = cached["response"]
             cards = cached["cards"]
@@ -1086,10 +1650,6 @@ async def generate_response(
         # ── 缓存检查 ──
         # 阶段 1: 意图分类 + 检索（非流式，~0.8s）
         # ═══════════════════════════════════════════════════════
-
-        # 获取多轮对话历史
-        from app.services import state_manager as sm
-        conversation_history = await sm.get_recent_messages(conversation_id or "", limit=6)
 
         initial_state: AgentState = {
             "query": message,
@@ -1108,6 +1668,30 @@ async def generate_response(
             yield {"event": "progress", "data": ProgressEvent(message="已理解您的问题，正在回复...").model_dump_json()}
             text = "你可以告诉我具体的需求，比如「推荐一款降噪耳机」「300元以内的运动鞋」「送女朋友的生日礼物」，我会帮你找到合适的商品～"
             yield {"event": "text_delta", "data": TextDeltaEvent(content=text).model_dump_json()}
+            yield {"event": "done", "data": DoneEvent().model_dump_json()}
+            return
+
+        # ── 联网搜索：外部信息查询 → web_search node → 返回结果 ──
+        if after_intent.get("intent") == "web_search":
+            yield {"event": "progress", "data": ProgressEvent(message="正在联网搜索...").model_dump_json()}
+            after_ws = await node_web_search(after_intent)
+            ws_response = after_ws.get("response", "")
+            web_results = after_ws.get("_web_results", [])
+
+            # 发送搜索摘要文本
+            yield {"event": "text_delta", "data": TextDeltaEvent(content=ws_response).model_dump_json()}
+
+            # 发送每条搜索结果
+            for i, wr in enumerate(web_results):
+                wr_event = WebSearchResultEvent(
+                    title=wr.get("title", ""),
+                    url=wr.get("url", ""),
+                    snippet=wr.get("snippet", ""),
+                    index=i + 1,
+                    total=len(web_results),
+                )
+                yield {"event": "web_search_result", "data": wr_event.model_dump_json()}
+
             yield {"event": "done", "data": DoneEvent().model_dump_json()}
             return
 
@@ -1195,15 +1779,31 @@ async def generate_response(
         slots = after_retrieve.get("slots", {})
 
         if not chunks:
+            if slots.get("category"):
+                logger.info("No precise results for '%s', expanding within category=%s", message[:40], slots.get("category"))
+                chunks = await _retrieve_same_category_supplements(message, slots, chunks)
+
+        if not chunks:
             # 兜底策略：无过滤检索 + 热门推荐词
             logger.info("No results for '%s', trying hot fallback...", message[:40])
-            fallback_state = {**after_intent, "query": "热门推荐 热销商品", "rewritten_query": "热门推荐 热销商品", "slots": {}}
+            fallback_slots = slots if slots.get("category") else {}
+            fallback_query = f"{slots.get('category')} 热门推荐" if slots.get("category") else "热门推荐 热销商品"
+            fallback_state = {**after_intent, "query": fallback_query, "rewritten_query": fallback_query, "slots": fallback_slots}
             after_fallback = await node_retrieve(fallback_state)
             chunks = after_fallback.get("retrieved_chunks", [])
+            slots = after_fallback.get("slots", fallback_slots)
             if not chunks:
-                yield {"event": "progress", "data": ProgressEvent(message="未找到匹配商品").model_dump_json()}
-                text = "抱歉，暂时没有找到符合您要求的商品。可以试试调整条件重新搜索吗？"
-                yield {"event": "text_delta", "data": TextDeltaEvent(content=text).model_dump_json()}
+                # 最终兜底：联网搜索
+                yield {"event": "progress", "data": ProgressEvent(message="本地商品库未匹配，正在联网搜索...").model_dump_json()}
+                after_ws = await node_web_search(after_intent)
+                ws_response = after_ws.get("response", "")
+                web_results = after_ws.get("_web_results", [])
+                yield {"event": "text_delta", "data": TextDeltaEvent(content=ws_response).model_dump_json()}
+                for i, wr in enumerate(web_results):
+                    yield {"event": "web_search_result", "data": WebSearchResultEvent(
+                        title=wr.get("title", ""), url=wr.get("url", ""),
+                        snippet=wr.get("snippet", ""), index=i + 1, total=len(web_results),
+                    ).model_dump_json()}
                 yield {"event": "done", "data": DoneEvent().model_dump_json()}
                 return
             yield {"event": "progress", "data": ProgressEvent(message="未精确匹配，为您推荐热销商品...").model_dump_json()}
@@ -1218,8 +1818,19 @@ async def generate_response(
         from app.services.product_ranker import rank_products
 
         raw_products = _extract_raw_products(chunks)
+        raw_products = _filter_products_by_requested_category(raw_products, slots.get("category", ""))
         user_prefs = _build_user_prefs(slots)
         ranked = rank_products(raw_products, user_prefs, after_retrieve.get("intent", ""), top_k=3)
+        if len(ranked) < 3 and slots.get("category"):
+            logger.info(
+                "Only %d ranked products after exclusions; supplementing category=%s",
+                len(ranked), slots.get("category")
+            )
+            chunks = await _retrieve_same_category_supplements(message, slots, chunks)
+            raw_products = _extract_raw_products(chunks, limit=30)
+            raw_products = _filter_products_by_requested_category(raw_products, slots.get("category", ""))
+            user_prefs = _build_user_prefs(slots)
+            ranked = rank_products(raw_products, user_prefs, after_retrieve.get("intent", ""), top_k=3)
         valid_ranked, is_reliable = _validate_ranked_products(ranked)
         logger.info("Ranked: %d products, valid: %d, reliable: %s", len(ranked), len(valid_ranked), is_reliable)
 
@@ -1236,12 +1847,12 @@ async def generate_response(
         prompt = _build_generation_prompt(message, slots, valid_ranked, is_reliable, after_retrieve.get("intent", ""), history=conversation_history)
 
         # ═══════════════════════════════════════════════════════
-        # 阶段 4: 真流式 LLM — 边生成边推送 text_delta
+        # 阶段 4: LLM 生成 + 交错输出 — 摘要 → (商品文本 + 卡片) × N → 结语
         # ═══════════════════════════════════════════════════════
 
         from app.services.llm_client import chat_completion
 
-        logger.info("Starting true streaming LLM call...")
+        logger.info("Starting LLM call for interleaved output...")
         stream = await chat_completion(
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
@@ -1251,34 +1862,27 @@ async def generate_response(
 
         t_first_token = None
         response_text = ""
-        async for chunk in stream:
-            delta = chunk.choices[0].delta
-            if delta.content:
+        async for event in _stream_interleaved(stream, cards):
+            if event["event"] == "text_delta":
                 if t_first_token is None:
                     t_first_token = time.monotonic()
-                response_text += delta.content
+                data = json.loads(event["data"])
+                response_text += data.get("content", "")
+            yield event
 
         ttft_ms = int((t_first_token - t_start) * 1000) if t_first_token else 0
-        logger.info("LLM streaming done: %d chars, TTFT=%dms", len(response_text), ttft_ms)
-
-        # ═══════════════════════════════════════════════════════
-        # 阶段 5: 交错发送 — 文本段 + 商品卡片交替
-        # ═══════════════════════════════════════════════════════
-
-        logger.info("Emitting interleaved: %d cards", len(cards))
-        async for evt in _emit_interleaved(response_text, cards):
-            yield evt
+        logger.info("LLM done: %d chars, TTFT=%dms", len(response_text), ttft_ms)
 
         # ═══════════════════════════════════════════════════════
         # 阶段 6: 缓存 + 状态回写
         # ═══════════════════════════════════════════════════════
 
-        await cache.set(message, response_text, cards)
+        await cache.set(message, response_text, cards, cache_key=cache_key)
 
         try:
             await sm.update_state(
                 conversation_id or "",
-                **slots,
+                slots=slots,
                 product_cards=cards,
                 intent=after_retrieve.get("intent", ""),
             )
@@ -1286,7 +1890,10 @@ async def generate_response(
             logger.warning("State update failed for conversation '%s': %s", conversation_id, e)
 
         total_ms = int((time.monotonic() - t_start) * 1000)
-        yield {"event": "done", "data": DoneEvent(latency_ms=total_ms, total_cards=len(cards)).model_dump_json()}
+        # 仅暴露前端需要的状态字段，不泄露内部标记
+        client_slots = {k: v for k, v in slots.items()
+                        if not k.startswith("_") and k not in ("missing_slots", "exclude_text_terms")}
+        yield {"event": "done", "data": DoneEvent(latency_ms=total_ms, total_cards=len(cards), slots=client_slots).model_dump_json()}
 
     except Exception as exc:
         logger.exception("Agent pipeline error")

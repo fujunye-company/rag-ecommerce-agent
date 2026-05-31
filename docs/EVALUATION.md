@@ -123,6 +123,9 @@ python data/test_cases/run_eval.py
 # 快速冒烟测试
 python scripts/run_eval_quick.py
 
+# P@3 检索评测（可选 reranker 实测）
+python scripts/run_p3_test.py --with-reranker
+
 # E2E 场景 curl 测试（无需依赖）
 bash tests/e2e_scenarios.sh
 ```

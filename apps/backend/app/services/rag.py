@@ -18,6 +18,7 @@ async def retrieve(
     exclude_brands: list[str] | None = None,
     exclude_categories: list[str] | None = None,
     exclude_attributes: dict[str, str] | None = None,
+    strict_category: bool = False,
 ) -> dict:
     """
     RAG 检索主入口:
@@ -52,7 +53,7 @@ async def retrieve(
                 exclude_attributes=exclude_attributes, top_k=top_k,
             )
 
-    if not chunks and category:
+    if not chunks and category and not strict_category:
         # 策略B: 品类名可能不匹配，回退到纯语义+价格（丢弃品类过滤）
         logger.info("RAG: category='%s' returned 0 even without price, retry without category", category)
         chunks, search_ms = await hybrid_search(

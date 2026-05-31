@@ -64,8 +64,22 @@ def _get_local_model():
         logger.error("Local VLM unavailable: %s", e)
         _local_model = None
         _local_processor = None
-        _model_load_attempted = False  # 允许下次重试（而非永久缓存失败状态）
+        _model_load_attempted = True  # 本进程内跳过重复重载，避免 Demo 现场反复卡顿
     return _local_model, _local_processor
+
+
+def get_vision_readiness() -> dict:
+    """Return lightweight readiness details without loading the heavy VLM."""
+    from app.core.config import settings
+
+    modelscope_cache = Path.home() / ".cache" / "modelscope" / "qwen" / "Qwen3-VL-2B-Instruct"
+    return {
+        "local_model_loaded": _local_model is not None,
+        "local_model_attempted": _model_load_attempted,
+        "local_model_cache_exists": modelscope_cache.exists(),
+        "cloud_vision_configured": bool(settings.DOUBAO_API_KEY),
+        "ready": _local_model is not None or bool(settings.DOUBAO_API_KEY),
+    }
 
 
 async def _parse_with_doubao(image_bytes: bytes) -> dict:

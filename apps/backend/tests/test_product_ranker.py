@@ -76,6 +76,25 @@ def test_anti_selection_excludes_brands(ranker, sample_products):
     titles = {r["title"] for r in result}
     assert "Sony XM5" not in titles
     assert "Bose QC45" not in titles
+    assert result[0]["title"] == "AirPods Pro"
+
+
+def test_exclude_brands_is_case_and_space_insensitive(ranker, sample_products):
+    prefs = {"exclude_brands": [" apple "]}
+    result = ranker.rank(sample_products, prefs, "anti_selection", top_k=5)
+    titles = {r["title"] for r in result}
+    assert "AirPods Pro" not in titles
+
+
+def test_exclude_brand_matches_compound_brand_names(ranker):
+    products = [
+        {"title": "AirPods Pro", "price": 1899, "rating": 4.8, "brand": "Apple 苹果", "semantic_score": 0.9},
+        {"title": "Huawei FreeBuds", "price": 999, "rating": 4.6, "brand": "华为", "semantic_score": 0.8},
+    ]
+
+    result = ranker.rank(products, {"exclude_brands": ["Apple"]}, "anti_selection", top_k=5)
+
+    assert [r["title"] for r in result] == ["Huawei FreeBuds"]
 
 
 def test_anti_selection_excludes_attributes(ranker, sample_products):

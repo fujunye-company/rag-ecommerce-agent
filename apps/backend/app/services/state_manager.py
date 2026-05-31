@@ -51,23 +51,29 @@ async def get_or_create_session(session_id: str | None = None) -> tuple[str, dic
 
         # 从数据库获取 (仅当有DB时)
         if _HAS_DB:
-            async with AsyncSessionLocal() as db:
-                result = await db.execute(select(Session).where(Session.id == valid_uuid))
-                session = result.scalar_one_or_none()
-                if session:
-                    state = session.state_json or {}
-                    _cache[str(session.id)] = state
-                    return str(session.id), state
+            try:
+                async with AsyncSessionLocal() as db:
+                    result = await db.execute(select(Session).where(Session.id == valid_uuid))
+                    session = result.scalar_one_or_none()
+                    if session:
+                        state = session.state_json or {}
+                        _cache[str(session.id)] = state
+                        return str(session.id), state
+            except Exception as e:
+                logger.warning("Session DB lookup failed, using memory fallback: %s", e)
 
     # 创建新会话（优先使用传入的有效 UUID）
     new_id = valid_uuid if valid_uuid else uuid.uuid4()
     new_id_str = str(new_id)
 
     if _HAS_DB:
-        async with AsyncSessionLocal() as db:
-            session = Session(id=new_id, state_json={}, message_count=0)
-            db.add(session)
-            await db.commit()
+        try:
+            async with AsyncSessionLocal() as db:
+                session = Session(id=new_id, state_json={}, message_count=0)
+                db.add(session)
+                await db.commit()
+        except Exception as e:
+            logger.warning("Session DB create failed, using memory fallback: %s", e)
 
     _cache[new_id_str] = {}
     logger.info("Created session: %s (db=%s)", new_id_str[:8], _HAS_DB)

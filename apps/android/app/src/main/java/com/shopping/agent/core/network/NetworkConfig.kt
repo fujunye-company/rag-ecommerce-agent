@@ -1,15 +1,14 @@
 package com.shopping.agent.core.network
 
+import com.shopping.agent.BuildConfig
+
 /**
- * 网络配置 — 集中管理 BASE_URL，避免分散硬编码。
+ * Network configuration shared by repositories and SSE clients.
  *
- * Android 模拟器访问本机后端：10.0.2.2 → Windows 宿主机
- * 真机 Wi-Fi 调试：电脑局域网 IP
- * 真机 USB adb reverse：127.0.0.1
+ * Android emulator: http://10.0.2.2:8080
+ * Physical device over Wi-Fi: set API_BASE_URL to http://<LAN-IP>:8080
+ * Physical device over adb reverse: set API_BASE_URL to http://127.0.0.1:8080
  */
 object NetworkConfig {
-    /** 模拟器: http://10.0.2.2:8082 */
-    const val BASE_URL = "http://10.0.2.2:8082"
-    // 真机 Wi-Fi: const val BASE_URL = "http://192.168.x.x:8082"
-    // 真机 USB reverse: const val BASE_URL = "http://127.0.0.1:8082"
+    val BASE_URL: String = BuildConfig.API_BASE_URL
 }

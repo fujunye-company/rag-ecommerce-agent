@@ -33,7 +33,8 @@ sealed class SSEEvent {
     data class Done(
         val sessionId: String = "",
         val totalCards: Int = 0,
-        val latencyMs: Int = 0
+        val latencyMs: Int = 0,
+        val slots: Map<String, Any> = emptyMap()
     ) : SSEEvent()
     
     data class Error(val message: String) : SSEEvent()
@@ -42,6 +43,14 @@ sealed class SSEEvent {
         val question: String,
         val missingSlots: List<String>,
         val options: List<String>
+    ) : SSEEvent()
+
+    data class WebSearchResult(
+        val title: String,
+        val url: String,
+        val snippet: String,
+        val index: Int,
+        val total: Int
     ) : SSEEvent()
 }
 
@@ -69,7 +78,8 @@ data class ProgressPayload(val message: String)
 data class DonePayload(
     val total_cards: Int,
     val latency_ms: Int,
-    val message: String?
+    val message: String?,
+    val slots: Map<String, Any>?
 )
 
 data class ErrorPayload(val message: String, val code: String?)
@@ -78,4 +88,12 @@ data class ClarifyPayload(
     val question: String,
     val missing_slots: List<String>?,
     val options: List<String>?
+)
+
+data class WebSearchResultPayload(
+    val title: String,
+    val url: String,
+    val snippet: String,
+    val index: Int,
+    val total: Int
 )

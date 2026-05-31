@@ -194,14 +194,14 @@ async def health():
         qdrant_status = f"unavailable: {str(e)[:50]}"
     
     healthy = db_status == "connected"
-    return {
+    return JSONResponse(status_code=200 if healthy else 503, content={
         "status": "ok" if healthy else "degraded",
         "version": "1.0.0",
         "database": db_status,
         "qdrant": qdrant_status,
         "collection": collection_name,
         "vector_size": vector_size,
-    }, 200 if healthy else 503
+    })
 
 
 # ── 版本信息 ──────────────────────────────────────────────

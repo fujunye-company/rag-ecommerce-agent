@@ -202,7 +202,8 @@ class SseClient(
                     SSEEvent.Done(
                         sessionId = convId ?: "",
                         totalCards = d.total_cards,
-                        latencyMs = d.latency_ms
+                        latencyMs = d.latency_ms,
+                        slots = d.slots ?: emptyMap()
                     )
                 }
                 "clarify" -> {
@@ -211,6 +212,16 @@ class SseClient(
                         question = d.question,
                         missingSlots = d.missing_slots ?: emptyList(),
                         options = d.options ?: emptyList()
+                    )
+                }
+                "web_search_result" -> {
+                    val d = gson.fromJson(json, WebSearchResultPayload::class.java)
+                    SSEEvent.WebSearchResult(
+                        title = d.title,
+                        url = d.url,
+                        snippet = d.snippet,
+                        index = d.index,
+                        total = d.total
                     )
                 }
                 "error" -> {

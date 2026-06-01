@@ -10,6 +10,7 @@ import com.shopping.agent.data.model.*
 import com.shopping.agent.data.remote.SseClient
 import com.shopping.agent.data.repository.ChatRepository
 import com.shopping.agent.data.tts.TtsManager
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,6 +61,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val visionClient = SseClient()
     private val userRepo = UserRepository(application)
     private val ttsManager = TtsManager(application)
+    private val initComplete = CompletableDeferred<Unit>()
 
     init {
         viewModelScope.launch {
@@ -81,8 +83,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             // 加载对话列表
             val metas = userRepo.getConversationMetas()
 
-            // 恢复上次的排除 chips
-            val savedChipsJson = userRepo.getSetting("last_clarify_chips")
+            // 恢复该对话的排除 chips（按对话独立存储）
+            val savedChipsJson = userRepo.getSetting("clarify_chips_$convId")
             val savedChips: List<String> = if (savedChipsJson.isNotEmpty()) {
                 try {
                     Gson().fromJson(savedChipsJson, object : TypeToken<List<String>>() {}.type)
@@ -99,6 +101,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     screenState = if (messages.isNotEmpty()) ScreenState.Content(true) else ScreenState.Idle,
                 )
             }
+            initComplete.complete(Unit)
         }
     }
 
@@ -120,18 +123,23 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     // 每日问候（当日首次打开 App 时单开一个独立对话）
     // ═══════════════════════════════════════════════════════
 
-    fun sendDailyGreeting() {
+    suspend fun sendDailyGreeting() {
+        // 等待 init 协程完成，确保 currentConversationId 和 messages 已从 DB 恢复
+        initComplete.await()
+
         val today = java.time.LocalDate.now().toString()
-        val lastGreetingDate = userRepo.getSettingSync("last_greeting_date")
+        val lastGreetingDate = userRepo.getSetting("last_greeting_date")
         if (lastGreetingDate == today) return
 
         // 有历史消息时不覆盖 — 用户可能在继续之前的对话
         if (_uiState.value.messages.isNotEmpty()) return
 
-        userRepo.setSettingSync("last_greeting_date", today)
+        userRepo.setSetting("last_greeting_date", today)
 
-        // 使用当前 conversationId，不创建新会话覆盖 last_conversation_id
-        val convId = _uiState.value.currentConversationId
+        // 从 settings 读取真正的 conversationId，不依赖可能未初始化的 _uiState
+        val savedConvId = userRepo.getSetting("last_conversation_id")
+        val convId = if (savedConvId.isNotEmpty()) savedConvId else _uiState.value.currentConversationId
+
         val greeting = ChatMessage(
             id = UUID.randomUUID().toString(),
             role = MessageRole.Assistant,
@@ -147,12 +155,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             status = MessageStatus.Sent,
         )
 
-        viewModelScope.launch {
-            userRepo.createConversation(convId, "每日推荐")
-            userRepo.saveMessage(greeting, convId)
-            userRepo.saveMessage(productMsg, convId)
-            refreshConversationList()
-        }
+        userRepo.createConversation(convId, "每日推荐")
+        userRepo.saveMessage(greeting, convId)
+        userRepo.saveMessage(productMsg, convId)
+        refreshConversationList()
 
         _uiState.update {
             it.copy(
@@ -192,13 +198,20 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             userRepo.setSetting("last_conversation_id", convId)
             val messages = userRepo.getMessages(convId)
+            // 恢复该对话的排除 chips
+            val savedChipsJson = userRepo.getSetting("clarify_chips_$convId")
+            val savedChips: List<String> = if (savedChipsJson.isNotEmpty()) {
+                try {
+                    Gson().fromJson(savedChipsJson, object : TypeToken<List<String>>() {}.type)
+                } catch (_: Exception) { emptyList() }
+            } else emptyList()
             _uiState.update {
                 it.copy(
                     currentConversationId = convId,
                     messages = messages,
                     streamingText = "",
                     streamingCards = emptyList(),
-                    clarifyChips = emptyList(),
+                    clarifyChips = savedChips,
                     searchStatus = "",
                     screenState = if (messages.isNotEmpty()) ScreenState.Content(true) else ScreenState.Idle,
                 )
@@ -447,8 +460,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                         .take(4)
                                     val excludeChips = brands.map { "排除 $it" }
                                     _uiState.update { it.copy(clarifyChips = excludeChips) }
-                                    // 持久化排除 chips，跨 App 重启恢复
-                                    userRepo.setSetting("last_clarify_chips", Gson().toJson(excludeChips))
+                                    // 持久化排除 chips，按对话独立存储
+                                    userRepo.setSetting("clarify_chips_$convId", Gson().toJson(excludeChips))
                                 }
                             }
                             is SSEEvent.Error -> {

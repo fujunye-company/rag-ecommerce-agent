@@ -607,6 +607,30 @@ async def _retrieve_same_category_supplements(query: str, slots: dict, existing_
     return _filter_chunks_by_requested_category(merged, category)
 
 
+# 品牌中英文别名映射 — 解决 Qdrant 中同一品牌中英文名不一致导致排除失效的问题
+_BRAND_ALIASES: dict[str, str] = {
+    "华为": "Huawei", "Huawei": "华为",
+    "苹果": "Apple", "Apple": "苹果",
+    "小米": "Xiaomi", "Xiaomi": "小米",
+    "阿迪达斯": "Adidas", "Adidas": "阿迪达斯",
+    "索尼": "Sony", "Sony": "索尼",
+    "耐克": "Nike", "Nike": "耐克",
+    "联想": "Lenovo", "Lenovo": "联想",
+    "三星": "Samsung", "Samsung": "三星",
+    "惠普": "HP", "HP": "惠普",
+}
+
+
+def _expand_brand_aliases(brands: list[str]) -> list[str]:
+    """添加品牌中英文别名的排除列表，保证两边都能匹配。"""
+    expanded: set[str] = set(brands)
+    for b in brands:
+        alias = _BRAND_ALIASES.get(b)
+        if alias:
+            expanded.add(alias)
+    return list(expanded)
+
+
 def _scoped_exclude_brands(slots: dict) -> list:
     """Return exclude_brands scoped to the current category, so brand exclusion
     doesn't leak across different categories."""
@@ -614,15 +638,17 @@ def _scoped_exclude_brands(slots: dict) -> list:
     if category:
         by_cat = slots.get("exclude_by_category", {})
         if by_cat and category in by_cat:
-            return by_cat[category]
-    return slots.get("exclude_brands") or []
+            return _expand_brand_aliases(by_cat[category])
+    return _expand_brand_aliases(slots.get("exclude_brands") or [])
 
 
 def _normalize_exclusions(slots: dict) -> None:
     """Move flat exclude_brands into category-scoped exclude_by_category dict."""
     category = slots.get("category", "")
+    if not category:
+        return  # no category to scope to — keep exclude_brands as-is
     flat = slots.pop("exclude_brands", None)
-    if not flat or not category:
+    if not flat:
         return
     by_cat = dict(slots.get("exclude_by_category") or {})
     existing = set(by_cat.get(category, []))
@@ -1798,14 +1824,15 @@ async def generate_response(
                 chunks = await _retrieve_same_category_supplements(message, slots, chunks)
 
         if not chunks:
-            # 兜底策略：无过滤检索 + 热门推荐词
-            # 清除排除条件，避免 "排除 Apple" 后所有结果都被过滤导致为空
-            logger.info("No results for '%s', trying hot fallback...", message[:40])
-            fallback_slots = {k: v for k, v in slots.items() if k not in (
-                "exclude_brands", "exclude_by_category", "exclude_categories",
-                "exclude_attributes", "exclude_text_terms",
-            )} if slots.get("category") else {}
-            fallback_query = f"{slots.get('category')} 热门推荐" if slots.get("category") else "热门推荐 热销商品"
+            # 兜底策略：清除品类 + 排除条件，纯语义检索
+            # —— 品类名可能不匹配（如 LLM 提取"降噪耳机"但 DB 中为"耳机"）
+            logger.info("No results for '%s', trying hot fallback (no category/exclusion filters)...", message[:40])
+            fallback_slots = {
+                k: v for k, v in slots.items()
+                if k not in ("category", "exclude_brands", "exclude_by_category",
+                             "exclude_categories", "exclude_attributes", "exclude_text_terms")
+            }
+            fallback_query = message
             fallback_state = {**after_intent, "query": fallback_query, "rewritten_query": fallback_query, "slots": fallback_slots}
             after_fallback = await node_retrieve(fallback_state)
             chunks = after_fallback.get("retrieved_chunks", [])

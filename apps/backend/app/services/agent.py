@@ -1671,6 +1671,20 @@ async def generate_response(
             yield {"event": "done", "data": DoneEvent().model_dump_json()}
             return
 
+        # ── 否定/排除语义检测：LLM 可能把 "排除 Apple" 误判为 web_search，
+        #     但只要有否定关键词 + 对话历史（多轮上下文），就应走 anti_selection 检索路径
+        neg_keywords = ["不要", "除了", "非", "不含", "排除", "拒绝", "去掉", "避开", "别"]
+        has_negation_in_query = any(kw in message for kw in neg_keywords)
+        has_negation_slots = bool(
+            after_intent.get("slots", {}).get("exclude_brands") or
+            after_intent.get("slots", {}).get("exclude_categories") or
+            after_intent.get("slots", {}).get("exclude_text_terms")
+        )
+        has_history = len(conversation_history) >= 2
+        if after_intent.get("intent") == "web_search" and (has_negation_in_query or has_negation_slots) and has_history:
+            logger.info("Overriding web_search → anti_selection: negation detected in multi-turn context")
+            after_intent["intent"] = "anti_selection"
+
         # ── 联网搜索：外部信息查询 → web_search node → 返回结果 ──
         if after_intent.get("intent") == "web_search":
             yield {"event": "progress", "data": ProgressEvent(message="正在联网搜索...").model_dump_json()}
@@ -1785,8 +1799,12 @@ async def generate_response(
 
         if not chunks:
             # 兜底策略：无过滤检索 + 热门推荐词
+            # 清除排除条件，避免 "排除 Apple" 后所有结果都被过滤导致为空
             logger.info("No results for '%s', trying hot fallback...", message[:40])
-            fallback_slots = slots if slots.get("category") else {}
+            fallback_slots = {k: v for k, v in slots.items() if k not in (
+                "exclude_brands", "exclude_by_category", "exclude_categories",
+                "exclude_attributes", "exclude_text_terms",
+            )} if slots.get("category") else {}
             fallback_query = f"{slots.get('category')} 热门推荐" if slots.get("category") else "热门推荐 热销商品"
             fallback_state = {**after_intent, "query": fallback_query, "rewritten_query": fallback_query, "slots": fallback_slots}
             after_fallback = await node_retrieve(fallback_state)

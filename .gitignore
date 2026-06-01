@@ -29,6 +29,7 @@ Thumbs.db
 *.apk
 *.aab
 *.keystore
+*.jks
 local.properties
 apps/android/.gradle/
 apps/android/build/

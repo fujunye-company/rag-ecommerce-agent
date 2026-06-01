@@ -135,9 +135,6 @@ async def node_classify_intent(state: AgentState) -> AgentState:
                         state["slots"]["exclude_attributes"],
                         state["slots"].get("exclude_text_terms"))
 
-        if _should_inherit_category_for_negation(query, state["slots"], prev_slots, has_negation, negation if has_negation else {}):
-            state["slots"]["category"] = prev_slots["category"]
-
         # 品类隔离：排除品牌只影响当前品类，不越界到其他品类
         _normalize_exclusions(state["slots"])
 
@@ -517,34 +514,6 @@ def _build_rewrite_base(query: str, expanded: str, slots: dict, has_negation: bo
         return f"{slots['category']} 热门推荐 同类商品"
     positive_q = (negation or {}).get("positive_query", "") if has_negation else ""
     return positive_q or expanded or query
-
-
-def _should_inherit_category_for_negation(
-    query: str,
-    slots: dict,
-    prev_slots: dict,
-    has_negation: bool,
-    negation: dict,
-) -> bool:
-    """Keep the previous product category for chip-style requests like '排除 Apple'."""
-    if not has_negation or not prev_slots.get("category"):
-        return False
-
-    current_category = (slots.get("category") or "").strip()
-    previous_category = (prev_slots.get("category") or "").strip()
-    if not current_category:
-        return True
-    if current_category == previous_category:
-        return False
-
-    positive_query = ((negation or {}).get("positive_query") or "").strip()
-    compact_query = query.strip()
-    chip_like = re.fullmatch(
-        r"(?:不要|除了|非|不含|排除|拒绝|去掉|避开|别要|别买)\s*[\w\u4e00-\u9fff ._+-]{1,40}",
-        compact_query,
-        flags=re.IGNORECASE,
-    )
-    return bool(chip_like and (not positive_query or positive_query == compact_query))
 
 
 def _previous_slots_from_state(state: dict) -> dict:
@@ -1867,16 +1836,8 @@ async def generate_response(
 
         if not valid_ranked:
             yield {"event": "progress", "data": ProgressEvent(message="未找到匹配商品").model_dump_json()}
-            yield {"event": "progress", "data": ProgressEvent(message="本地商品库未匹配，正在联网搜索...").model_dump_json()}
-            after_ws = await node_web_search(after_intent)
-            ws_response = after_ws.get("response", "")
-            web_results = after_ws.get("_web_results", [])
-            yield {"event": "text_delta", "data": TextDeltaEvent(content=ws_response).model_dump_json()}
-            for i, wr in enumerate(web_results):
-                yield {"event": "web_search_result", "data": WebSearchResultEvent(
-                    title=wr.get("title", ""), url=wr.get("url", ""),
-                    snippet=wr.get("snippet", ""), index=i + 1, total=len(web_results),
-                ).model_dump_json()}
+            text = "抱歉，暂时没有找到符合您要求的商品。可以试试调整条件重新搜索吗？"
+            yield {"event": "text_delta", "data": TextDeltaEvent(content=text).model_dump_json()}
             yield {"event": "done", "data": DoneEvent().model_dump_json()}
             return
 

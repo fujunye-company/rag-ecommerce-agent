@@ -1,8 +1,4 @@
-from app.services.agent import (
-    _build_rewrite_base,
-    _previous_slots_from_state,
-    _should_inherit_category_for_negation,
-)
+from app.services.agent import _build_rewrite_base, _previous_slots_from_state
 
 
 def test_previous_slots_reads_nested_state():
@@ -37,23 +33,3 @@ def test_negation_rewrite_base_uses_inherited_category():
     )
 
     assert base == "平板 热门推荐 同类商品"
-
-
-def test_chip_style_negation_keeps_previous_category_when_slot_is_polluted():
-    assert _should_inherit_category_for_negation(
-        query="排除 Apple",
-        slots={"category": "Apple"},
-        prev_slots={"category": "平板"},
-        has_negation=True,
-        negation={"positive_query": "排除 Apple"},
-    )
-
-
-def test_negation_with_new_explicit_category_can_switch_category():
-    assert not _should_inherit_category_for_negation(
-        query="推荐手机，不要 Apple",
-        slots={"category": "手机"},
-        prev_slots={"category": "平板"},
-        has_negation=True,
-        negation={"positive_query": "推荐手机"},
-    )

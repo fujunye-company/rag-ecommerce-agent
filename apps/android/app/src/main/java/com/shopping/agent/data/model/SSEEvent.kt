@@ -52,6 +52,10 @@ sealed class SSEEvent {
         val index: Int,
         val total: Int
     ) : SSEEvent()
+
+    data class Compare(
+        val dimensions: List<Map<String, Any?>>
+    ) : SSEEvent()
 }
 
 // ── JSON payload 映射（仅 SseClient 内部解析用） ──

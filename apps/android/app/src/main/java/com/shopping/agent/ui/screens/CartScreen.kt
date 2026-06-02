@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
@@ -132,7 +132,7 @@ fun CartScreen(
         // 下单成功弹窗
         if (uiState.orderResult != null) {
             Dialog(onDismissRequest = { viewModel.dismissOrderResult() }) {
-                Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surface) {
+                Surface(shape = RadiusXl, color = MaterialTheme.colorScheme.surface) {
                     Column(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -171,7 +171,7 @@ private fun CartItemCard(
     onDelete: () -> Unit,
 ) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = RadiusLg,
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 1.dp,
     ) {
@@ -183,7 +183,7 @@ private fun CartItemCard(
             AsyncImage(
                 model = item.product.imageUrl ?: "",
                 contentDescription = item.product.title,
-                modifier = Modifier.size(72.dp).clip(RoundedCornerShape(8.dp)),
+                modifier = Modifier.size(72.dp).clip(RadiusMd),
                 contentScale = ContentScale.Crop,
             )
             Spacer(Modifier.width(12.dp))

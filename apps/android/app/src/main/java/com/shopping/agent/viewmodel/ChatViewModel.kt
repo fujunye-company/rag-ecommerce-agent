@@ -295,15 +295,57 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         ttsManager.resetForNewMessage()
 
         viewModelScope.launch {
-            val accText = StringBuilder()
-            val accCards = mutableListOf<Product>()
-            val accWebResults = mutableListOf<WebSearchItem>()
-            val convId = _uiState.value.currentConversationId
+            userRepo.saveMessage(userMessage, _uiState.value.currentConversationId)
+            streamWithRetry(text)
+        }
+    }
 
-            // 用户消息必须第一时间持久化，避免 SSE 流异常中断时丢失
-            userRepo.saveMessage(userMessage, convId)
+    private suspend fun streamWithRetry(text: String) {
+        val maxRetries = 3
+        var attempt = 0
+        var lastException: Exception? = null
+
+        while (attempt < maxRetries) {
+            if (attempt > 0) {
+                val delayMs = (1000L * (1 shl (attempt - 1))).coerceAtMost(8000L)
+                delay(delayMs)
+                _uiState.update { it.copy(searchStatus = "正在重新连接…（第${attempt}次）") }
+            }
+            attempt++
 
             try {
+                performStream(text)
+                return  // success
+            } catch (e: java.io.IOException) {
+                lastException = e
+                // 已收数据 → 不重试，用 H4 的持久化逻辑
+                if (_uiState.value.messages.any { it.role == MessageRole.Assistant }) {
+                    return
+                }
+                continue
+            } catch (e: Exception) {
+                lastException = e
+                break  // non-IO errors don't retry
+            }
+        }
+
+        _uiState.update {
+            it.copy(
+                searchStatus = "",
+                screenState = ScreenState.Error("连接失败，请检查网络后重试"),
+                isStreaming = false,
+            )
+        }
+    }
+
+    private suspend fun performStream(text: String) {
+        val accText = StringBuilder()
+        val accCards = mutableListOf<Product>()
+        val accWebResults = mutableListOf<WebSearchItem>()
+        var accCompareDims: List<Map<String, Any?>> = emptyList()
+        val convId = _uiState.value.currentConversationId
+
+        try {
                 chatRepository.sendMessage(text, _uiState.value.currentConversationId)
                     .collect { event ->
                         when (event) {
@@ -318,6 +360,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                     index = event.index,
                                     total = event.total,
                                 ))
+                            }
+                            is SSEEvent.Compare -> {
+                                accCompareDims = event.dimensions
                             }
                             is SSEEvent.Clarify -> {
                                 _uiState.update {
@@ -365,11 +410,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                     }
 
                                     if (!summaryText.isNullOrBlank()) {
+                                        val dimsForSummary = accCompareDims.toList()
+                                        accCompareDims = emptyList()
                                         val summaryMsg = ChatMessage(
                                             id = UUID.randomUUID().toString(),
                                             role = MessageRole.Assistant,
                                             content = summaryText.trim(),
                                             productCards = emptyList(),
+                                            compareDimensions = dimsForSummary,
                                             status = MessageStatus.Sent,
                                         )
                                         _uiState.update {
@@ -416,13 +464,15 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                 // 提交剩余文本（如结语），附联网搜索结果
                                 val remainingText = accText.toString().trim()
                                 val finalWebResults = accWebResults.toList()
-                                if (remainingText.isNotEmpty() || finalWebResults.isNotEmpty()) {
+                                val finalCompareDims = accCompareDims.toList()
+                                if (remainingText.isNotEmpty() || finalWebResults.isNotEmpty() || finalCompareDims.isNotEmpty()) {
                                     val closingMsg = ChatMessage(
                                         id = UUID.randomUUID().toString(),
                                         role = MessageRole.Assistant,
                                         content = remainingText,
                                         productCards = emptyList(),
                                         webSearchResults = finalWebResults,
+                                        compareDimensions = finalCompareDims,
                                         status = MessageStatus.Sent,
                                     )
                                     _uiState.update {
@@ -476,13 +526,52 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                             }
                         }
                     }
+            } catch (e: java.io.IOException) {
+                android.util.Log.e("ChatViewModel", "SSE IO error: ${e.message}")
+
+                // 保存已累积但未落盘的数据
+                val remainingText = accText.toString().trim()
+                val remainingCards = accCards.toList()
+                val remainingWebResults = accWebResults.toList()
+                if (remainingText.isNotEmpty() || remainingCards.isNotEmpty()) {
+                    val partialMsg = ChatMessage(
+                        id = UUID.randomUUID().toString(),
+                        role = MessageRole.Assistant,
+                        content = remainingText,
+                        productCards = remainingCards,
+                        webSearchResults = remainingWebResults,
+                        status = MessageStatus.Sent,
+                    )
+                    userRepo.saveMessage(partialMsg, convId)
+                    _uiState.update { it.copy(messages = it.messages + partialMsg) }
+                }
+                throw e  // propagate to streamWithRetry for retry
             } catch (e: Exception) {
                 android.util.Log.e("ChatViewModel", "SSE exception: ${e.message}", e)
+
+                val remainingText = accText.toString().trim()
+                val remainingCards = accCards.toList()
+                val remainingWebResults = accWebResults.toList()
+                if (remainingText.isNotEmpty() || remainingCards.isNotEmpty()) {
+                    val partialMsg = ChatMessage(
+                        id = UUID.randomUUID().toString(),
+                        role = MessageRole.Assistant,
+                        content = remainingText,
+                        productCards = remainingCards,
+                        webSearchResults = remainingWebResults,
+                        status = MessageStatus.Sent,
+                    )
+                    userRepo.saveMessage(partialMsg, convId)
+                    _uiState.update { it.copy(messages = it.messages + partialMsg) }
+                }
+
                 _uiState.update {
                     it.copy(
                         searchStatus = "",
-                        screenState = ScreenState.Error("网络连接失败：${e.message}"),
+                        screenState = ScreenState.Error("网络连接失败，请重试"),
                         isStreaming = false,
+                        streamingText = "",
+                        streamingCards = emptyList(),
                     )
                 }
             }
@@ -619,11 +708,28 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     }
             } catch (e: Exception) {
                 android.util.Log.e("ChatViewModel", "Vision SSE exception: ${e.message}", e)
+
+                val remainingText = accText.toString().trim()
+                val remainingCards = accCards.toList()
+                if (remainingText.isNotEmpty() || remainingCards.isNotEmpty()) {
+                    val partialMsg = ChatMessage(
+                        id = UUID.randomUUID().toString(),
+                        role = MessageRole.Assistant,
+                        content = remainingText.ifEmpty { "图片识别中断" },
+                        productCards = remainingCards,
+                        status = MessageStatus.Sent,
+                    )
+                    userRepo.saveMessage(partialMsg, convId)
+                    _uiState.update { it.copy(messages = it.messages + partialMsg) }
+                }
+
                 _uiState.update {
                     it.copy(
                         searchStatus = "",
-                        screenState = ScreenState.Error("拍照找货失败：${e.message}"),
+                        screenState = ScreenState.Error("拍照找货失败，请重试"),
                         isStreaming = false,
+                        streamingText = "",
+                        streamingCards = emptyList(),
                     )
                 }
             }

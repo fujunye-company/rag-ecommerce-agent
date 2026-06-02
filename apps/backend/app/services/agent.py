@@ -474,6 +474,45 @@ def _validate_ranked_products(ranked: list) -> tuple[list, bool]:
     return valid, is_reliable
 
 
+def _diversify_scenario_products(ranked: list, max_total: int = 5) -> list:
+    """场景化推荐品类多样性采样：保证每品类至少 1 款，按 match_score 降序。
+
+    Args:
+        ranked: 已按 match_score 降序排列的商品列表
+        max_total: 最多返回的商品数量
+
+    Returns:
+        品类多样化后的商品列表
+    """
+    if len(ranked) <= max_total:
+        return ranked
+
+    picked = []
+    seen_categories: set[str] = set()
+    remaining = []
+
+    for r in ranked:
+        cat = (r.get("category") or "").strip()
+        if cat and cat not in seen_categories:
+            picked.append(r)
+            seen_categories.add(cat)
+            if len(picked) >= max_total:
+                return picked
+        else:
+            remaining.append(r)
+
+    for r in remaining:
+        if len(picked) >= max_total:
+            break
+        picked.append(r)
+
+    logger.info(
+        "Scenario diversity: %d categories -> %d products (from %d total)",
+        len(seen_categories), len(picked), len(ranked),
+    )
+    return picked
+
+
 # ═══════════════════════════════════════════════════════
 # 共享辅助函数 — 消除 node_generate / generate_response 重复
 # ═══════════════════════════════════════════════════════
@@ -711,7 +750,11 @@ def _build_generation_prompt(message: str, slots: dict, valid_ranked: list, is_r
 
     scenario_hint = ""
     if intent == "scenario_shopping":
-        scenario_hint = "⚠️ 场景化推荐模式：当前用户描述了一个完整场景，检索结果可能涵盖多个品类。请按品类分组推荐，说明每件商品在场景中的作用，并给出搭配建议。\n"
+        scenario_hint = (
+            "场景化推荐模式：当前用户描述了一个完整场景，商品已按品类多样化筛选。\n"
+            "请按品类分组推荐（每个品类介绍 1 款最优商品），说明各商品在场景中的角色与搭配逻辑。\n"
+            "开头用一句话概述搭配方案（如'为您搭配三亚度假三件套：防晒+穿搭+护目'），再逐品展开。\n"
+        )
 
     # 多轮对话历史
     history_text = ""
@@ -1143,7 +1186,7 @@ async def node_cart(state: "AgentState") -> "AgentState":
 
     except Exception as e:
         logger.error("Cart operation failed: %s", e)
-        state["response"] = f"购物车操作失败：{str(e)}"
+        state["response"] = "购物车操作失败，请稍后重试"
         state["product_cards"] = []
 
     return state
@@ -1187,15 +1230,239 @@ async def node_web_search(state: AgentState) -> AgentState:
     return state
 
 
+async def _resolve_compare_targets(query: str, conversation_id: str, history: list) -> list[str] | None:
+    """检测回指：用户是否引用了上一轮推荐中的某几款商品进行对比。
+
+    支持模式：
+    - "对比前两款"、"比较前两个" → 取前2个
+    - "对比第1和第3款"、"比较第2个和第3个" → 取指定索引
+    - "对比这两款"、"比较那俩" → 取前2个（从上一轮）
+    - "对比XM5和QC45" → 不处理（名称匹配走检索），返回None
+    """
+    import re
+
+    if not history or len(history) < 2:
+        return None
+
+    q = query.strip()
+
+    # 检测回指关键词
+    backref_keywords = ["前两", "前2", "前二", "这两", "那两", "前几", "这俩", "那俩",
+                        "第一款", "第二款", "第三款", "第1款", "第2款", "第3款",
+                        "第.和第", "第.跟第", "第.与第",
+                        "上面", "刚才", "刚刚", "前面推荐"]
+
+    has_backref = any(kw in q for kw in backref_keywords)
+
+    # 也匹配 "对比第1和第3" 这种数字模式
+    index_pattern = re.findall(r'第\s*(\d+)\s*(?:款|个)', q)
+    if not has_backref and not index_pattern:
+        return None
+
+    # 从状态管理器获取上一轮 product_cards
+    from app.services import state_manager as sm
+    prev_state = await sm.get_state(conversation_id)
+    prev_cards = prev_state.get("product_cards", []) if prev_state else []
+
+    if not prev_cards or len(prev_cards) < 2:
+        logger.info("Compare backref: no previous product_cards to resolve from")
+        return None
+
+    logger.info("Compare backref: query='%s', prev_cards=%d", q[:40], len(prev_cards))
+
+    # 提取用户指定的索引
+    if index_pattern:
+        indices = [int(i) - 1 for i in index_pattern]  # 转为0-based
+    elif any(kw in q for kw in ["前两", "前2", "前二", "这两", "那两", "这俩", "那俩"]):
+        indices = [0, 1]  # 默认前2款
+    else:
+        indices = [0, 1]  # 兜底：前2款
+
+    # 过滤有效索引
+    valid_indices = [i for i in indices if 0 <= i < len(prev_cards)]
+    if len(valid_indices) < 2:
+        return None
+
+    target_ids = [prev_cards[i].get("product_id", "") for i in valid_indices]
+    target_ids = [pid for pid in target_ids if pid]
+
+    if len(target_ids) >= 2:
+        logger.info("Compare backref resolved: indices=%s → ids=%s", valid_indices, target_ids)
+        return target_ids
+
+    return None
+
+
+def _detect_compare_brands(query: str, products: list[dict]) -> list[str]:
+    """从查询中检测用户明确提到的品牌，返回匹配到的品牌名列表（按查询中出现顺序）。
+
+    例如 "对比华为和Apple手机" → ["Huawei", "Apple"]（匹配 products 中实际品牌名）
+    未检测到明确品牌时返回空列表。
+    """
+    import re
+
+    # 从 products 中收集已知品牌（用于大小写/中英文映射）
+    known_brands = {}
+    for p in products:
+        b = (p.get("brand") or "").strip()
+        if b:
+            known_brands[b.lower()] = b
+
+    if len(known_brands) < 2:
+        return []
+
+    # 构建品牌名关键词列表，按长度降序避免短词误匹配（如 "小米" 不应仅匹配 "米"）
+    brand_keys = sorted(known_brands.keys(), key=len, reverse=True)
+
+    # 在 query 中查找品牌名出现的位置和对应的标准品牌名
+    found: list[tuple[int, str]] = []  # (position, canonical_brand)
+    q_lower = query.lower()
+
+    for key in brand_keys:
+        pos = q_lower.find(key)
+        if pos >= 0:
+            # 排除品牌名是常见词的误匹配（如 "小米" 不在 "对比" 中）
+            found.append((pos, known_brands[key]))
+
+    # 按位置排序，去重
+    found.sort()
+    result = []
+    seen = set()
+    for _, brand in found:
+        if brand.lower() not in seen:
+            result.append(brand)
+            seen.add(brand.lower())
+
+    return result[:3]  # 最多3个品牌
+
+
+async def node_compare(state: AgentState) -> AgentState:
+    """商品对比节点 — 从检索结果中取 top 2-3 商品，调用 comparator 生成多维度对比。
+    支持 _target_product_ids 跳过检索直接对比指定商品。
+    """
+    from app.services.comparator import compare_products as run_comparison
+    from app.services.product_ranker import rank_products
+
+    query = state.get("rewritten_query") or state.get("query", "")
+    slots = state.get("slots", {})
+    target_product_ids = state.get("_target_product_ids", [])
+    chunks = state.get("retrieved_chunks", [])
+
+    # 使用已解析的目标商品 ID（来自回指解析）或从检索结果中取 top-N
+    if target_product_ids and len(target_product_ids) >= 2:
+        product_ids = target_product_ids
+        # 从缓存/检索结果中获取商品详情
+        raw_products = _extract_raw_products(chunks) if chunks else []
+        if not raw_products:
+            # 需要从 Qdrant fetch 这些产品的 payload
+            from app.services.comparator import _fetch_products_from_qdrant
+            raw_products = await _fetch_products_from_qdrant(product_ids)
+        ranked = list(raw_products)  # 保持原始顺序
+        logger.info("node_compare: using resolved target IDs: %s", product_ids)
+    else:
+        if not chunks:
+            logger.warning("node_compare: no retrieved chunks, falling back to text-only")
+            state["response"] = "抱歉，没有找到可对比的商品，试试更具体的商品名称吧。"
+            state["product_cards"] = []
+            return state
+
+        raw_products = _extract_raw_products(chunks)
+        user_prefs = _build_user_prefs(slots)
+        ranked = rank_products(raw_products, user_prefs, "commodity_compare", top_k=3)
+
+        if len(ranked) < 2:
+            state["response"] = "需要至少 2 个商品才能进行对比。试试提供更具体的商品名称。"
+            state["product_cards"] = []
+            return state
+
+        # 用户明确提了N个品牌 → 每个品牌只取最优的1款，避免多选
+        query_brands = _detect_compare_brands(query, ranked)
+        if query_brands and len(query_brands) == 2:
+            brand_picks = []
+            for brand in query_brands:
+                match = next((r for r in ranked if (r.get("brand") or "").lower() == brand.lower()), None)
+                if match:
+                    brand_picks.append(match)
+            if len(brand_picks) == 2:
+                ranked = brand_picks
+                logger.info("node_compare: brand-filtered to 2: %s", [r.get("brand") for r in ranked])
+
+        product_ids = [r["product_id"] for r in ranked]
+
+    logger.info("node_compare: comparing %d products: %s", len(product_ids), product_ids)
+
+    try:
+        comparison = await run_comparison(product_ids=product_ids, dimensions=None)
+    except Exception as e:
+        logger.error("node_compare: comparison failed: %s", e)
+        state["response"] = "对比分析暂时不可用，请稍后再试。"
+        state["product_cards"] = []
+        return state
+
+    # 构建对比文本（无 markdown，纯文本格式）
+    dims = comparison.get("dimensions", [])
+    summary = comparison.get("summary", "")
+
+    # 构建 products_map：优先用 ranked，否则从 raw_products 构建
+    if not target_product_ids:
+        products_map = {r["product_id"]: r for r in ranked}
+    else:
+        products_map = {p.get("product_id", ""): p for p in raw_products}
+
+    lines = ["📊 商品对比"]
+    for dim in dims:
+        dim_name = dim['name']
+        lines.append(f"\n▎{dim_name}")
+        for pid, val in dim.get("values", {}).items():
+            product = products_map.get(pid, {})
+            name = product.get("title", pid)
+            # 截短产品名以提高可读性
+            short_name = _shorten_product_name(name)
+            marker = " 🏆" if dim.get("winner") == pid else ""
+            lines.append(f"  {short_name}: {val}{marker}")
+
+    if summary:
+        lines.append(f"\n💡 {summary}")
+
+    response_text = "\n".join(lines)
+    state["response"] = response_text
+
+    # 构建 product_cards 供客户端展示
+    cards = []
+    products_for_cards = ranked if not target_product_ids else raw_products
+    for i, p in enumerate(products_for_cards):
+        if isinstance(p, str):
+            # 原始 product_id，从 products_map 取
+            p = products_map.get(p, {})
+        cards.append({
+            "product_id": p.get("product_id", ""),
+            "title": p.get("title", ""),
+            "price": float(p.get("price", 0)),
+            "rating": float(p.get("rating", 3.0)),
+            "highlights": (p.get("highlights") or [])[:3] if isinstance(p.get("highlights"), list) else [],
+            "image_url": (p.get("image_urls") or [None])[0] if p.get("image_urls") else None,
+            "image_urls": p.get("image_urls") if isinstance(p.get("image_urls"), list) else [],
+            "brand": p.get("brand", ""),
+            "category": p.get("category", ""),
+        })
+    state["product_cards"] = cards
+    state["_comparison_dims"] = dims  # 暂存维度数据，供 SSE 发射
+
+    return state
+
+
 # ── Router ──
 
 def route_after_intent(state: AgentState) -> str:
-    """意图路由：闲聊 → generate, 联网搜索 → web_search, 缺失信息 → clarify, 购物车 → cart, 其他 → retrieve"""
+    """意图路由：闲聊 → generate, 联网搜索 → web_search, 对比 → compare, 缺失信息 → clarify, 购物车 → cart, 其他 → retrieve"""
     if state.get("intent") == "chitchat":
         return "generate"
 
     if state.get("intent") == "web_search":
         return "web_search"
+
+    if state.get("intent") == "commodity_compare":
+        return "compare"
 
     if state.get("intent") == "cart_operation":
         return "cart"
@@ -1233,6 +1500,7 @@ def build_agent_graph() -> StateGraph:
     workflow.add_node("classify_intent", node_classify_intent)
     workflow.add_node("clarify", node_clarify)
     workflow.add_node("retrieve", node_retrieve)
+    workflow.add_node("compare", node_compare)
     workflow.add_node("cart", node_cart)
     workflow.add_node("web_search", node_web_search)
     workflow.add_node("generate", node_generate)
@@ -1241,12 +1509,14 @@ def build_agent_graph() -> StateGraph:
     workflow.add_conditional_edges("classify_intent", route_after_intent, {
         "retrieve": "retrieve",
         "clarify": "clarify",
+        "compare": "compare",
         "cart": "cart",
         "web_search": "web_search",
         "generate": "generate",
     })
     workflow.add_edge("clarify", "generate")
     workflow.add_edge("retrieve", "generate")
+    workflow.add_edge("compare", "generate")
     workflow.add_edge("cart", "generate")
     workflow.add_edge("web_search", "generate")
     workflow.add_edge("generate", END)
@@ -1625,6 +1895,18 @@ def _build_cache_key(message: str, conversation_id: str | None, history: list[di
     )
 
 
+def _shorten_product_name(title: str, max_len: int = 28) -> str:
+    """截短产品名称以提高对比文本可读性"""
+    if len(title) <= max_len:
+        return title
+    # 尝试在括号/逗号处截断
+    for sep in ("（", "(", "，", ","):
+        pos = title.find(sep)
+        if 6 < pos < max_len:
+            return title[:pos]
+    return title[:max_len-1] + "…"
+
+
 def _clean_stream_text(text: str) -> str:
     """Remove internal structure markers before streaming text to the client."""
     text = re.sub(r"「(?:商品\s*\d+\s*」|结语」)|\[(?:SUMMARY|PRODUCT_\d+|CLOSING)\]|【(?:SUMMARY|PRODUCT_\d+|CLOSING)】", "", text, flags=re.IGNORECASE)
@@ -1711,6 +1993,35 @@ async def generate_response(
             logger.info("Overriding web_search → anti_selection: negation detected in multi-turn context")
             after_intent["intent"] = "anti_selection"
 
+        # ── Commerce sanity check: LLM 可能把纯价格/品牌/品类限定词误判为 web_search ──
+        #     如 "3000元以下的手表"、"华为手机"、"降噪耳机" — 这些不含"推荐"但明显是导购意图
+        if after_intent.get("intent") == "web_search":
+            _commerce_keywords = [
+                # 价格模式
+                r'\d+元', r'\d+块', r'以下', r'以内', r'以上', r'左右', r'以内',
+                # 购买意图
+                '买', '购', '想搞', '整一个',
+                # 品类词（常见电商类目）
+                '手机', '耳机', '手表', '电脑', '平板', '相机', '音箱', '键盘', '鼠标',
+                '洗面奶', '面霜', '防晒', '精华', '面膜', '口红', '粉底', '化妆',
+                '跑鞋', '运动鞋', '篮球鞋', '羽绒服', 'T恤', '卫衣', '背包', '行李箱',
+                '降噪', '蓝牙', '无线', '有线', '充电', '续航', '防水', '防摔',
+                '推荐', '哪个好', '怎么选', '什么牌子', '性价比',
+            ]
+            _web_only_keywords = [
+                '最新', '新闻', '趋势', '流行', '网上', '搜索', '查一下', '最近有什么',
+                '现在什么', '什么时候', '2025', '2026', '今年', '双11', '618', '双十一',
+            ]
+            _has_commerce = any(
+                (re.search(kw, message) if kw.startswith(r'\d') else kw in message)
+                for kw in _commerce_keywords
+            )
+            _has_web_only = any(kw in message for kw in _web_only_keywords)
+            if _has_commerce and not _has_web_only:
+                logger.info("Overriding web_search → commodity_recommend: commerce keywords detected")
+                after_intent["intent"] = "commodity_recommend"
+                after_intent["confidence"] = 0.55  # moderate confidence — was overridden
+
         # ── 联网搜索：外部信息查询 → web_search node → 返回结果 ──
         if after_intent.get("intent") == "web_search":
             yield {"event": "progress", "data": ProgressEvent(message="正在联网搜索...").model_dump_json()}
@@ -1756,6 +2067,59 @@ async def generate_response(
             cart_response = after_cart.get("response", "购物车操作完成。")
             yield {"event": "text_delta", "data": TextDeltaEvent(content=cart_response).model_dump_json()}
             yield {"event": "done", "data": DoneEvent().model_dump_json()}
+            return
+
+        # ── 商品对比：走 retrieve → compare → 返回结构化对比结果 ──
+        if after_intent.get("intent") == "commodity_compare":
+            yield {"event": "progress", "data": ProgressEvent(message="正在检索商品，准备对比...").model_dump_json()}
+
+            # 检测回指：用户引用上一轮推荐的某几款（"对比前两款"、"比较第1和第3个"）
+            target_ids = await _resolve_compare_targets(
+                query=message,
+                conversation_id=conversation_id or "",
+                history=conversation_history,
+            )
+
+            if target_ids and len(target_ids) >= 2:
+                logger.info("Compare: using resolved target product_ids: %s", target_ids)
+                after_intent["_target_product_ids"] = target_ids
+                after_compare = await node_compare(after_intent)
+            else:
+                after_retrieve = await node_retrieve(after_intent)
+                after_compare = await node_compare(after_retrieve)
+
+            compare_response = after_compare.get("response", "")
+            compare_cards = after_compare.get("product_cards", [])
+            compare_dims = after_compare.get("_comparison_dims", [])
+
+            # 发送对比文本
+            if compare_response:
+                yield {"event": "text_delta", "data": TextDeltaEvent(content=compare_response).model_dump_json()}
+
+            # 发送对比维度事件
+            if compare_dims:
+                from app.schemas.sse_events import CompareEvent
+                yield {"event": "compare", "data": CompareEvent(dimensions=compare_dims).model_dump_json()}
+
+            # 发送各商品卡片
+            for i, card in enumerate(compare_cards):
+                card_event = ProductCardEvent(
+                    product_id=card.get("product_id", ""),
+                    title=card.get("title", ""),
+                    price=float(card.get("price", 0)),
+                    rating=float(card.get("rating", 3.0)),
+                    highlights=card.get("highlights", [])[:3],
+                    image_url=card.get("image_url"),
+                    image_urls=card.get("image_urls", []),
+                    brand=card.get("brand", ""),
+                    category=card.get("category", ""),
+                    index=i + 1,
+                    total=len(compare_cards),
+                )
+                yield {"event": "product_cards", "data": card_event.model_dump_json()}
+
+            total_ms = int((time.monotonic() - t_start) * 1000)
+            yield {"event": "done", "data": DoneEvent(total_cards=len(compare_cards), latency_ms=total_ms).model_dump_json()}
             return
 
         # ── clarify 反问：缺失关键信息 / 短词仅有品类 / 低置信度 / 极短模糊词 → 追问用户 ──
@@ -1865,8 +2229,15 @@ async def generate_response(
         raw_products = _extract_raw_products(chunks)
         raw_products = _filter_products_by_requested_category(raw_products, slots.get("category", ""))
         user_prefs = _build_user_prefs(slots)
-        ranked = rank_products(raw_products, user_prefs, after_retrieve.get("intent", ""), top_k=3)
-        if len(ranked) < 3 and slots.get("category"):
+        intent = after_retrieve.get("intent", "")
+
+        if intent == "scenario_shopping":
+            ranked = rank_products(raw_products, user_prefs, intent, top_k=10)
+            ranked = _diversify_scenario_products(ranked, max_total=5)
+        else:
+            ranked = rank_products(raw_products, user_prefs, intent, top_k=3)
+
+        if intent != "scenario_shopping" and len(ranked) < 3 and slots.get("category"):
             logger.info(
                 "Only %d ranked products after exclusions; supplementing category=%s",
                 len(ranked), slots.get("category")
@@ -1875,7 +2246,7 @@ async def generate_response(
             raw_products = _extract_raw_products(chunks, limit=30)
             raw_products = _filter_products_by_requested_category(raw_products, slots.get("category", ""))
             user_prefs = _build_user_prefs(slots)
-            ranked = rank_products(raw_products, user_prefs, after_retrieve.get("intent", ""), top_k=3)
+            ranked = rank_products(raw_products, user_prefs, intent, top_k=3)
         valid_ranked, is_reliable = _validate_ranked_products(ranked)
         logger.info("Ranked: %d products, valid: %d, reliable: %s", len(ranked), len(valid_ranked), is_reliable)
 
@@ -1942,6 +2313,6 @@ async def generate_response(
 
     except Exception as exc:
         logger.exception("Agent pipeline error")
-        error = ErrorEvent(message=str(exc), code="AGENT_ERROR")
+        error = ErrorEvent(message="AI 引擎处理异常，请稍后重试", code="AGENT_ERROR")
         yield {"event": "error", "data": error.model_dump_json()}
         yield {"event": "done", "data": DoneEvent().model_dump_json()}

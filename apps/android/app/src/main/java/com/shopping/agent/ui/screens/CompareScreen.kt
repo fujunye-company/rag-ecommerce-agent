@@ -57,14 +57,9 @@ fun CompareTabScreen() {
     var searchResults by remember { mutableStateOf<List<com.shopping.agent.data.model.Product>>(emptyList()) }
     var hasSearched by remember { mutableStateOf(false) }
 
-    // AI 对比状态
-    var aiCompareLoading by remember { mutableStateOf(false) }
-    var aiCompareResult by remember { mutableStateOf<com.shopping.agent.data.repository.CompareResult?>(null) }
-    var showCompareDialog by remember { mutableStateOf(false) }
-    val compareRepo = remember { CompareRepository() }
-
     // 启动时从后端拉取真实商品，失败则保留 mock 数据
     LaunchedEffect(Unit) {
+        val compareRepo = CompareRepository()
         val real = compareRepo.fetchProducts()
         if (!real.isNullOrEmpty()) {
             allProducts = real
@@ -122,31 +117,6 @@ fun CompareTabScreen() {
                 IconButton(onClick = LocalOnMenuClick.current, modifier = Modifier.size(34.dp)) {
                     Icon(Icons.Default.Menu, "菜单", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(26.dp))
                 }
-                Spacer(Modifier.width(4.dp))
-                FilledTonalButton(
-                    onClick = {
-                        aiCompareLoading = true
-                        kotlinx.coroutines.MainScope().launch {
-                            aiCompareResult = compareRepo.compareProducts(
-                                displayProducts.take(5).map { it.productId }
-                            )
-                            aiCompareLoading = false
-                            showCompareDialog = aiCompareResult != null
-                        }
-                    },
-                    enabled = !aiCompareLoading && displayProducts.size >= 2,
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                    modifier = Modifier.height(34.dp)
-                ) {
-                    if (aiCompareLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = Primary
-                        )
-                        Spacer(Modifier.width(6.dp))
-                    }
-                    Text("AI对比", style = MaterialTheme.typography.labelMedium)
-                }
             }
         )
 
@@ -198,10 +168,6 @@ fun CompareTabScreen() {
             placeholder = "搜索商品或粘贴链接…",
         )
 
-        // AI 对比结果弹窗
-        if (showCompareDialog && aiCompareResult != null) {
-            AiCompareDialog(result = aiCompareResult!!, onDismiss = { showCompareDialog = false })
-        }
     }
 }
 
@@ -482,7 +448,7 @@ private fun AiCompareDialog(result: com.shopping.agent.data.repository.CompareRe
                                     fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                 if (dim.winner != null) {
                                     Spacer(Modifier.width(8.dp))
-                                    Surface(shape = RoundedCornerShape(4.dp), color = PrimaryLight) {
+                                    Surface(shape = RadiusSm, color = PrimaryLight) {
                                         Text("最佳: ${dim.winner}", modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                             style = MaterialTheme.typography.labelSmall, color = Primary)
                                     }

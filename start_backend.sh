@@ -1,10 +1,12 @@
 #!/bin/bash
 # RAG E-Commerce Agent — 后端启动脚本
-# 设置 HF 离线模式，避免 reranker 每次 70s 超时
+# 用法: source ~/.hermes-venv/bin/activate && bash start_backend.sh
 
-cd /mnt/c/Users/fujunye/Desktop/Hermes/04-rag-ecommerce/apps/backend
+set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR/apps/backend"
 
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
-~/.hermes-venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+uvicorn app.main:app --host 0.0.0.0 --port 8080

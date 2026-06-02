@@ -6,6 +6,7 @@ data class ChatMessage(
     val content: String,
     val productCards: List<Product> = emptyList(),
     val webSearchResults: List<WebSearchItem> = emptyList(),
+    val compareDimensions: List<Map<String, Any?>> = emptyList(),
     val timestamp: Long = System.currentTimeMillis(),
     val status: MessageStatus = MessageStatus.Sent,
     val errorMessage: String? = null,

@@ -7,12 +7,10 @@ import com.shopping.agent.data.model.Product
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 data class CompareDimension(
     val name: String,
@@ -29,10 +27,7 @@ data class CompareResult(
 class CompareRepository(
     private val baseUrl: String = NetworkConfig.BASE_URL
 ) {
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .build()
+    private val client = NetworkConfig.httpClient
     private val gson = Gson()
 
     suspend fun fetchProducts(): List<Product>? = withContext(Dispatchers.IO) {
@@ -56,7 +51,7 @@ class CompareRepository(
                         price = obj.optDouble("price", 0.0),
                         rating = obj.optDouble("rating", 3.0).toFloat(),
                         ratingCount = obj.optInt("rating_count", 0),
-                        imageUrl = obj.optString("image_url").takeIf { obj.has("image_url") && !obj.isNull("image_url") },
+                        imageUrl = NetworkConfig.resolveImageUrl(obj.optString("image_url").takeIf { obj.has("image_url") && !obj.isNull("image_url") }),
                         imageUrls = listOf(),
                         highlights = listOf(),
                         attributes = mapOf(),

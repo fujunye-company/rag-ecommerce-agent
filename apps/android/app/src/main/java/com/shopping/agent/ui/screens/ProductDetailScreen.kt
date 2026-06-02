@@ -347,7 +347,7 @@ private fun ProductInfoCard(product: ProductDetailData) {
                 product.title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
-                color = Color(0xFF222222),
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 lineHeight = 21.sp,
@@ -392,7 +392,7 @@ private fun CouponBenefitCard(coupons: List<CouponInfo>, savedAmount: Int) {
         border = BorderStroke(1.dp, Neutral100),
     ) {
         Column(Modifier.padding(14.dp)) {
-            Text("优惠", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF333333))
+            Text("优惠", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.height(8.dp))
             coupons.forEach { coupon ->
                 val (bg, border, textColor) = when (coupon.type) {
@@ -418,7 +418,7 @@ private fun CouponBenefitCard(coupons: List<CouponInfo>, savedAmount: Int) {
                             fontWeight = FontWeight.Bold,
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text(coupon.text, fontSize = 13.sp, color = Color(0xFF333333))
+                        Text(coupon.text, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(Modifier.weight(1f))
                         Icon(Icons.Default.ChevronRight, "展开", tint = Color.Gray, modifier = Modifier.size(16.dp))
                     }
@@ -455,7 +455,7 @@ private fun LogisticsGuaranteeCard(delivery: DeliveryInfo, guarantee: List<Strin
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.LocalShipping, "发货", tint = Color.Gray, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(delivery.estimate, fontSize = 13.sp, color = Color(0xFF333333))
+                Text(delivery.estimate, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.weight(1f))
                 Text(delivery.shipping, fontSize = 12.sp, color = GreenCheck)
             }
@@ -463,20 +463,20 @@ private fun LogisticsGuaranteeCard(delivery: DeliveryInfo, guarantee: List<Strin
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.LocationOn, "发货地", tint = Color.Gray, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(delivery.location, fontSize = 13.sp, color = Color(0xFF333333))
+                Text(delivery.location, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
             }
 
             // Guarantee badges
             if (guarantee.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))
-                Divider(color = Color(0xFFF0F0F0))
+                Divider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     guarantee.forEach { item ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.CheckCircle, "保障", tint = GreenCheck, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text(item, fontSize = 12.sp, color = Color(0xFF666666))
+                            Text(item, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -501,7 +501,7 @@ private fun ProductSpecGrid(specs: List<SpecItem>) {
         border = BorderStroke(1.dp, Neutral100),
     ) {
         Column(Modifier.padding(14.dp)) {
-            Text("规格参数", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF333333))
+            Text("规格参数", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.height(10.dp))
             val rows = specs.chunked(2)
             rows.forEach { row ->
@@ -513,13 +513,13 @@ private fun ProductSpecGrid(specs: List<SpecItem>) {
                         ) {
                             Text(spec.label, fontSize = 13.sp, color = Color.Gray)
                             Spacer(Modifier.width(6.dp))
-                            Text(spec.value, fontSize = 13.sp, color = Color(0xFF333333))
+                            Text(spec.value, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                     // Fill empty cell if odd count
                     if (row.size < 2) Spacer(Modifier.weight(1f))
                 }
-                Divider(color = Color(0xFFF5F5F5))
+                Divider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
     }
@@ -540,7 +540,7 @@ private fun ReviewSummarySection(reviews: ReviewSummary) {
     ) {
         Column(Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("评价", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF333333))
+                Text("评价", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.weight(1f))
                 Text("${reviews.count}条评价", fontSize = 12.sp, color = Color.Gray)
                 Icon(Icons.Default.ChevronRight, "查看全部", tint = Color.Gray, modifier = Modifier.size(16.dp))
@@ -556,7 +556,7 @@ private fun ReviewSummarySection(reviews: ReviewSummary) {
                     Modifier.padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("好评率", fontSize = 13.sp, color = Color(0xFF666666))
+                    Text("好评率", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.width(8.dp))
                     Text(
                         reviews.goodRate,
@@ -580,7 +580,7 @@ private fun ReviewSummarySection(reviews: ReviewSummary) {
                                 kw,
                                 Modifier.padding(horizontal = 12.dp, vertical = 5.dp),
                                 fontSize = 12.sp,
-                                color = Color(0xFF666666),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -623,7 +623,7 @@ private fun ShopInfoCard(
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(shop.name, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF333333))
+                        Text(shop.name, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(Modifier.width(6.dp))
                         Surface(
                             shape = RoundedCornerShape(4.dp),
@@ -668,7 +668,7 @@ private fun ShopInfoCard(
             }
 
             Spacer(Modifier.height(10.dp))
-            Divider(color = Color(0xFFF0F0F0))
+            Divider(color = MaterialTheme.colorScheme.outlineVariant)
             Spacer(Modifier.height(10.dp))
 
             // Score row
@@ -689,7 +689,7 @@ private fun ShopScoreItem(label: String, score: String) {
             score.ifBlank { "-" },
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            color = if (score.contains("高")) GreenCheck else Color(0xFF333333),
+            color = if (score.contains("高")) GreenCheck else MaterialTheme.colorScheme.onSurface,
         )
     }
 }

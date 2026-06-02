@@ -4,12 +4,19 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.shopping.agent.core.network.NetworkConfig
 import com.shopping.agent.data.model.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 
 data class ProductDetailUiState(
     val product: ProductDetailData? = null,
@@ -26,20 +33,58 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
     val uiState: StateFlow<ProductDetailUiState> = _uiState.asStateFlow()
 
     private val prefs = application.getSharedPreferences("detail_prefs", Context.MODE_PRIVATE)
+    private val cartPrefs = application.getSharedPreferences("cart_prefs", Context.MODE_PRIVATE)
+
+    private val client = NetworkConfig.httpClient
+
+    private val baseUrl = NetworkConfig.BASE_URL
+
+    private val sessionId: String
+        get() {
+            val existing = cartPrefs.getString("cart_session_id", null)
+            if (existing != null) return existing
+            val newId = java.util.UUID.randomUUID().toString()
+            cartPrefs.edit().putString("cart_session_id", newId).apply()
+            return newId
+        }
 
     fun loadProduct(productId: String) {
         _uiState.update { it.copy(isLoading = true) }
-        // 用 mock 数据驱动 — 后续可替换为 API 调用
-        val detail = buildMockDetail(productId)
-        val faved = prefs.getBoolean("fav_$productId", false)
-        val following = prefs.getBoolean("follow_${detail.shop.name}", false)
-        _uiState.update {
-            it.copy(
-                product = detail,
-                isLoading = false,
-                isFavorited = faved,
-                isFollowingShop = following,
-            )
+        viewModelScope.launch {
+            // 优先从后端 API 获取商品详情
+            val apiDetail = fetchProductFromApi(productId)
+            val detail = apiDetail ?: buildMockDetail(productId)
+            val faved = prefs.getBoolean("fav_$productId", false)
+            val following = prefs.getBoolean("follow_${detail.shop.name}", false)
+            _uiState.update {
+                it.copy(
+                    product = detail,
+                    isLoading = false,
+                    isFavorited = faved,
+                    isFollowingShop = following,
+                )
+            }
+        }
+    }
+
+    private suspend fun fetchProductFromApi(productId: String): ProductDetailData? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = Request.Builder()
+                    .url("$baseUrl/api/products/$productId")
+                    .get()
+                    .build()
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val body = response.body?.string() ?: return@withContext null
+                    val json = JSONObject(body)
+                    val data = json.optJSONObject("data") ?: return@withContext null
+                    buildDetailFromApiJson(data)
+                } else null
+            } catch (e: Exception) {
+                android.util.Log.e("ProductDetailVM", "API fetch failed: ${e.message}", e)
+                null
+            }
         }
     }
 
@@ -60,7 +105,23 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
     fun addToCart() {
         val product = _uiState.value.product ?: return
         viewModelScope.launch {
-            _uiState.update { it.copy(addToCartResult = "已将「${product.title.take(12)}…」加入购物车") }
+            try {
+                withContext(Dispatchers.IO) {
+                    val body = JSONObject().apply {
+                        put("session_id", sessionId)
+                        put("product_id", product.productId)
+                    }
+                    val request = Request.Builder()
+                        .url("$baseUrl/api/v1/cart/add")
+                        .post(body.toString().toRequestBody("application/json".toMediaType()))
+                        .build()
+                    client.newCall(request).execute()
+                }
+                _uiState.update { it.copy(addToCartResult = "已将「${product.title.take(12)}…」加入购物车") }
+            } catch (e: Exception) {
+                android.util.Log.e("ProductDetailVM", "addToCart failed: ${e.message}", e)
+                _uiState.update { it.copy(addToCartResult = "加购失败：${e.message}") }
+            }
         }
     }
 
@@ -98,9 +159,93 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
             )
         }
 
+        fun buildDetailFromApiJson(data: JSONObject): ProductDetailData {
+            val productId = data.optString("product_id", "")
+            val title = data.optString("title", "")
+            val price = data.optDouble("price", 0.0)
+            val rating = data.optDouble("rating", 3.0)
+            val ratingCount = data.optInt("rating_count", 0)
+            val brand = data.optString("brand").takeIf { data.has("brand") && !data.isNull("brand") }
+
+            val highlights = mutableListOf<String>()
+            val highlightsArr = data.optJSONArray("highlights")
+            if (highlightsArr != null) {
+                for (i in 0 until highlightsArr.length()) {
+                    highlights.add(highlightsArr.optString(i, ""))
+                }
+            }
+
+            val attributes = mutableMapOf<String, String>()
+            val attrsObj = data.optJSONObject("attributes")
+            if (attrsObj != null) {
+                for (key in attrsObj.keys()) {
+                    attributes[key] = attrsObj.optString(key, "")
+                }
+            }
+
+            val imageUrls = mutableListOf<String>()
+            val imgArr = data.optJSONArray("image_urls")
+            if (imgArr != null && imgArr.length() > 0) {
+                for (i in 0 until imgArr.length()) {
+                    val url = NetworkConfig.resolveImageUrl(imgArr.optString(i, "")) ?: continue
+                    imageUrls.add(url)
+                }
+            }
+            if (imageUrls.isEmpty()) {
+                val singleImg = NetworkConfig.resolveImageUrl(
+                    data.optString("image_url").takeIf { data.has("image_url") && !data.isNull("image_url") }
+                )
+                if (singleImg != null) imageUrls.add(singleImg)
+            }
+            if (imageUrls.isEmpty()) {
+                imageUrls.add("https://picsum.photos/seed/$productId/400/400")
+            }
+
+            val originPrice = if (price > 0) price * 1.3 else null
+            val salesCount = ((ratingCount * 1.2).toInt().coerceAtLeast(1) * 100) + (productId.hashCode() % 100)
+            val brandName = brand ?: "品牌"
+
+            return ProductDetailData(
+                productId = productId,
+                images = imageUrls,
+                campaign = null,
+                price = PriceInfo(
+                    current = price,
+                    couponPrice = null,
+                    origin = originPrice?.let { String.format("%.1f", it).toDouble() },
+                    savedAmount = originPrice?.let { ((it - price).toInt()) } ?: 0,
+                    salesText = "已售 ${salesCount}+",
+                ),
+                title = title,
+                tags = highlights.take(3),
+                coupons = emptyList(),
+                delivery = DeliveryInfo(
+                    estimate = "预计 48 小时内发货",
+                    location = "广东广州",
+                    shipping = if (price >= 99) "免运费" else "运费 ¥8",
+                ),
+                guarantee = listOf("假一赔十", "7天无理由退货", "正品保障"),
+                specs = attributes.map { (k, v) -> SpecItem(k, v) },
+                reviews = ReviewSummary(
+                    count = ratingCount,
+                    goodRate = "${((rating / 5.0) * 100).toInt()}%",
+                    keywords = highlights.take(4),
+                ),
+                shop = ShopInfo(
+                    name = "${brandName}官方旗舰店",
+                    badge = "品牌认证",
+                    score = rating,
+                    fans = "${(ratingCount * 0.3 * 1000).toInt()}粉丝",
+                    qualityScore = String.format("%.1f", rating.coerceAtMost(4.9)),
+                    deliveryScore = String.format("%.1f", rating.coerceAtMost(4.8)),
+                    serviceScore = String.format("%.1f", (rating + 0.1).coerceAtMost(5.0)),
+                ),
+            )
+        }
+
         private fun buildDetailFromProduct(p: com.shopping.agent.data.model.Product): ProductDetailData {
             val imgList = if (p.imageUrls.isNotEmpty()) p.imageUrls
-            else listOf(p.imageUrl ?: "https://picsum.photos/seed/${p.productId}/400/400")
+            else listOf(NetworkConfig.resolveImageUrl(p.imageUrl) ?: "https://picsum.photos/seed/${p.productId}/400/400")
             val originPrice = if (p.price > 0) p.price * 1.3 else null
             val salesCount = ((p.ratingCount * 1.2).toInt().coerceAtLeast(1) * 100) + (p.productId.hashCode() % 100)
             val brandName = p.brand ?: "品牌"

@@ -1,5 +1,6 @@
 package com.shopping.agent.data.mapper
 
+import com.shopping.agent.core.network.NetworkConfig
 import com.shopping.agent.data.model.ProductDto
 import com.shopping.agent.data.model.Product
 
@@ -14,8 +15,8 @@ fun ProductDto.toProduct(): Product {
         price = price,
         rating = rating?.toFloat() ?: 3.0f,
         highlights = highlights ?: emptyList(),
-        imageUrl = image_url,
-        imageUrls = image_urls ?: emptyList(),
+        imageUrl = NetworkConfig.resolveImageUrl(image_url),
+        imageUrls = NetworkConfig.resolveImageUrls(image_urls ?: emptyList()),
         brand = brand,
         category = category ?: "",
         matchScore = match_score ?: 0.0,

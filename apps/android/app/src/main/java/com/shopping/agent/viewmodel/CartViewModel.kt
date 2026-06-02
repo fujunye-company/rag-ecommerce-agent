@@ -75,7 +75,7 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
                             productId = item.optString("product_id", ""),
                             title = item.optString("title", ""),
                             price = item.optDouble("price", 0.0),
-                            imageUrl = item.optString("image_url", "").takeIf { it.isNotEmpty() && it != "null" },
+                            imageUrl = NetworkConfig.resolveImageUrl(item.optString("image_url", "").takeIf { it.isNotEmpty() && it != "null" }),
                             brand = item.optString("brand", "").takeIf { it.isNotEmpty() && it != "null" },
                             category = item.optString("category", ""),
                         )

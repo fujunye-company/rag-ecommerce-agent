@@ -65,3 +65,4 @@ replay_pid*.log
 
 # Kotlin compiler error logs
 apps/android/.kotlin/
+/apps/android/gradle.properties

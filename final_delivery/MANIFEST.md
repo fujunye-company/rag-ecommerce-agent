@@ -51,8 +51,8 @@ rm -f final_delivery/source/backend/.env
 
 ## 交付物检查
 
-- [ ] APK 可安装运行
-- [ ] 源码不含 .env / API Key
-- [ ] README 含使用说明
-- [ ] 文档齐全（架构/性能/演示脚本）
-- [ ] 9 场景 ≥ 5 可演示
+- [x] APK 可安装运行（24.1MB debug APK 编译通过）
+- [x] 源码不含 .env / API Key（Git 历史已清理，文档已脱敏）
+- [x] README 含使用说明（SETUP.md + README.md 覆盖前后端部署）
+- [x] 文档齐全（架构/性能/演示脚本/DATA-CONTRACT/CHANGELOG）
+- [x] 9 场景 ≥ 5 可演示（8/9 全栈完成，S7 场景推荐后端就绪）

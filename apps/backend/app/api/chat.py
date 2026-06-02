@@ -56,7 +56,7 @@ async def chat(request: ChatRequest):
             await increment_message_count(session_id)
         except Exception as exc:
             logger.exception("Chat endpoint error")
-            error = ErrorEvent(message=str(exc), code="CHAT_ERROR")
+            error = ErrorEvent(message="服务器内部错误，请稍后重试", code="CHAT_ERROR")
             yield {"event": "error", "data": error.model_dump_json()}
             yield {"event": "done", "data": DoneEvent().model_dump_json()}
 

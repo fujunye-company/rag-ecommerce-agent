@@ -10,11 +10,8 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://shopping:shopping123@postgres:5432/shopping_agent
       - QDRANT_URL=http://qdrant:6333
-      - DOUBAO_API_KEY=${DOUBAO_API_KEY}
-      - DOUBAO_BASE_URL=https://ark.cn-beijing.volces.com/api/v3/
-      - LLM_MODEL=ep-20260514111645-lmgt2
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
-      - DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
+    env_file:
+      - env/.env.docker
     volumes:
       - model_cache:/root/.cache
       - ../apps/backend/data:/app/data
@@ -27,7 +24,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 10s
       timeout: 3s
-      retries: 5
+      retries: 30
+      start_period: 300s
 
   postgres:
     image: postgres:16
@@ -59,7 +57,7 @@ services:
     environment:
       QDRANT__SERVICE__GRPC_PORT: 6334
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6333/healthz"]
       interval: 5s
       timeout: 3s
       retries: 10

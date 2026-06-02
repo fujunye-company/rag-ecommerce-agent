@@ -155,6 +155,9 @@ async def _fetch_products_from_qdrant(product_ids: list[str]) -> list[dict]:
     products = []
     for record in records:
         payload = record.payload or {}
+        image_urls = payload.get("image_urls") or []
+        if not image_urls and payload.get("image_url"):
+            image_urls = [payload["image_url"]]
         products.append({
             "product_id": payload.get("product_id", ""),
             "title": payload.get("title", ""),
@@ -166,6 +169,7 @@ async def _fetch_products_from_qdrant(product_ids: list[str]) -> list[dict]:
             "attributes": payload.get("attributes", {}),
             "highlights": payload.get("highlights", []),
             "scenarios": payload.get("scenarios", []),
+            "image_urls": image_urls,
         })
 
     logger.info("Fetched %d/%d products from Qdrant", len(products), len(product_ids))
@@ -180,7 +184,8 @@ _COMPARISON_SYSTEM_PROMPT = (
     "1. 各商品的核心差异\n"
     "2. 每个商品的适用人群/场景\n"
     "3. 综合推荐意见\n"
-    "用中文回复，控制在 200 字以内，直接给出结论，不要客套话。"
+    "用纯文本中文回复，控制在 200 字以内。不要使用 markdown 格式（如 **、##、- 等标记），"
+    "不要输出代码块或表格。直接给出自然语句结论。"
 )
 
 
@@ -188,22 +193,33 @@ def _build_comparison_table(
     dimensions: list[dict],
     products_map: dict[str, dict],
 ) -> str:
-    """构建供 LLM 阅读的对比文本"""
-    lines = ["## 商品对比表\n"]
+    """构建供 LLM 阅读的对比文本（纯文本格式，无 markdown）"""
+    lines = ["商品对比表"]
     for p in products_map.values():
+        highlights = " / ".join(p.get("highlights", [])[:3])
         lines.append(
-            f"- **{p['title']}** ({p['brand']}): "
-            f"¥{p['price']}, {p['rating']}★, "
-            f"亮点: {' / '.join(p.get('highlights', [])[:3])}"
+            f"• [{p['title']}] ({p['brand']}) "
+            f"¥{p['price']} | {p['rating']}★"
+            + (f" | 亮点: {highlights}" if highlights else "")
         )
 
-    lines.append("\n## 维度对比")
+    lines.append("\n维度对比")
     for dim in dimensions:
-        lines.append(f"\n### {dim['name']}")
+        lines.append(f"\n▎{dim['name']}")
         for pid, val in dim["values"].items():
             product = products_map.get(pid, {})
-            marker = " 🏆" if dim.get("winner") == pid else ""
-            lines.append(f"  - {product.get('title', pid)}: {val}{marker}")
+            marker = " 最佳" if dim.get("winner") == pid else ""
+            title = product.get("title", pid)
+            # 截短产品名
+            if len(title) > 30:
+                for sep in ("（", "(", "，", ","):
+                    pos = title.find(sep)
+                    if 6 < pos < 30:
+                        title = title[:pos]
+                        break
+                else:
+                    title = title[:28] + "…"
+            lines.append(f"  {title}: {val}{marker}")
 
     return "\n".join(lines)
 

@@ -5,6 +5,7 @@ import android.content.Context
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.shopping.agent.core.network.NetworkConfig
 import com.shopping.agent.data.model.CartItem
 import com.shopping.agent.data.model.ChatMessage
 import com.shopping.agent.data.model.MessageRole
@@ -322,7 +323,7 @@ class UserRepository(context: Context) {
                 price = cursor.getDouble(cursor.getColumnIndexOrThrow("price")),
                 brand = cursor.getString(cursor.getColumnIndexOrThrow("brand")).takeIf { it.isNotEmpty() },
                 category = cursor.getString(cursor.getColumnIndexOrThrow("category")),
-                imageUrl = cursor.getString(cursor.getColumnIndexOrThrow("image_url")).takeIf { it.isNotEmpty() },
+                imageUrl = NetworkConfig.resolveImageUrl(cursor.getString(cursor.getColumnIndexOrThrow("image_url")).takeIf { it.isNotEmpty() }),
                 rating = cursor.getDouble(cursor.getColumnIndexOrThrow("rating")).toFloat(),
             )
             list.add(CartItem(product, cursor.getInt(cursor.getColumnIndexOrThrow("quantity"))))
@@ -1019,7 +1020,7 @@ class UserRepository(context: Context) {
             price = cursor.getDouble(cursor.getColumnIndexOrThrow("price")),
             brand = cursor.getString(cursor.getColumnIndexOrThrow("brand")).takeIf { it.isNotEmpty() },
             category = cursor.getString(cursor.getColumnIndexOrThrow("category")),
-            imageUrl = cursor.getString(cursor.getColumnIndexOrThrow("image_url")).takeIf { it.isNotEmpty() },
+            imageUrl = NetworkConfig.resolveImageUrl(cursor.getString(cursor.getColumnIndexOrThrow("image_url")).takeIf { it.isNotEmpty() }),
             rating = cursor.getDouble(cursor.getColumnIndexOrThrow("rating")).toFloat(),
         )
         return CartItem(product, cursor.getInt(cursor.getColumnIndexOrThrow("quantity")))

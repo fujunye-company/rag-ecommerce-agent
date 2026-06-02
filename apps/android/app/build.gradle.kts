@@ -1,8 +1,18 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+// 读取签名配置（不入库的 local.properties）
+val keystoreProps = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+fun keystoreProp(key: String, env: String): String =
+    keystoreProps.getProperty(key, "").ifEmpty { System.getenv(env) ?: "" }
 
 android {
     namespace = "com.shopping.agent"
@@ -16,16 +26,27 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
-        // Android模拟器访问本机WSL后端: 10.0.2.2 → Windows → WSL port proxy
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8080\"")
+        // debug/模拟器 默认连接 localhost。release 构建时通过 -PapiUrl=xxx 覆盖
+        val apiUrl = project.findProperty("apiUrl") as String? ?: "http://10.0.2.2:8080"
+        buildConfigField("String", "API_BASE_URL", "\"$apiUrl\"")
     }
 
     buildFeatures {
         buildConfig = true
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file("hermes-release.jks")
+            storePassword = keystoreProp("KEYSTORE_PASSWORD", "KEYSTORE_PASSWORD")
+            keyAlias = keystoreProp("KEY_ALIAS", "KEY_ALIAS")
+            keyPassword = keystoreProp("KEY_PASSWORD", "KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
         }
     }

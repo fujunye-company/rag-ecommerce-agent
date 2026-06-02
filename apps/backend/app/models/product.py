@@ -25,3 +25,4 @@ class Product(Base):
     attributes: Mapped[dict | None] = mapped_column(JSONB, nullable=True, comment="结构化属性 (e.g. {颜色:黑, 续航:30h})")
     highlights: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True, comment="核心卖点")
     scenarios: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True, comment="适用场景")
+    source_product_id: Mapped[str | None] = mapped_column(String(255), nullable=True, comment="原始商品ID (seed/expanded)")

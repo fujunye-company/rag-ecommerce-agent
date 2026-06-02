@@ -18,7 +18,7 @@ async def run_eval(background_tasks: BackgroundTasks):
     except Exception as e:
         logger.exception("Evaluation failed")
         return ApiResponse(
-            data={"error": str(e)},
+            data={"error": "评测执行失败，请稍后重试"},
             message="评测执行失败"
         ).model_dump()
 

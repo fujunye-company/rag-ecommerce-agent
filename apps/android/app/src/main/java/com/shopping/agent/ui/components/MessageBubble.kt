@@ -1,5 +1,6 @@
 package com.shopping.agent.ui.components
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -13,8 +14,7 @@ import com.shopping.agent.data.model.MessageStatus
 import com.shopping.agent.data.model.Product
 import com.shopping.agent.ui.theme.*
 
-// 用户气泡颜色 — 使用 MaterialTheme 适配暗色模式
-private val UserBubbleBg @Composable get() = if (MaterialTheme.colorScheme.background.value < 0.5f) Color(0xFF1A3A5C) else Color(0xFFE3F0FD)
+private val UserBubbleBg @Composable get() = if (isSystemInDarkTheme()) Color(0xFF1A3A5C) else Color(0xFFE3F0FD)
 
 @Composable
 fun MessageBubble(

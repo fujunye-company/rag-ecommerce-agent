@@ -242,6 +242,12 @@ async def node_clarify(state: AgentState) -> AgentState:
                 "价格": "请问您的预算大概是多少呢？",
                 "品牌": "请问您有偏好的品牌吗？",
                 "场景": "请问是买来做什么用的呢？",
+                "用途": "请问您主要用来做什么呢？",
+                "规格": "请问您对规格有什么要求吗？",
+                "风格": "请问您偏好什么风格呢？",
+                "材质": "请问对材质有特别要求吗？",
+                "功能": "请问您最看重哪些功能呢？",
+                "颜色": "请问您偏好什么颜色呢？",
             }
             question = None
             for key, tmpl in clarify_map.items():
@@ -252,6 +258,7 @@ async def node_clarify(state: AgentState) -> AgentState:
         else:
             state["response"] = f"您想要什么类型的{category}呢？比如预算、用途方面有什么偏好吗？"
 
+    state["_clarify_done"] = True
     logger.info("Clarify: missing=%s category=%s → response=%s", missing, category, state["response"])
     return state
 
@@ -840,6 +847,10 @@ AirPods Pro | 综合匹配度 85%
 
 async def node_generate(state: AgentState) -> AgentState:
     """生成回答 + 商品卡片"""
+    if state.get("_clarify_done"):
+        state["product_cards"] = []
+        return state
+
     if state.get("intent") == "cart_operation" and state.get("response"):
         state["product_cards"] = state.get("product_cards", [])
         return state
@@ -1481,12 +1492,23 @@ def route_after_intent(state: AgentState) -> str:
     is_ultra_vague = len(original_query) <= 3 or original_query in ultra_vague_words
 
     missing_everything = bool(missing) and not (has_category or has_scenario or has_budget or has_attrs)
-    short_category_only = len(original_query) <= 4 and has_category \
-        and not (has_scenario or has_budget or has_attrs)
+    only_has_category = has_category and not (has_scenario or has_budget or has_attrs)
+    short_category_only = len(original_query) <= 4 and only_has_category
     low_confidence = confidence < 0.5 and intent_type == "commodity_recommend"
 
-    if (is_ultra_vague or missing_everything or short_category_only or low_confidence) \
-            and intent_type not in ("chitchat", "anti_selection", "cart_operation"):
+    # 非购物意图不追问（闲聊、反选、购物车、对比）
+    non_shopping_intents = {"chitchat", "anti_selection", "cart_operation", "commodity_compare"}
+    needs_clarify = (is_ultra_vague or missing_everything or short_category_only or low_confidence) \
+        and intent_type not in non_shopping_intents
+
+    # 有多轮历史时，短查询是在之前推荐基础上的细化（如"要轻量的"），跳过追问
+    conversation_history = state.get("history", [])
+    is_short_query = len(original_query) <= 4
+    if needs_clarify and len(conversation_history) >= 2 and (is_short_query or is_ultra_vague):
+        logger.info("Clarify bypassed due to conversation history")
+        needs_clarify = False
+
+    if needs_clarify:
         return "clarify"
 
     return "retrieve"
@@ -2122,48 +2144,16 @@ async def generate_response(
             yield {"event": "done", "data": DoneEvent(total_cards=len(compare_cards), latency_ms=total_ms).model_dump_json()}
             return
 
-        # ── clarify 反问：缺失关键信息 / 短词仅有品类 / 低置信度 / 极短模糊词 → 追问用户 ──
-        slots_check = after_intent.get("slots", {})
-        missing_check = slots_check.get("missing_slots", [])
-        has_cat = bool(slots_check.get("category"))
-        has_scene = bool(slots_check.get("scenario"))
-        has_budget = bool(slots_check.get("price_min") or slots_check.get("price_max"))
-        has_attrs = bool(slots_check.get("attributes"))
-        confidence = after_intent.get("confidence", 0.5)
-        intent_type = after_intent.get("intent", "")
-        original_query = message.strip()
-        is_short_query = len(original_query) <= 4
-
-        # 场景0：极短模糊词（≤2字且无具体商品名，"推荐"、"买东西"）→ 无论扩展与否都追问
-        ultra_vague_words = {"推荐", "买东西", "推荐一下", "买什么", "买啥", "有什么", "推荐个"}
-        is_ultra_vague = len(original_query) <= 3 or original_query in ultra_vague_words
-
-        # 场景1：完全缺失关键信息（无品类无场景无预算无属性）→ 必须追问
-        missing_everything = bool(missing_check) and not (has_cat or has_scene or has_budget or has_attrs)
-
-        # 场景2：短词仅含品类（如"耳机"、"手机"）→ 追问细化需求
-        only_has_category = has_cat and not (has_scene or has_budget or has_attrs)
-        short_category_query = is_short_query and only_has_category
-
-        # 场景3：低置信度 → LLM不理解用户意图
-        low_confidence = confidence < 0.5 and intent_type == "commodity_recommend"
-
-        needs_clarify = (is_ultra_vague or missing_everything or short_category_query or low_confidence) \
-            and intent_type not in ("chitchat", "anti_selection", "cart_operation")
-        # 有多轮历史时，短查询很可能是在之前推荐基础上的细化（如"要轻量的"），跳过追问
-        has_history = len(conversation_history) >= 2
-        logger.info("Clarify check: needs=%s history=%d short=%s ultra=%s cat=%s",
-                    needs_clarify, len(conversation_history), is_short_query, is_ultra_vague, has_cat)
-        if needs_clarify and has_history and (is_short_query or is_ultra_vague):
-            logger.info("Clarify bypassed due to conversation history")
-            needs_clarify = False
-        if needs_clarify:
-            # 持久化当前槽位，下次用户回复时可合并继承
-            await sm.update_state(conversation_id or "", slots=slots_check)
+        # ── clarify 反问：由 route_after_intent 统一决策（含历史上下文 + 多场景触发）──
+        route = route_after_intent(after_intent)
+        if route == "clarify":
+            await sm.update_state(conversation_id or "", slots=after_intent.get("slots", {}))
             yield {"event": "progress", "data": ProgressEvent(message="正在分析您的需求细节...").model_dump_json()}
-            after_clarify = await node_clarify(after_intent)
-            clarify_text = after_clarify.get("response", "")
-            missing_list = missing_check if isinstance(missing_check, list) else []
+            final_state = await agent_graph.ainvoke(after_intent)
+            clarify_text = final_state.get("response", "")
+            missing_list = after_intent.get("slots", {}).get("missing_slots", [])
+            if not isinstance(missing_list, list):
+                missing_list = []
             from app.schemas.sse_events import ClarifyEvent
             yield {
                 "event": "clarify",

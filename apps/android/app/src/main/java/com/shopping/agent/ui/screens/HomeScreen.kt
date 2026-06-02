@@ -50,12 +50,6 @@ fun HomeScreen(
                         modifier = Modifier.size(26.dp)
                     )
                 }
-                IconButton(onClick = {}, modifier = Modifier.size(34.dp)) {
-                    Icon(Icons.Default.Call, "电话", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(26.dp))
-                }
-                IconButton(onClick = {}, modifier = Modifier.size(34.dp)) {
-                    Icon(Icons.Default.Notifications, "通知", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(26.dp))
-                }
             }
         })
 

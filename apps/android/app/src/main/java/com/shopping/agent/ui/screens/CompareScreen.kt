@@ -1,6 +1,9 @@
 package com.shopping.agent.ui.screens
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.LaunchedEffect
@@ -34,10 +38,16 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import java.io.File
+import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.shopping.agent.data.mock.MockCompareData
+import com.shopping.agent.data.model.Product
+import com.shopping.agent.data.model.SSEEvent
+import com.shopping.agent.data.remote.SseClient
 import com.shopping.agent.data.repository.CompareRepository
 import com.shopping.agent.ui.components.*
 import com.shopping.agent.ui.navigation.LocalOnMenuClick
@@ -54,8 +64,17 @@ fun CompareTabScreen() {
 
     // 本地搜索状态
     var searchQuery by remember { mutableStateOf("") }
-    var searchResults by remember { mutableStateOf<List<com.shopping.agent.data.model.Product>>(emptyList()) }
+    var searchResults by remember { mutableStateOf<List<Product>>(emptyList()) }
     var hasSearched by remember { mutableStateOf(false) }
+
+    // 拍照搜物状态
+    var showChooser by remember { mutableStateOf(false) }
+    var cameraUri by remember { mutableStateOf<Uri?>(null) }
+    var cameraUriToLaunch by remember { mutableStateOf<Uri?>(null) }
+    var isVisionSearching by remember { mutableStateOf(false) }
+    var visionStatus by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val visionClient = remember { SseClient() }
 
     // 启动时从后端拉取真实商品，失败则保留 mock 数据
     LaunchedEffect(Unit) {
@@ -63,6 +82,116 @@ fun CompareTabScreen() {
         val real = compareRepo.fetchProducts()
         if (!real.isNullOrEmpty()) {
             allProducts = real
+        }
+    }
+
+    // 拍照搜物 — 先定义以便 launcher 回调引用
+    fun startVisionSearch(imageFile: File) {
+        isVisionSearching = true
+        visionStatus = "📷 正在识别图片，请稍候…"
+        val scope = MainScope()
+        scope.launch {
+            val visionProducts = mutableListOf<Product>()
+            try {
+                visionClient.connectVision(imageFile)
+                    .collect { event ->
+                        when (event) {
+                            is SSEEvent.Progress -> {
+                                visionStatus = event.message
+                            }
+                            is SSEEvent.ProductCard -> {
+                                visionProducts.add(Product(
+                                    productId = event.productId,
+                                    title = event.title,
+                                    price = event.price,
+                                    rating = event.rating.toFloat(),
+                                    highlights = event.highlights,
+                                    imageUrl = event.imageUrl,
+                                    imageUrls = event.imageUrls,
+                                    brand = event.brand,
+                                    category = event.category,
+                                    matchScore = event.matchScore,
+                                ))
+                            }
+                            is SSEEvent.Done -> {
+                                if (visionProducts.isNotEmpty()) {
+                                    allProducts = (visionProducts + allProducts).distinctBy { it.productId }
+                                    searchResults = visionProducts
+                                    hasSearched = true
+                                }
+                                isVisionSearching = false
+                                visionStatus = ""
+                            }
+                            is SSEEvent.Error -> {
+                                android.util.Log.e("CompareScreen", "Vision error: ${event.message}")
+                                android.widget.Toast.makeText(context, "拍照找货失败，请重试", android.widget.Toast.LENGTH_SHORT).show()
+                                isVisionSearching = false
+                                visionStatus = ""
+                            }
+                            else -> {}
+                        }
+                    }
+            } catch (e: Exception) {
+                android.util.Log.e("CompareScreen", "Vision exception", e)
+                android.widget.Toast.makeText(context, "拍照找货失败，请重试", android.widget.Toast.LENGTH_SHORT).show()
+                isVisionSearching = false
+                visionStatus = ""
+            }
+        }
+    }
+
+    // 相册选择器
+    val galleryPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            try {
+                val inputStream = context.contentResolver.openInputStream(it)
+                val tempFile = File(context.cacheDir, "compare_gallery_${System.currentTimeMillis()}.jpg")
+                inputStream?.use { inp ->
+                    tempFile.outputStream().use { out -> inp.copyTo(out) }
+                }
+                startVisionSearch(tempFile)
+            } catch (e: Exception) {
+                android.util.Log.e("CompareScreen", "Image save failed", e)
+                android.widget.Toast.makeText(context, "图片处理失败，请重试", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // 拍照
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            cameraUri?.let { uri ->
+                try {
+                    val tempFile = File(context.cacheDir, "compare_camera_${System.currentTimeMillis()}.jpg")
+                    context.contentResolver.openInputStream(uri)?.use { inp ->
+                        tempFile.outputStream().use { out -> inp.copyTo(out) }
+                    }
+                    startVisionSearch(tempFile)
+                } catch (e: Exception) {
+                    android.util.Log.e("CompareScreen", "Camera save failed", e)
+                    android.widget.Toast.makeText(context, "拍照处理失败，请重试", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    val launchTakePicture: (Uri) -> Unit = { uri ->
+        cameraUri = uri
+        cameraLauncher.launch(uri)
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            cameraUriToLaunch?.let { launchTakePicture(it) }
+            cameraUriToLaunch = null
+        } else {
+            android.widget.Toast.makeText(context, "需要相机权限才能拍照", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -143,7 +272,15 @@ fun CompareTabScreen() {
 
         // ===== 内容区 =====
         Box(modifier = Modifier.weight(1f)) {
-            if (selectedProduct != null) {
+            if (isVisionSearching) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = Primary)
+                        Spacer(Modifier.height(12.dp))
+                        Text(visionStatus, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            } else if (selectedProduct != null) {
                 // 挂画式价格跟踪面板
                 CompareTrackingSheet(
                     productId = selectedProduct!!,
@@ -157,7 +294,7 @@ fun CompareTabScreen() {
             }
         }
 
-        // ===== 底部搜索输入栏 (1:1 复刻主页) =====
+        // ===== 底部搜索输入栏 =====
         CompareSearchBar(
             query = searchQuery,
             onQueryChange = { searchQuery = it },
@@ -166,8 +303,63 @@ fun CompareTabScreen() {
                 searchQuery = ""
             },
             placeholder = "搜索商品或粘贴链接…",
+            onCameraClick = { showChooser = true },
         )
 
+        // ===== 拍照/相册选择弹窗 =====
+        if (showChooser) {
+            AlertDialog(
+                onDismissRequest = { showChooser = false },
+                icon = { Icon(Icons.Default.CameraAlt, contentDescription = null) },
+                title = { Text("拍照找货") },
+                text = { Text("选择获取图片的方式") },
+                confirmButton = {
+                    Column {
+                        OutlinedButton(
+                            onClick = {
+                                showChooser = false
+                                val dateStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(java.util.Date())
+                                val photoFile = File(context.cacheDir, "JPEG_${dateStamp}.jpg")
+                                val uri = androidx.core.content.FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    photoFile
+                                )
+                                val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+                                if (hasPermission) {
+                                    launchTakePicture(uri)
+                                } else {
+                                    cameraUriToLaunch = uri
+                                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("拍照")
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = {
+                                showChooser = false
+                                galleryPicker.launch("image/*")
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("从相册选择")
+                        }
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showChooser = false }) {
+                        Text("取消")
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -178,6 +370,7 @@ private fun CompareSearchBar(
     onQueryChange: (String) -> Unit,
     onSend: () -> Unit,
     placeholder: String,
+    onCameraClick: () -> Unit = {},
 ) {
     Surface(shadowElevation = 3.dp, color = MaterialTheme.colorScheme.surface) {
         Row(
@@ -188,7 +381,7 @@ private fun CompareSearchBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 拍照搜物图标
-            IconButton(onClick = {}, modifier = Modifier.size(44.dp)) {
+            IconButton(onClick = onCameraClick, modifier = Modifier.size(44.dp)) {
                 Icon(Icons.Default.CameraAlt, "拍照搜物", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             // 输入框

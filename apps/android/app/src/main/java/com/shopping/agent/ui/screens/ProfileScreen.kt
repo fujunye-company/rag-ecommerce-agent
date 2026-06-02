@@ -135,104 +135,6 @@ private fun ProfileHeader(
 }
 
 /**
- * 购物车预览模块 — 横向商品卡片列表
- * 设计规约: §5.2 CartPreviewSection
- */
-@Composable
-private fun CartPreviewSection(
-    onCartClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        onClick = onCartClick,
-        shape = RadiusLg,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // 标题行
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "购物车",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    "${MockProfile.cartCount}件商品",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Spacer(Modifier.height(12.dp))
-            // 横向商品卡片列表
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                MockProfile.cartItems.forEach { item ->
-                    CartProductMiniCard(
-                        title = item.title,
-                        price = item.price,
-                        imagePlaceholder = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CartProductMiniCard(
-    title: String,
-    price: String,
-    imagePlaceholder: Color,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier,
-        shape = RadiusMd,
-        colors = CardDefaults.cardColors(containerColor = imagePlaceholder),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            // 商品图占位
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.outline),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("图", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Spacer(Modifier.height(6.dp))
-            Text(
-                title,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-            )
-            Text(
-                price,
-                style = MaterialTheme.typography.labelMedium,
-                color = TextPrice,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-    }
-}
-
-/**
  * 订单状态模块 — 5个状态入口
  * 设计规约: §5.3 OrderStatusSection
  */
@@ -488,10 +390,7 @@ fun ProfileScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            // ===== A02: 购物车预览 =====
-            CartPreviewSection(onCartClick = {})
-
-            // ===== A03: 我的订单 =====
+            // ===== A02: 我的订单 =====
             OrderStatusSection()
 
             // ===== A04: 常用功能 =====

@@ -526,7 +526,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                             }
                         }
                     }
-            } catch (e: java.io.IOException) {
+                } catch (e: java.io.IOException) {
                 android.util.Log.e("ChatViewModel", "SSE IO error: ${e.message}")
 
                 // 保存已累积但未落盘的数据
@@ -575,7 +575,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
             }
-        }
     }
 
     fun onClarifyChipClick(chip: String) {

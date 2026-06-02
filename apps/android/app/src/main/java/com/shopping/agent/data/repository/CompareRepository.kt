@@ -33,7 +33,7 @@ class CompareRepository(
     suspend fun fetchProducts(): List<Product>? = withContext(Dispatchers.IO) {
         try {
             val request = Request.Builder()
-                .url("$baseUrl/api/products?limit=100")
+                .url("$baseUrl/api/v1/products?limit=100")
                 .get()
                 .build()
             val response = client.newCall(request).execute()
@@ -73,7 +73,7 @@ class CompareRepository(
             }
 
             val request = Request.Builder()
-                .url("$baseUrl/api/products/compare")
+                .url("$baseUrl/api/v1/products/compare")
                 .post(body.toString().toRequestBody("application/json".toMediaType()))
                 .build()
 

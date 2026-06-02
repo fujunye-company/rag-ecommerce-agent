@@ -71,7 +71,7 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
         return withContext(Dispatchers.IO) {
             try {
                 val request = Request.Builder()
-                    .url("$baseUrl/api/products/$productId")
+                    .url("$baseUrl/api/v1/products/$productId")
                     .get()
                     .build()
                 val response = client.newCall(request).execute()

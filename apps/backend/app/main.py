@@ -107,6 +107,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Prometheus metrics — 所有 HTTP 请求的延迟/计数/错误率
+try:
+    from prometheus_fastapi_instrumentator import Instrumentator
+    Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+except ImportError:
+    pass
+
 
 # ── 异常处理器 ──────────────────────────────────────────────
 from app.core.exceptions import AppException
@@ -154,9 +161,7 @@ async def request_timing_middleware(request: Request, call_next):
         logger.warning("Slow request: %s %s — %.0fms", request.method, request.url.path, elapsed_ms)
     return response
 
-# 路由注册 — /api/v1 为主要版本，/api 保留向后兼容
-# TODO: 全量阶段废弃 /api 前缀，仅保留 /api/v1
-for prefix in ["/api/v1", "/api"]:
+for prefix in ["/api/v1"]:
     app.include_router(chat.router, prefix=prefix, tags=["chat"])
     app.include_router(products.router, prefix=prefix, tags=["products"])
     app.include_router(upload.router, prefix=prefix, tags=["upload"])

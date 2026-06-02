@@ -35,12 +35,15 @@ logger = logging.getLogger("main")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期：启动时建表+预热模型，关闭时断开数据库"""
+    from app import startup as _startup
+
     # startup
     if settings.DATABASE_URL:
         try:
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
             logger.info("数据库表创建/验证完成")
+            _startup._state.db_done = True
         except Exception as exc:
             logger.warning("数据库初始化失败（降级运行，购物车/多轮历史暂不可用）: %s", exc)
             # 不 raise — 允许应用在无数据库模式下运行
@@ -48,18 +51,24 @@ async def lifespan(app: FastAPI):
         logger.info("DATABASE_URL 未配置，跳过数据库初始化（内存模式）")
 
     # 预热 Reranker 模型（同步，阻塞启动直到就绪）
+    _startup._state.phase = "warming_reranker"
     try:
         from app.services.reranker import _get_model
         import asyncio as _asyncio
         await _asyncio.to_thread(_get_model)
         logger.info("Reranker model warmed up")
+        _startup._state.reranker_warm = True
     except Exception as e:
         logger.warning("Reranker warmup skipped: %s", e)
+
+    # 自动数据入库 — 确保 Qdrant 有商品向量（幂等）
+    await _startup.ensure_qdrant_data()
 
     # 清空旧缓存 — 确保 top_k 等参数变更后不返回过期数据
     from app.services import cache
     await cache.clear()
     logger.info("Query cache cleared on startup")
+    _startup._state.phase = "ready"
 
     yield
     # shutdown
@@ -97,6 +106,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Prometheus metrics — 所有 HTTP 请求的延迟/计数/错误率
+try:
+    from prometheus_fastapi_instrumentator import Instrumentator
+    Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+except ImportError:
+    pass
 
 
 # ── 异常处理器 ──────────────────────────────────────────────
@@ -145,9 +161,7 @@ async def request_timing_middleware(request: Request, call_next):
         logger.warning("Slow request: %s %s — %.0fms", request.method, request.url.path, elapsed_ms)
     return response
 
-# 路由注册 — /api/v1 为主要版本，/api 保留向后兼容
-# TODO: 全量阶段废弃 /api 前缀，仅保留 /api/v1
-for prefix in ["/api/v1", "/api"]:
+for prefix in ["/api/v1"]:
     app.include_router(chat.router, prefix=prefix, tags=["chat"])
     app.include_router(products.router, prefix=prefix, tags=["products"])
     app.include_router(upload.router, prefix=prefix, tags=["upload"])
@@ -227,6 +241,25 @@ async def clear_cache():
     await cache.clear()
     logger.info("Cache cleared via API (was %d entries)", st["size"])
     return {"status": "ok", "cleared": st["size"]}
+
+
+# ── 就绪检查 ──────────────────────────────────────────────
+@app.get("/ready")
+async def ready():
+    """部署脚本轮询端点 — 返回初始化进度，直到所有组件就绪"""
+    from app.startup import get_startup_state
+    state = get_startup_state()
+    status_code = 200 if state["phase"] == "ready" else 503
+    return JSONResponse(status_code=status_code, content={
+        "status": state["phase"],
+        "progress": {
+            "database": state["db_done"],
+            "qdrant_collection_exists": state["collection_exists"],
+            "qdrant_item_count": state["item_count"],
+            "reranker_warm": state["reranker_warm"],
+        },
+        "message": state["message"],
+    })
 
 
 # ── 根路径 ────────────────────────────────────────────────

@@ -17,7 +17,7 @@
 
 ### Fixed
 - **`get_fast_client()` 修复**：改为复用 `create_llm_client()` → Doubao，不再硬编码 DeepSeek
-- **Doubao API Key 验证**：`ark-d50e8124-...` 实测通过，`ep-20260514111645-lmgt2` 正常响应
+- **Doubao API Key 验证**：官方 Key 实测通过，`ep-20260514111645-lmgt2` 正常响应
 - **Qdrant 数据完整性**：md5[:16]%2^63 hash 碰撞 → uuid.uuid5() 确定性 UUID，消除 ~60 条丢失
 - **DATA-CONTRACT 补充**：新增 clarify 事件类型 + UUID5 point ID 说明
 

@@ -11,7 +11,7 @@
 | 后端 | FastAPI + LangGraph + LlamaIndex |
 | 向量库 | Qdrant (1024-dim, bge-large-v1.5) |
 | 数据库 | PostgreSQL + pgvector (async SQLAlchemy) |
-| LLM | **Doubao-Seed-2.0-lite** ⚠️ Key待验证 (当前 DeepSeek 降级) |
+| LLM | **Doubao-Seed-2.0-lite** ✅ (Key 已验证通过，DeepSeek 保留降级) |
 | Embedding | BGE-large-zh-v1.5 |
 | 前端 | Kotlin + Jetpack Compose (Android 原生, 33 kt) |
 | Python | 3.11 @ ~/.hermes-venv |

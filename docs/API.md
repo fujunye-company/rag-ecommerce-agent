@@ -1,14 +1,15 @@
-# API 接口文档 — AI 全栈挑战赛
+# API 接口文档 — Hermes 电商AI导购系统
 
-> Base URL: `http://localhost:8000/api`
+> Base URL: `http://localhost:8080/api/v1`
+> 所有端点同时挂载在 `/api/v1` 和 `/api` 前缀下（向后兼容）。
 
 ---
 
 ## 对话接口
 
-### POST /api/chat
+### POST /chat
 
-SSE 流式对话。
+SSE 流式对话，支持多轮上下文（通过 `conversation_id`）。
 
 **请求**：
 ```json
@@ -18,25 +19,26 @@ SSE 流式对话。
 }
 ```
 
-**SSE 事件**：
-```
-event: text_delta
-data: {"type":"text_delta","content":"您好..."}
+**SSE 事件类型**：
 
-event: product_cards
-data: {"type":"product_cards","products":[{"id":"...","title":"...","price":2499,...}]}
-
-event: done
-data: {"type":"done"}
-```
+| 事件 | 说明 |
+|------|------|
+| `progress` | 处理进度通知（message 字段） |
+| `text_delta` | AI 文本回复片段（content 字段） |
+| `product_cards` | 商品卡片（product_id, title, price, image_url, match_score, highlights 等） |
+| `clarify` | 反问澄清（question, missing_slots, options） |
+| `web_search_result` | 联网搜索结果（title, url, snippet） |
+| `compare` | 商品对比维度（dimensions 数组） |
+| `error` | 错误事件（message, code） |
+| `done` | 流结束（latency_ms, total_cards, slots） |
 
 ---
 
 ## 商品接口
 
-### GET /api/products
+### GET /products
 
-商品列表（支持筛选/排序/分页）。
+商品列表，支持筛选/排序/分页。
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
@@ -45,67 +47,130 @@ data: {"type":"done"}
 | price_min | float | 最低价 |
 | price_max | float | 最高价 |
 | keyword | string | 标题搜索 |
-| sort_by | string | price_asc/price_desc/rating/sales |
+| sort_by | string | price_asc / price_desc / rating / sales |
 | page | int | 页码 (default 1) |
 | size | int | 每页条数 (default 20, max 100) |
 
-### GET /api/products/{id}
+### GET /products/{product_id}
 
 商品详情。
 
-### POST /api/products
+### POST /products
 
 创建商品。
 
-### PUT /api/products/{id}
+### PUT /products/{product_id}
 
-更新商品。
+更新商品（仅更新传入字段）。
 
-### DELETE /api/products/{id}
+### DELETE /products/{product_id}
 
 删除商品。
 
 ---
 
-## 购物车接口（场景6 — 待实现）
+## 购物车接口
 
-### GET /api/cart
+### GET /cart
 
-获取购物车。
+获取购物车（含商品图片/品牌/品类）。Query: `?session_id=<uuid>`
 
-### POST /api/cart/items
+### POST /cart/items
 
-添加商品到购物车。
+添加商品。Body: `{ "session_id": "...", "product_id": "..." }`  
+服务端查商品表取真实价格，不信任客户端传入的 price/title。
 
-### PUT /api/cart/items/{id}
+### POST /cart/add
 
-修改购物车商品数量。
+[Android 兼容别名] 同 POST /cart/items。
 
-### DELETE /api/cart/items/{id}
+### DELETE /cart/items
 
-删除购物车商品。
+删除商品。Body: `{ "session_id": "...", "product_id": "..." }`
 
-### POST /api/cart/checkout
+### POST /cart/remove
 
-模拟下单。
+[Android 兼容别名] 同 DELETE /cart/items。
+
+### PUT /cart/items
+
+修改数量。Body: `{ "session_id": "...", "product_id": "...", "quantity": 2 }`
+
+### PUT /cart/quantity
+
+[Android 兼容别名] 同 PUT /cart/items。
+
+### DELETE /cart
+
+清空购物车。Query: `?session_id=<uuid>`
+
+### POST /cart/clear
+
+[Android 兼容别名] 清空购物车。Body: `{ "session_id": "..." }`
 
 ---
 
-## 图片上传/搜索接口（场景7 — 加分项，待实现）
+## 订单接口
 
-### POST /api/upload/image
+### POST /orders
 
-上传图片进行商品识别。
+下单（读取购物车 → 创建订单 → 清空购物车）。
 
-### POST /api/image-search
+Body: `{ "session_id": "...", "address": "收货地址" }`
 
-基于图片理解的相似商品检索。
+### GET /orders
+
+订单列表。Query: `?session_id=<uuid>&status=pending`
+
+### GET /orders/{order_id}
+
+订单详情。
+
+### POST /orders/{order_id}/cancel
+
+取消订单。
+
+---
+
+## 拍照找货接口
+
+### POST /upload/image
+
+上传图片，本地保存。multipart/form-data: `file`
+
+### POST /upload/vision-search
+
+拍照找货（SSE 流式）。multipart/form-data: `file`  
+返回: `progress`（vision_parsed）→ `product_cards` → `done`
+
+### GET /upload/vision-status
+
+视觉检索 readiness 检查（不触发模型加载）。
+
+### POST /documents/upload
+
+知识文档上传。multipart/form-data: `file`
+
+---
+
+## 对比接口
+
+### POST /products/compare
+
+多商品横向对比。
+
+```json
+{
+  "product_ids": ["id1", "id2"],
+  "dimensions": ["价格", "功能", "口碑"]
+}
+```
 
 ---
 
 ## 反馈接口
 
-### POST /api/feedback
+### POST /feedback
 
 点赞/点踩。
 
@@ -119,10 +184,51 @@ data: {"type":"done"}
 
 ---
 
+## 评测接口
+
+### POST /evaluation/run
+
+触发评测任务（后台异步执行）。
+
+### GET /evaluation/report
+
+获取最新评测报告。
+
+---
+
+## 知识库接口
+
+### POST /knowledge/ingest
+
+知识库入库。
+
+---
+
+## 缓存管理
+
+### POST /api/cache/clear
+
+清空查询缓存（参数变更后使用）。
+
+---
+
 ## 健康检查
 
 ### GET /health
 
 ```json
-{"status":"ok","version":"0.1.0","database":"connected"}
+{
+  "status": "ok",
+  "version": "1.0.0",
+  "database": "connected",
+  "qdrant": "ok"
+}
 ```
+
+### GET /ready
+
+部署就绪检查（返回初始化进度）。
+
+### GET /version
+
+系统版本及技术栈信息。

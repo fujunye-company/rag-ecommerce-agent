@@ -21,16 +21,16 @@ async def search_web(query: str, max_results: int = 5) -> list[dict]:
     """
     try:
         results = []
-        kwargs = {"max_results": max_results}
+        kwargs = {}
         if _DDGS_PROXY:
             kwargs["proxy"] = _DDGS_PROXY
-        with DDGS(**kwargs) as ddgs:
-            for r in ddgs.text(query, max_results=max_results):
-                results.append({
-                    "title": r.get("title", ""),
-                    "url": r.get("href", ""),
-                    "snippet": r.get("body", ""),
-                })
+        ddgs = DDGS(**kwargs)
+        for r in ddgs.text(query, max_results=max_results):
+            results.append({
+                "title": r.get("title", ""),
+                "url": r.get("href", ""),
+                "snippet": r.get("body", ""),
+            })
         logger.info("Web search for '%s': %d results", query[:40], len(results))
         return results
     except Exception as e:

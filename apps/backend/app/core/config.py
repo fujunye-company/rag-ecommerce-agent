@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     # 不存在时自动降级为 BAAI/bge-reranker-v2-m3 (HF)
     RERANKER_MODEL: str = str(Path(__file__).resolve().parents[2] / "data" / "models" / "bge-reranker-v2-m3")
 
+    # ── 数据导入 ──
+    AUTO_IMPORT_DATA: bool = True
+
     # ── 服务 ──
     LOG_LEVEL: str = "INFO"
     APP_HOST: str = "0.0.0.0"

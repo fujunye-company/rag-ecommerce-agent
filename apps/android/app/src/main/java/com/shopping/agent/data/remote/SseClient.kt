@@ -27,12 +27,7 @@ import java.util.concurrent.TimeUnit
 class SseClient(
     private val baseUrl: String = NetworkConfig.BASE_URL
 ) {
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(0, TimeUnit.MILLISECONDS)  // SSE 长连接必须为0 (无限超时)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
-
+    private val client = NetworkConfig.sseClient
     private val gson = Gson()
 
     // ── 文本聊天 ──────────────────────────────────────────
@@ -52,15 +47,13 @@ class SseClient(
             .header("Accept", "text/event-stream")
             .build()
 
-        val response = client.newCall(request).execute()
-
-        if (!response.isSuccessful) {
-            emit(SSEEvent.Error("HTTP ${response.code}: ${response.message}"))
-            return@flow
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                emit(SSEEvent.Error("HTTP ${response.code}: ${response.message}"))
+                return@flow
+            }
+            parseStream(response, conversationId)
         }
-
-        parseStream(response, conversationId)
-        response.close()
     }.flowOn(Dispatchers.IO)
 
     // ── 拍照找货 ──────────────────────────────────────────
@@ -85,15 +78,13 @@ class SseClient(
             .header("Accept", "text/event-stream")
             .build()
 
-        val response = client.newCall(request).execute()
-
-        if (!response.isSuccessful) {
-            emit(SSEEvent.Error("HTTP ${response.code}: ${response.message}"))
-            return@flow
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                emit(SSEEvent.Error("HTTP ${response.code}: ${response.message}"))
+                return@flow
+            }
+            parseStream(response = response, convId = null, isVision = true)
         }
-
-        parseStream(response = response, convId = null, isVision = true)
-        response.close()
     }.flowOn(Dispatchers.IO)
 
     // ── SSE 流解析 ────────────────────────────────────────
@@ -173,8 +164,8 @@ class SseClient(
                         rating = d.rating,
                         matchScore = d.match_score,
                         highlights = d.highlights ?: emptyList(),
-                        imageUrl = d.image_url,
-                        imageUrls = d.image_urls ?: emptyList(),
+                        imageUrl = NetworkConfig.resolveImageUrl(d.image_url),
+                        imageUrls = NetworkConfig.resolveImageUrls(d.image_urls ?: emptyList()),
                         brand = d.brand,
                         category = d.category ?: "",
                         index = d.index,
@@ -223,6 +214,14 @@ class SseClient(
                         index = d.index,
                         total = d.total
                     )
+                }
+                "compare" -> {
+                    val node = gson.fromJson(json, com.google.gson.JsonObject::class.java)
+                    val dims = node.getAsJsonArray("dimensions")
+                    val dimList = if (dims != null) {
+                        gson.fromJson(dims, List::class.java) as List<Map<String, Any?>>
+                    } else emptyList()
+                    SSEEvent.Compare(dimensions = dimList)
                 }
                 "error" -> {
                     val d = gson.fromJson(json, ErrorPayload::class.java)

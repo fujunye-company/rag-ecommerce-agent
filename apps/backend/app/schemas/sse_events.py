@@ -94,4 +94,4 @@ class WebSearchResultEvent(BaseModel, SSEMixin):
 
 
 # ── 联合类型 ──
-SSEEvent = TextDeltaEvent | ProductCardEvent | DoneEvent | ErrorEvent | ProgressEvent | ClarifyEvent | WebSearchResultEvent
+SSEEvent = TextDeltaEvent | ProductCardEvent | DoneEvent | ErrorEvent | ProgressEvent | ClarifyEvent | WebSearchResultEvent | CompareEvent

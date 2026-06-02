@@ -8,9 +8,9 @@ install: ## Install backend dependencies
 	cd apps/backend && pip install -r requirements.txt
 
 dev: ## Start backend dev server
-	cd apps/backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	cd apps/backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 
-docker-up: ## Start infrastructure (PostgreSQL + Qdrant)
+docker-up: ## Start infrastructure (PostgreSQL + Qdrant + Backend)
 	docker compose -f infrastructure/docker-compose.yml up -d
 
 docker-down: ## Stop infrastructure
@@ -25,3 +25,12 @@ seed: ## Seed product data
 clean: ## Clean Python cache
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name '*.pyc' -delete 2>/dev/null || true
+
+deploy: ## One-click deploy (Linux/WSL/macOS)
+	bash deploy.sh
+
+deploy-win: ## One-click deploy (Windows PowerShell)
+	powershell -ExecutionPolicy Bypass -File deploy.ps1
+
+deploy-stop: ## Stop all deployed services
+	bash deploy.sh --stop

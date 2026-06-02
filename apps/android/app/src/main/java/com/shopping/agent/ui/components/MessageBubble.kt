@@ -1,5 +1,6 @@
 package com.shopping.agent.ui.components
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -13,8 +14,7 @@ import com.shopping.agent.data.model.MessageStatus
 import com.shopping.agent.data.model.Product
 import com.shopping.agent.ui.theme.*
 
-// 用户气泡: 浅蓝白
-private val UserBubbleBg = Color(0xFFE3F0FD)
+private val UserBubbleBg @Composable get() = if (isSystemInDarkTheme()) Color(0xFF1A3A5C) else Color(0xFFE3F0FD)
 
 @Composable
 fun MessageBubble(
@@ -52,11 +52,66 @@ fun MessageBubble(
                         Spacer(Modifier.height(Dimens.space2))
                         WebSearchResultCard(item = item)
                     }
+                    if (message.compareDimensions.isNotEmpty()) {
+                        Spacer(Modifier.height(Dimens.space2))
+                        CompareDimensionsCard(dimensions = message.compareDimensions)
+                    }
                 }
             }
             if (onRetry != null && message.status == MessageStatus.Error) {
                 Spacer(Modifier.height(Dimens.space1))
                 TextButton(onClick = onRetry) { Text("重试", color = ErrorColor) }
+            }
+        }
+    }
+}
+
+@Composable
+fun CompareDimensionsCard(dimensions: List<Map<String, Any?>>) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Column(modifier = Modifier.padding(Dimens.space2)) {
+            dimensions.forEach { dim ->
+                val name = dim["name"] as? String ?: return@forEach
+                val values = dim["values"] as? Map<String, Any?> ?: emptyMap()
+                val winner = dim["winner"] as? String
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    if (winner != null) {
+                        Spacer(Modifier.width(6.dp))
+                        Surface(
+                            shape = MaterialTheme.shapes.extraSmall,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                        ) {
+                            Text(
+                                text = "🏆 $winner",
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                            )
+                        }
+                    }
+                }
+                values.forEach { (productId, value) ->
+                    Text(
+                        text = "$productId: ${value ?: ""}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (dim != dimensions.last()) {
+                    Spacer(Modifier.height(6.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(Modifier.height(4.dp))
+                }
             }
         }
     }

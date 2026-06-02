@@ -65,12 +65,19 @@ async def get_products(
 
 
 async def get_product_by_id(db: AsyncSession, product_id: str) -> Product | None:
-    """获取单个商品详情"""
+    """Get product by UUID or source_product_id (legacy string ID)."""
     try:
         uid = UUID(product_id)
     except ValueError:
-        return None
+        # Not a UUID — try source_product_id lookup for legacy string IDs
+        result = await db.execute(select(Product).where(Product.source_product_id == product_id))
+        return result.scalar_one_or_none()
     result = await db.execute(select(Product).where(Product.id == uid))
+    product = result.scalar_one_or_none()
+    if product:
+        return product
+    # Fallback: try source_product_id in case a UUID string was passed as product_id
+    result = await db.execute(select(Product).where(Product.source_product_id == product_id))
     return result.scalar_one_or_none()
 
 

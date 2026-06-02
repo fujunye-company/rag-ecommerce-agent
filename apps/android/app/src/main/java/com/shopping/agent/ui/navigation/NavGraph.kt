@@ -213,7 +213,6 @@ fun AppNavGraph(
                             onBack = { navController.popBackStack() }
                         )
                     }
-                    composable("history") { HistoryScreen() }
                     composable("product_detail/{productId}",
                         arguments = listOf(navArgument("productId") { type = NavType.StringType })) { entry ->
                         ProductDetailScreen(

@@ -23,7 +23,7 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
         /** 数据库文件名 */
         const val DATABASE_NAME = "hermes_local.db"
         /** 当前数据库版本号，变更 schema 时递增 */
-        const val DATABASE_VERSION = 7
+        const val DATABASE_VERSION = 8
 
         /** 用户画像表 — 以 "sw" UUID 为主键，avatar 为 BLOB 列 */
         const val TABLE_USER = "user_profile"
@@ -111,6 +111,7 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
                 image_url   TEXT DEFAULT '',
                 rating      REAL DEFAULT 0,
                 quantity    INTEGER DEFAULT 1,
+                is_selected INTEGER DEFAULT 0,
                 added_at    INTEGER NOT NULL
             )
         """.trimIndent())
@@ -389,6 +390,15 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
             // v7: messages 新增 web_search_results 列，持久化联网搜索结果
             try {
                 db.execSQL("ALTER TABLE $TABLE_MESSAGES ADD COLUMN web_search_results TEXT DEFAULT '[]'")
+            } catch (_: Exception) {
+                // 列已存在则忽略
+            }
+        }
+
+        if (oldVersion < 8) {
+            // v8: cart_items 新增 is_selected 列，记录商品选中状态
+            try {
+                db.execSQL("ALTER TABLE $TABLE_CART ADD COLUMN is_selected INTEGER DEFAULT 0")
             } catch (_: Exception) {
                 // 列已存在则忽略
             }

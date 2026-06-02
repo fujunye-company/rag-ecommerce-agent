@@ -4,12 +4,15 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.shopping.agent.data.local.UserRepository
 import com.shopping.agent.data.model.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class ProductDetailUiState(
     val product: ProductDetailData? = null,
@@ -26,10 +29,16 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
     val uiState: StateFlow<ProductDetailUiState> = _uiState.asStateFlow()
 
     private val prefs = application.getSharedPreferences("detail_prefs", Context.MODE_PRIVATE)
+    private val repository = UserRepository(application)
+
+    /** 加载商品时缓存的 Product 对象，用于加购时写入数据库 */
+    private var cachedProduct: Product? = null
 
     fun loadProduct(productId: String) {
         _uiState.update { it.copy(isLoading = true) }
         // 用 mock 数据驱动 — 后续可替换为 API 调用
+        val sourceProduct = com.shopping.agent.data.mock.mockProducts.find { it.productId == productId }
+        cachedProduct = sourceProduct
         val detail = buildMockDetail(productId)
         val faved = prefs.getBoolean("fav_$productId", false)
         val following = prefs.getBoolean("follow_${detail.shop.name}", false)
@@ -57,10 +66,28 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
         _uiState.update { it.copy(isFollowingShop = newState) }
     }
 
+    /** 将当前商品加入购物车，写入本地 SQLite 数据库。 */
     fun addToCart() {
-        val product = _uiState.value.product ?: return
+        val detail = _uiState.value.product ?: return
+        val product = cachedProduct
+        if (product == null) {
+            _uiState.update { it.copy(addToCartResult = "加购失败：商品数据异常") }
+            return
+        }
         viewModelScope.launch {
-            _uiState.update { it.copy(addToCartResult = "已将「${product.title.take(12)}…」加入购物车") }
+            try {
+                val cartPrefs = getApplication<Application>()
+                    .getSharedPreferences("cart_prefs", Context.MODE_PRIVATE)
+                val sessionId = cartPrefs.getString("cart_session_id", "") ?: ""
+                withContext(Dispatchers.IO) {
+                    repository.saveCartItemForCurrentUser(product, sessionId, 1)
+                }
+                _uiState.update {
+                    it.copy(addToCartResult = "已将「${detail.title.take(12)}…」加入购物车")
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(addToCartResult = "加购失败：${e.message}") }
+            }
         }
     }
 

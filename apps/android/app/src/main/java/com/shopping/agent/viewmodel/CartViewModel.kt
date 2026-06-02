@@ -1,11 +1,9 @@
 package com.shopping.agent.viewmodel
 
 import android.app.Application
-import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.Gson
-import com.shopping.agent.core.network.NetworkConfig
+import com.shopping.agent.data.local.UserRepository
 import com.shopping.agent.data.model.CartItem
 import com.shopping.agent.data.model.Product
 import kotlinx.coroutines.Dispatchers
@@ -15,76 +13,73 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
+/** 购物车 UI 状态 */
 data class CartUiState(
+    /** 购物车全部商品列表 */
     val items: List<CartItem> = emptyList(),
+    /** 是否处于管理模式 */
+    val isManageMode: Boolean = false,
+    /** 当前选中的商品 productId 集合（仅当前缓存生效） */
+    val selectedProductIds: Set<String> = emptySet(),
+    /** 选中商品总价（两位小数） */
+    val selectedTotalPrice: Double = 0.0,
+    /** 全部商品总价 */
     val totalPrice: Double = 0.0,
+    /** 是否正在加载 */
     val isLoading: Boolean = false,
+    /** 加载错误信息 */
     val error: String? = null,
-    val orderResult: String? = null,  // 下单结果信息
+    /** 下单结果信息 */
+    val orderResult: String? = null,
+    /** 快速清理面板是否可见 */
+    val showQuickClean: Boolean = false,
+    /** 快速清理中选中的商品 productId 集合 */
+    val quickCleanSelectedIds: Set<String> = emptySet(),
 )
+
+/** 购物车商品数量 */
+val CartUiState.itemCount: Int get() = items.size
 
 class CartViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(CartUiState())
     val uiState: StateFlow<CartUiState> = _uiState.asStateFlow()
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .build()
+    private val repository = UserRepository(application)
 
-    private val baseUrl = NetworkConfig.BASE_URL
-    private val prefs = application.getSharedPreferences("cart_prefs", Context.MODE_PRIVATE)
-
-    // 持久化 sessionId：安装后首次生成，之后复用
-    private val sessionId: String
-        get() {
-            val existing = prefs.getString("cart_session_id", null)
-            if (existing != null) return existing
+    /** 会话 ID，用于兼容旧数据 */
+    private val sessionId: String by lazy {
+        val prefs = application.getSharedPreferences("cart_prefs", android.content.Context.MODE_PRIVATE)
+        val existing = prefs.getString("cart_session_id", null)
+        if (existing != null) {
+            existing
+        } else {
             val newId = java.util.UUID.randomUUID().toString()
             prefs.edit().putString("cart_session_id", newId).apply()
-            return newId
+            newId
         }
+    }
 
+    /** 加载购物车数据 */
     fun loadCart() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val response = withContext(Dispatchers.IO) {
-                    val request = Request.Builder()
-                        .url("$baseUrl/api/v1/cart?session_id=$sessionId")
-                        .get()
-                        .build()
-                    client.newCall(request).execute()
+                val items = withContext(Dispatchers.IO) {
+                    repository.getCartItemsForCurrentUser(sessionId)
                 }
-                if (response.isSuccessful) {
-                    val body = response.body?.string() ?: "{}"
-                    val json = JSONObject(body)
-                    val itemsArray = json.optJSONArray("items") ?: org.json.JSONArray()
-                    val items = mutableListOf<CartItem>()
-                    for (i in 0 until itemsArray.length()) {
-                        val item = itemsArray.getJSONObject(i)
-                        val product = Product(
-                            productId = item.optString("product_id", ""),
-                            title = item.optString("title", ""),
-                            price = item.optDouble("price", 0.0),
-                            imageUrl = item.optString("image_url", "").takeIf { it.isNotEmpty() && it != "null" },
-                            brand = item.optString("brand", "").takeIf { it.isNotEmpty() && it != "null" },
-                            category = item.optString("category", ""),
-                        )
-                        items.add(CartItem(product, item.optInt("quantity", 1)))
-                    }
-                    val total = items.sumOf { it.product.price * it.quantity }
-                    _uiState.update { it.copy(items = items, totalPrice = total, isLoading = false) }
-                } else {
-                    _uiState.update { it.copy(isLoading = false, error = "加载失败") }
+                val total = items.sumOf { it.product.price * it.quantity }
+                val selectedIds = items.filter { it.isSelected }.map { it.product.productId }.toSet()
+                val selectedTotal = items.filter { it.isSelected }.sumOf { it.product.price * it.quantity }
+                _uiState.update {
+                    it.copy(
+                        items = items,
+                        totalPrice = total,
+                        selectedProductIds = selectedIds,
+                        selectedTotalPrice = selectedTotal,
+                        isLoading = false,
+                    )
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message) }
@@ -92,157 +87,288 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** 切换管理模式 */
+    fun toggleManageMode() {
+        val currentState = _uiState.value
+        if (currentState.isManageMode) {
+            // 退出管理模式：从数据库重新加载选中状态
+            viewModelScope.launch {
+                try {
+                    val items = withContext(Dispatchers.IO) {
+                        repository.getCartItemsForCurrentUser(sessionId)
+                    }
+                    val selectedIds = items.filter { it.isSelected }.map { it.product.productId }.toSet()
+                    val selectedTotal = items.filter { it.isSelected }.sumOf { it.product.price * it.quantity }
+                    _uiState.update {
+                        it.copy(
+                            isManageMode = false,
+                            items = items,
+                            selectedProductIds = selectedIds,
+                            selectedTotalPrice = selectedTotal,
+                        )
+                    }
+                } catch (_: Exception) {
+                    _uiState.update { it.copy(isManageMode = false) }
+                }
+            }
+        } else {
+            // 进入管理模式：清空选中缓存，不从数据库读取
+            _uiState.update {
+                it.copy(isManageMode = true, selectedProductIds = emptySet(), selectedTotalPrice = 0.0)
+            }
+        }
+    }
+
+    /** 切换单个商品选中状态 */
+    fun toggleItemSelection(productId: String) {
+        _uiState.update { state ->
+            val newSelected = state.selectedProductIds.toMutableSet()
+            if (newSelected.contains(productId)) {
+                newSelected.remove(productId)
+            } else {
+                newSelected.add(productId)
+            }
+            val selectedTotal = state.items
+                .filter { newSelected.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(
+                selectedProductIds = newSelected,
+                selectedTotalPrice = selectedTotal,
+            )
+        }
+    }
+
+    /** 全选 / 取消全选所有商品 */
+    fun toggleSelectAll() {
+        _uiState.update { state ->
+            val allIds = state.items.map { it.product.productId }.toSet()
+            val allSelected = allIds.all { state.selectedProductIds.contains(it) }
+            val newSelected = if (allSelected) {
+                emptySet<String>()
+            } else {
+                allIds
+            }
+            val selectedTotal = state.items
+                .filter { newSelected.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(
+                selectedProductIds = newSelected,
+                selectedTotalPrice = selectedTotal,
+            )
+        }
+    }
+
+    /** 全选 / 取消全选指定商家的商品 */
+    fun toggleBrandSelection(brand: String) {
+        _uiState.update { state ->
+            val brandProductIds = state.items
+                .filter { it.product.brand == brand }
+                .map { it.product.productId }
+                .toSet()
+            val allBrandSelected = brandProductIds.all { state.selectedProductIds.contains(it) }
+            val newSelected = state.selectedProductIds.toMutableSet()
+            if (allBrandSelected) {
+                newSelected.removeAll(brandProductIds)
+            } else {
+                newSelected.addAll(brandProductIds)
+            }
+            val selectedTotal = state.items
+                .filter { newSelected.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(
+                selectedProductIds = newSelected,
+                selectedTotalPrice = selectedTotal,
+            )
+        }
+    }
+
+    /** 检查指定商家商品是否全部选中 */
+    fun isBrandFullySelected(brand: String): Boolean {
+        val state = _uiState.value
+        val brandProductIds = state.items
+            .filter { it.product.brand == brand }
+            .map { it.product.productId }
+            .toSet()
+        if (brandProductIds.isEmpty()) return false
+        return brandProductIds.all { state.selectedProductIds.contains(it) }
+    }
+
+    /** 增加商品数量 */
+    fun increaseQuantity(productId: String) {
+        _uiState.update { state ->
+            val updated = state.items.map { item ->
+                if (item.product.productId == productId && item.quantity < MAX_QUANTITY) {
+                    item.copy(quantity = item.quantity + 1)
+                } else item
+            }
+            val total = updated.sumOf { it.product.price * it.quantity }
+            val selectedTotal = updated
+                .filter { state.selectedProductIds.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(items = updated, totalPrice = total, selectedTotalPrice = selectedTotal)
+        }
+        // 异步持久化到数据库
+        viewModelScope.launch {
+            val item = _uiState.value.items.find { it.product.productId == productId } ?: return@launch
+            withContext(Dispatchers.IO) {
+                repository.updateCartItemQuantity(productId, item.quantity)
+            }
+        }
+    }
+
+    /** 减少商品数量，减至 0 则删除 */
+    fun decreaseQuantity(productId: String) {
+        val item = _uiState.value.items.find { it.product.productId == productId } ?: return
+        if (item.quantity <= 1) {
+            removeFromCart(productId)
+            return
+        }
+        _uiState.update { state ->
+            val updated = state.items.map { item ->
+                if (item.product.productId == productId) {
+                    item.copy(quantity = item.quantity - 1)
+                } else item
+            }
+            val total = updated.sumOf { it.product.price * it.quantity }
+            val selectedTotal = updated
+                .filter { state.selectedProductIds.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(items = updated, totalPrice = total, selectedTotalPrice = selectedTotal)
+        }
+        viewModelScope.launch {
+            val updatedItem = _uiState.value.items.find { it.product.productId == productId } ?: return@launch
+            withContext(Dispatchers.IO) {
+                repository.updateCartItemQuantity(productId, updatedItem.quantity)
+            }
+        }
+    }
+
+    /** 更新商品数量（用户手动输入） */
+    fun updateQuantity(productId: String, quantity: Int) {
+        val clamped = quantity.coerceIn(1, MAX_QUANTITY)
+        _uiState.update { state ->
+            val updated = state.items.map { item ->
+                if (item.product.productId == productId) {
+                    item.copy(quantity = clamped)
+                } else item
+            }
+            val total = updated.sumOf { it.product.price * it.quantity }
+            val selectedTotal = updated
+                .filter { state.selectedProductIds.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(items = updated, totalPrice = total, selectedTotalPrice = selectedTotal)
+        }
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.updateCartItemQuantity(productId, clamped)
+            }
+        }
+    }
+
+    /** 从购物车移除单件商品 */
+    fun removeFromCart(productId: String) {
+        _uiState.update { state ->
+            val updated = state.items.filter { it.product.productId != productId }
+            val newSelected = state.selectedProductIds - productId
+            val total = updated.sumOf { it.product.price * it.quantity }
+            val selectedTotal = updated
+                .filter { newSelected.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(
+                items = updated,
+                totalPrice = total,
+                selectedProductIds = newSelected,
+                selectedTotalPrice = selectedTotal,
+            )
+        }
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.removeCartItem(productId)
+            }
+        }
+    }
+
+    /** 执行删除选中商品（含数据库操作） */
+    fun performDeleteSelected() {
+        val idsToDelete = _uiState.value.selectedProductIds.toList()
+        if (idsToDelete.isEmpty()) return
+        _uiState.update { state ->
+            val updated = state.items.filter { it.product.productId !in idsToDelete }
+            val total = updated.sumOf { it.product.price * it.quantity }
+            state.copy(
+                items = updated,
+                totalPrice = total,
+                selectedProductIds = emptySet(),
+                selectedTotalPrice = 0.0,
+            )
+        }
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.deleteCartItems(idsToDelete)
+            }
+        }
+    }
+
+    /** 添加商品到购物车 */
     fun addToCart(product: Product) {
         viewModelScope.launch {
             val existing = _uiState.value.items.find { it.product.productId == product.productId }
             if (existing != null) {
-                _uiState.update {
-                    val updated = it.items.map { item ->
-                        if (item.product.productId == product.productId)
-                            item.copy(quantity = item.quantity + 1)
-                        else item
-                    }
-                    it.copy(items = updated, totalPrice = updated.sumOf { c -> c.product.price * c.quantity })
-                }
+                updateQuantity(product.productId, existing.quantity + 1)
             } else {
-                val newItem = CartItem(product, 1)
-                _uiState.update {
-                    val updated = it.items + newItem
-                    it.copy(items = updated, totalPrice = updated.sumOf { c -> c.product.price * c.quantity })
+                val newItem = CartItem(product, 1, isSelected = true)
+                _uiState.update { state ->
+                    val updated = state.items + newItem
+                    val total = updated.sumOf { it.product.price * it.quantity }
+                    val newSelected = state.selectedProductIds + product.productId
+                    val selectedTotal = updated
+                        .filter { newSelected.contains(it.product.productId) }
+                        .sumOf { it.product.price * it.quantity }
+                    state.copy(
+                        items = updated,
+                        totalPrice = total,
+                        selectedProductIds = newSelected,
+                        selectedTotalPrice = selectedTotal,
+                    )
                 }
-            }
-
-            try {
                 withContext(Dispatchers.IO) {
-                    val body = JSONObject().apply {
-                        put("session_id", sessionId)
-                        put("product_id", product.productId)
-                    }
-                    val request = Request.Builder()
-                        .url("$baseUrl/api/v1/cart/add")
-                        .post(body.toString().toRequestBody("application/json".toMediaType()))
-                        .build()
-                    client.newCall(request).execute()
+                    repository.saveCartItemForCurrentUser(product, sessionId, 1)
                 }
-            } catch (e: Exception) {
-                android.util.Log.e("CartViewModel", "addToCart server sync failed", e)
-                _uiState.update { it.copy(error = "加购同步失败，请下拉刷新") }
             }
         }
     }
 
-    fun removeFromCart(productId: String) {
-        viewModelScope.launch {
-            val previousItems = _uiState.value.items
-            val previousTotal = _uiState.value.totalPrice
-            _uiState.update {
-                val updated = it.items.filter { item -> item.product.productId != productId }
-                it.copy(items = updated, totalPrice = updated.sumOf { c -> c.product.price * c.quantity })
-            }
-            try {
-                withContext(Dispatchers.IO) {
-                    val body = JSONObject().apply {
-                        put("session_id", sessionId)
-                        put("product_id", productId)
-                    }
-                    val request = Request.Builder()
-                        .url("$baseUrl/api/v1/cart/remove")
-                        .post(body.toString().toRequestBody("application/json".toMediaType()))
-                        .build()
-                    client.newCall(request).execute()
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("CartViewModel", "removeFromCart server sync failed", e)
-                _uiState.update { it.copy(items = previousItems, totalPrice = previousTotal, error = "删除同步失败，请下拉刷新") }
-            }
-        }
-    }
-
-    fun updateQuantity(productId: String, quantity: Int) {
-        if (quantity <= 0) { removeFromCart(productId); return }
-        viewModelScope.launch {
-            val previousItems = _uiState.value.items
-            val previousTotal = _uiState.value.totalPrice
-            _uiState.update {
-                val updated = it.items.map { item ->
-                    if (item.product.productId == productId) item.copy(quantity = quantity)
-                    else item
-                }
-                it.copy(items = updated, totalPrice = updated.sumOf { c -> c.product.price * c.quantity })
-            }
-            try {
-                withContext(Dispatchers.IO) {
-                    val body = JSONObject().apply {
-                        put("session_id", sessionId)
-                        put("product_id", productId)
-                        put("quantity", quantity)
-                    }
-                    val request = Request.Builder()
-                        .url("$baseUrl/api/v1/cart/quantity")
-                        .put(body.toString().toRequestBody("application/json".toMediaType()))
-                        .build()
-                    client.newCall(request).execute()
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("CartViewModel", "updateQuantity server sync failed", e)
-                _uiState.update { it.copy(items = previousItems, totalPrice = previousTotal, error = "修改同步失败，请下拉刷新") }
-            }
-        }
-    }
-
+    /** 清空购物车 */
     fun clearCart() {
+        _uiState.update { it.copy(items = emptyList(), totalPrice = 0.0, selectedProductIds = emptySet(), selectedTotalPrice = 0.0) }
         viewModelScope.launch {
-            val previousItems = _uiState.value.items
-            val previousTotal = _uiState.value.totalPrice
-            _uiState.update { it.copy(items = emptyList(), totalPrice = 0.0) }
-            try {
-                withContext(Dispatchers.IO) {
-                    val body = JSONObject().apply { put("session_id", sessionId) }
-                    val request = Request.Builder()
-                        .url("$baseUrl/api/v1/cart/clear")
-                        .post(body.toString().toRequestBody("application/json".toMediaType()))
-                        .build()
-                    client.newCall(request).execute()
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("CartViewModel", "clearCart server sync failed", e)
-                _uiState.update { it.copy(items = previousItems, totalPrice = previousTotal, error = "清空同步失败，请下拉刷新") }
+            withContext(Dispatchers.IO) {
+                repository.clearCart(sessionId)
             }
         }
     }
 
+    /** 下单 */
     fun placeOrder() {
         if (_uiState.value.items.isEmpty()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val response = withContext(Dispatchers.IO) {
-                    val body = JSONObject().apply {
-                        put("session_id", sessionId)
-                        put("address", "默认地址")
-                    }
-                    val request = Request.Builder()
-                        .url("$baseUrl/api/v1/orders")
-                        .post(body.toString().toRequestBody("application/json".toMediaType()))
-                        .build()
-                    client.newCall(request).execute()
-                }
-                if (response.isSuccessful) {
-                    val body = response.body?.string() ?: "{}"
-                    val json = JSONObject(body)
-                    val orderNo = json.optString("order_no", "")
-                    val total = json.optDouble("total", 0.0)
-                    _uiState.update {
-                        it.copy(
-                            items = emptyList(),
-                            totalPrice = 0.0,
-                            isLoading = false,
-                            orderResult = "下单成功！\n订单号：$orderNo\n实付：¥${"%.2f".format(total)}"
-                        )
-                    }
-                } else {
-                    val body = response.body?.string() ?: ""
-                    _uiState.update { it.copy(isLoading = false, error = "下单失败：${response.code}") }
+                // 使用选中的商品下单，若未选中任何商品则用全部商品
+                val selectedItems = _uiState.value.items.filter {
+                    _uiState.value.selectedProductIds.contains(it.product.productId)
+                }.ifEmpty { _uiState.value.items }
+                val orderNo = "ORD${System.currentTimeMillis()}"
+                val total = selectedItems.sumOf { it.product.price * it.quantity }
+                _uiState.update {
+                    it.copy(
+                        items = emptyList(),
+                        totalPrice = 0.0,
+                        selectedProductIds = emptySet(),
+                        selectedTotalPrice = 0.0,
+                        isLoading = false,
+                        orderResult = "下单成功！\n订单号：$orderNo\n实付：¥${"%.2f".format(total)}"
+                    )
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = "网络错误：${e.message}") }
@@ -250,9 +376,78 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** 关闭下单成功弹窗 */
     fun dismissOrderResult() {
         _uiState.update { it.copy(orderResult = null) }
     }
 
-    val itemCount: Int get() = _uiState.value.items.sumOf { it.quantity }
+    // ═══════════════════════════════════════════════════════
+    // 快速清理面板
+    // ═══════════════════════════════════════════════════════
+
+    /** 打开快速清理面板 */
+    fun openQuickClean() {
+        _uiState.update { it.copy(showQuickClean = true, quickCleanSelectedIds = emptySet()) }
+    }
+
+    /** 关闭快速清理面板 */
+    fun closeQuickClean() {
+        _uiState.update { it.copy(showQuickClean = false, quickCleanSelectedIds = emptySet()) }
+    }
+
+    /** 切换快速清理中商品的选中状态 */
+    fun toggleQuickCleanSelection(productId: String) {
+        _uiState.update { state ->
+            val newSet = state.quickCleanSelectedIds.toMutableSet()
+            if (newSet.contains(productId)) {
+                newSet.remove(productId)
+            } else {
+                newSet.add(productId)
+            }
+            state.copy(quickCleanSelectedIds = newSet)
+        }
+    }
+
+    /** 快速清理中全选/取消全选 */
+    fun toggleQuickCleanSelectAll() {
+        _uiState.update { state ->
+            val allIds = state.items.map { it.product.productId }.toSet()
+            val allSelected = allIds.all { state.quickCleanSelectedIds.contains(it) }
+            state.copy(
+                quickCleanSelectedIds = if (allSelected) emptySet() else allIds
+            )
+        }
+    }
+
+    /** 快速清理 — 删除选中的商品 */
+    fun performQuickCleanDelete() {
+        val idsToDelete = _uiState.value.quickCleanSelectedIds.toList()
+        if (idsToDelete.isEmpty()) return
+        _uiState.update { state ->
+            val updated = state.items.filter { it.product.productId !in idsToDelete }
+            val total = updated.sumOf { it.product.price * it.quantity }
+            val newSelected = state.selectedProductIds - idsToDelete.toSet()
+            val selectedTotal = updated
+                .filter { newSelected.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(
+                items = updated,
+                totalPrice = total,
+                selectedProductIds = newSelected,
+                selectedTotalPrice = selectedTotal,
+                showQuickClean = false,
+                quickCleanSelectedIds = emptySet(),
+            )
+        }
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                repository.deleteCartItems(idsToDelete)
+            }
+        }
+    }
+
+    companion object {
+        /** 商品数量最大值 */
+        const val MAX_QUANTITY = 1000
+    }
 }

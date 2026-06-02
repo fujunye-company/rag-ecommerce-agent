@@ -83,9 +83,16 @@ fun AppNavGraph(
                         ProfileScreen(
                             onSettingsClick = { navController.navigate("settings") },
                             onCustomerServiceClick = { navController.navigate("customer_service") },
+                            onCartClick = {
+                                navController.navigate(Screen.Cart.route) {
+                                    popUpTo("home") { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
                         )
                     }
-                    composable("cart") { CartScreen(onBack = { navController.popBackStack() }) }
+                    composable(Screen.Cart.route) { CartScreen() }
                     composable("settings") {
                         val ctx = androidx.compose.ui.platform.LocalContext.current
                         val repo = remember { com.shopping.agent.data.local.UserRepository(ctx) }

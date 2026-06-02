@@ -300,6 +300,7 @@ class UserRepository(context: Context) {
             put("image_url", product.imageUrl ?: "")
             put("rating", product.rating.toDouble())
             put("quantity", quantity)
+            put("is_selected", 1)
             put("added_at", System.currentTimeMillis())
         }
         db.writableDatabase.insertWithOnConflict(
@@ -325,7 +326,11 @@ class UserRepository(context: Context) {
                 imageUrl = cursor.getString(cursor.getColumnIndexOrThrow("image_url")).takeIf { it.isNotEmpty() },
                 rating = cursor.getDouble(cursor.getColumnIndexOrThrow("rating")).toFloat(),
             )
-            list.add(CartItem(product, cursor.getInt(cursor.getColumnIndexOrThrow("quantity"))))
+            list.add(CartItem(
+                product,
+                cursor.getInt(cursor.getColumnIndexOrThrow("quantity")),
+                cursor.getInt(cursor.getColumnIndexOrThrow("is_selected")) == 1,
+            ))
         }
         cursor.close()
         list
@@ -1003,6 +1008,7 @@ class UserRepository(context: Context) {
             put("image_url", product.imageUrl ?: "")
             put("rating", product.rating.toDouble())
             put("quantity", quantity)
+            put("is_selected", 1)
             put("added_at", System.currentTimeMillis())
         }
         db.writableDatabase.insertWithOnConflict(
@@ -1022,6 +1028,58 @@ class UserRepository(context: Context) {
             imageUrl = cursor.getString(cursor.getColumnIndexOrThrow("image_url")).takeIf { it.isNotEmpty() },
             rating = cursor.getDouble(cursor.getColumnIndexOrThrow("rating")).toFloat(),
         )
-        return CartItem(product, cursor.getInt(cursor.getColumnIndexOrThrow("quantity")))
+        return CartItem(
+            product,
+            cursor.getInt(cursor.getColumnIndexOrThrow("quantity")),
+            cursor.getInt(cursor.getColumnIndexOrThrow("is_selected")) == 1,
+        )
+    }
+
+    /** 更新购物车商品的选中状态 */
+    suspend fun updateCartItemSelection(productId: String, isSelected: Boolean) = withContext(Dispatchers.IO) {
+        val cv = ContentValues().apply {
+            put("is_selected", if (isSelected) 1 else 0)
+        }
+        db.writableDatabase.update(LocalDatabase.TABLE_CART, cv, "product_id=?", arrayOf(productId))
+    }
+
+    /** 批量更新购物车商品的选中状态 */
+    suspend fun updateCartItemsSelection(productIds: List<String>, isSelected: Boolean) = withContext(Dispatchers.IO) {
+        val cv = ContentValues().apply {
+            put("is_selected", if (isSelected) 1 else 0)
+        }
+        val writableDb = db.writableDatabase
+        productIds.forEach { productId ->
+            writableDb.update(LocalDatabase.TABLE_CART, cv, "product_id=?", arrayOf(productId))
+        }
+    }
+
+    /** 更新购物车商品数量 */
+    suspend fun updateCartItemQuantity(productId: String, quantity: Int) = withContext(Dispatchers.IO) {
+        val cv = ContentValues().apply {
+            put("quantity", quantity)
+        }
+        db.writableDatabase.update(LocalDatabase.TABLE_CART, cv, "product_id=?", arrayOf(productId))
+    }
+
+    /** 删除购物车中指定商品 */
+    suspend fun deleteCartItems(productIds: List<String>) = withContext(Dispatchers.IO) {
+        val writableDb = db.writableDatabase
+        productIds.forEach { productId ->
+            writableDb.delete(LocalDatabase.TABLE_CART, "product_id=?", arrayOf(productId))
+        }
+    }
+
+    /** 获取购物车商品总数 */
+    suspend fun getCartItemCount(): Int = withContext(Dispatchers.IO) {
+        val userId = getUserId()
+        if (userId.isEmpty()) return@withContext 0
+        val cursor = db.readableDatabase.rawQuery(
+            "SELECT COUNT(*) FROM ${LocalDatabase.TABLE_CART} WHERE user_id=?",
+            arrayOf(userId)
+        )
+        val count = if (cursor.moveToFirst()) cursor.getInt(0) else 0
+        cursor.close()
+        count
     }
 }

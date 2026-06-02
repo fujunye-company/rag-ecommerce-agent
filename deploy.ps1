@@ -116,6 +116,17 @@ Write-Host ""
 Write-Host "  API Docs:     http://localhost:8080/docs"
 Write-Host "  Health:       http://localhost:8080/health"
 Write-Host "  Ready:        http://localhost:8080/ready"
+
+# Validate data import produced vectors
+$itemCount = $readyJson.progress.qdrant_item_count
+if ($itemCount -eq 0) {
+    Write-Host ""
+    Write-Warn "=============================================================="
+    Write-Warn "  QDRANT HAS 0 VECTORS -- RAG retrieval will return empty results."
+    Write-Warn "  Check: docker compose -f $ComposeFile logs backend | Select-String 'auto-import|error'"
+    Write-Warn "=============================================================="
+}
+
 Write-Host "  Android APK:  cd apps/android; .\gradlew.bat assembleDebug -PapiUrl=http://<YOUR-IP>:8080"
 Write-Host ""
 Write-Host "  Demo script:  docs/submission/DEMO_RUNBOOK.md"

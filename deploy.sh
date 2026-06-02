@@ -146,8 +146,17 @@ echo "  API Docs:     http://localhost:8080/docs"
 echo "  Health:       http://localhost:8080/health"
 echo "  Ready:        http://localhost:8080/ready"
 
+# Validate data import actually produced vectors
+if [ "$ITEM_COUNT" = "0" ] || [ "$ITEM_COUNT" = "?" ]; then
+    echo ""
+    warn "=============================================================="
+    warn "  QDRANT HAS 0 VECTORS — RAG retrieval will return empty results."
+    warn "  Check: docker compose -f $COMPOSE_FILE logs backend | grep -iE 'auto-import|error'"
+    warn "=============================================================="
+fi
+
 # Detect LAN IP for Android connection
-LAN_IP=$(ip route get 1 2>/dev/null | awk '{print $7; exit}' 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}' || echo "")
+LAN_IP=$(ip route get 1 2>/dev/null | awk '{print $7; exit}' 2>/dev/null || ifconfig 2>/dev/null | awk '/inet / && !/127.0.0.1/ {print $2; exit}' || hostname -I 2>/dev/null | awk '{print $1}' || echo "")
 if [ -n "$LAN_IP" ]; then
     echo "  Android APK:  cd apps/android && ./gradlew assembleDebug -PapiUrl=http://$LAN_IP:8080"
 else

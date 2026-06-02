@@ -38,6 +38,12 @@ async def lifespan(app: FastAPI):
     from app import startup as _startup
 
     # startup
+    # 尽早设置 HF_ENDPOINT — 后续 reranker/embedding 模型加载都依赖此环境变量
+    if settings.HF_ENDPOINT:
+        import os as _os
+        _os.environ.setdefault("HF_ENDPOINT", settings.HF_ENDPOINT)
+        logger.info("HF_ENDPOINT=%s", settings.HF_ENDPOINT)
+
     if settings.DATABASE_URL:
         try:
             async with engine.begin() as conn:

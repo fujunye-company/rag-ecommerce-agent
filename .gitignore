@@ -39,6 +39,7 @@ apps/android/app/build/
 # Runtime data
 apps/backend/data/hf_home/
 apps/backend/data/qdrant_storage/
+apps/uploads/
 *.parquet
 *.arrow
 

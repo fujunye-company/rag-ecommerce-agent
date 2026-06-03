@@ -563,10 +563,20 @@ def _build_rewrite_base(query: str, expanded: str, slots: dict, has_negation: bo
 
 
 def _previous_slots_from_state(state: dict) -> dict:
-    """Read slots from current nested state and legacy top-level session fields."""
+    """Read slots from current nested state and legacy top-level session fields.
+
+    Defensively strips keys that leaked from old session state nesting contamination
+    (intent, product_cards, nested slots dict, etc.) so they don't pollute the new
+    merged slots and cause cross-category exclusion leakage.
+    """
     nested = state.get("slots")
     if isinstance(nested, dict):
         prev = dict(nested)
+        # 清除因旧版 state→slots 嵌套导致的脏数据泄露
+        for bad_key in ("intent", "product_cards", "slots", "latency_ms", "error",
+                        "query", "session_id", "_clarify_done", "_comparison_dims",
+                        "_is_reliable", "_query_was_expanded"):
+            prev.pop(bad_key, None)
     else:
         prev = {}
     for key in _SLOT_KEYS:
@@ -1493,7 +1503,9 @@ def route_after_intent(state: AgentState) -> str:
 
     missing_everything = bool(missing) and not (has_category or has_scenario or has_budget or has_attrs)
     only_has_category = has_category and not (has_scenario or has_budget or has_attrs)
-    short_category_only = len(original_query) <= 4 and only_has_category
+    # 含显式推荐/搜索关键词的短查询（如"推荐手机"、"耳机的推荐"）不应追问
+    has_explicit_intent = any(kw in original_query for kw in ("推荐", "找", "买", "搜", "选购"))
+    short_category_only = len(original_query) <= 4 and only_has_category and not has_explicit_intent
     low_confidence = confidence < 0.5 and intent_type == "commodity_recommend"
 
     # 非购物意图不追问（闲聊、反选、购物车、对比）
@@ -1984,7 +1996,7 @@ async def generate_response(
         initial_state: AgentState = {
             "query": message,
             "session_id": conversation_id or "",
-            "slots": state or {},
+            "slots": (state or {}).get("slots", {}) if isinstance(state, dict) else {},
             "history": conversation_history,
         }
 

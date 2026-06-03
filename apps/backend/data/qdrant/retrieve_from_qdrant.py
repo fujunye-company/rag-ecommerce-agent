@@ -19,7 +19,12 @@ from openai import OpenAI
 # ── 配置 ──────────────────────────────────────────────────
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 COLLECTION_NAME = os.environ.get("QDRANT_COLLECTION", "products")
-EMBEDDING_MODEL = "BAAI/bge-large-zh-v1.5"
+
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_BACKEND_DIR = os.path.dirname(_BASE_DIR)         # data/qdrant -> data/
+_HF_EMBEDDING = "BAAI/bge-large-zh-v1.5"
+_LOCAL_EMBEDDING = os.path.join(_BACKEND_DIR, "models", "bge-large-zh-v1.5")
+EMBEDDING_MODEL = _LOCAL_EMBEDDING if os.path.isdir(_LOCAL_EMBEDDING) else _HF_EMBEDDING
 
 # LLM: 优先 DeepSeek（当前降级方案），Doubao key 待确认
 LLM_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")

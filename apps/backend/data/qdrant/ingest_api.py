@@ -21,8 +21,12 @@ import uvicorn
 # ── 配置 ──────────────────────────────────────────────────
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 COLLECTION_NAME = os.environ.get("COLLECTION_NAME", "products")
-EMBEDDING_MODEL = "BAAI/bge-large-zh-v1.5"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_BACKEND_DIR = os.path.dirname(BASE_DIR)          # data/qdrant -> data/
+
+_HF_EMBEDDING = "BAAI/bge-large-zh-v1.5"
+_LOCAL_EMBEDDING = os.path.join(_BACKEND_DIR, "models", "bge-large-zh-v1.5")
+EMBEDDING_MODEL = _LOCAL_EMBEDDING if os.path.isdir(_LOCAL_EMBEDDING) else _HF_EMBEDDING
 
 DIM = 1024
 BATCH_SIZE = 32

@@ -18,9 +18,13 @@ from sentence_transformers import SentenceTransformer
 # ── 配置 ──────────────────────────────────────────────────
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 COLLECTION_NAME = os.environ.get("QDRANT_COLLECTION", "products")
-EMBEDDING_MODEL = "BAAI/bge-large-zh-v1.5"      # 1024 维，无需投影
 BATCH_SIZE = 32                                   # GPU 推理批次大小
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_BACKEND_DIR = os.path.dirname(BASE_DIR)          # data/qdrant -> data/
+
+_HF_EMBEDDING = "BAAI/bge-large-zh-v1.5"
+_LOCAL_EMBEDDING = os.path.join(_BACKEND_DIR, "models", "bge-large-zh-v1.5")
+EMBEDDING_MODEL = _LOCAL_EMBEDDING if os.path.isdir(_LOCAL_EMBEDDING) else _HF_EMBEDDING
 
 # UUID namespace for deterministic point IDs — avoids md5 hash collisions
 QDRANT_NAMESPACE = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")

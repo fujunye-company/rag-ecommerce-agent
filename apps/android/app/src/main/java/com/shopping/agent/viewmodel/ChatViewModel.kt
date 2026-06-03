@@ -512,6 +512,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                     _uiState.update { it.copy(clarifyChips = excludeChips) }
                                     // 持久化排除 chips，按对话独立存储
                                     userRepo.setSetting("clarify_chips_$convId", Gson().toJson(excludeChips))
+                                } else {
+                                    // 无商品返回时清除持久化 chips，避免旧品类排除条件残留
+                                    userRepo.setSetting("clarify_chips_$convId", "")
                                 }
                             }
                             is SSEEvent.Error -> {

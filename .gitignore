@@ -39,6 +39,8 @@ apps/android/app/build/
 # Runtime data
 apps/backend/data/hf_home/
 apps/backend/data/qdrant_storage/
+apps/uploads/*
+!apps/uploads/.gitkeep
 *.parquet
 *.arrow
 
@@ -77,3 +79,6 @@ apps/android/.kotlin/
 
 # Garbage files
 products.*
+
+# Local validation reports with machine-specific absolute paths
+data/images/image_validation.json

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import androidx.navigation.NavHostController
@@ -21,6 +22,7 @@ import com.shopping.agent.ui.screens.*
 import com.shopping.agent.viewmodel.ChatViewModel
 
 private val tabRoutes = bottomNavItems.map { it.route }.toSet()
+private val chatRoutes = setOf("home", "explore")
 
 /** CompositionLocal: 各页面可通过它打开历史抽屉 */
 val LocalOnMenuClick = staticCompositionLocalOf<() -> Unit> { {} }
@@ -36,9 +38,20 @@ fun AppNavGraph(
 
     var drawerVisible by remember { mutableStateOf(false) }
 
-    // 共享 ChatViewModel（多对话支持）
-    val chatViewModel: ChatViewModel = viewModel()
-    val uiState by chatViewModel.uiState.collectAsState()
+    val appViewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current) {
+        "AppNavGraph requires a ViewModelStoreOwner"
+    }
+    val shouldInitChat = drawerVisible ||
+        currentRoute in chatRoutes ||
+        (currentRoute == null && startDestination in chatRoutes)
+
+    // 共享 ChatViewModel（多对话支持）。登录/注册/找回密码页不提前初始化，避免未登录首屏触发聊天 DB/TTS 启动链路。
+    val chatViewModel: ChatViewModel? = if (shouldInitChat) {
+        viewModel(viewModelStoreOwner = appViewModelStoreOwner)
+    } else {
+        null
+    }
+    val uiState = chatViewModel?.uiState?.collectAsState()?.value
 
     CompositionLocalProvider(LocalOnMenuClick provides { drawerVisible = true }) {
         Box {
@@ -59,7 +72,7 @@ fun AppNavGraph(
                     modifier = Modifier.padding(innerPadding)) {
                     composable("home") {
                         HomeScreen(
-                            chatViewModel = chatViewModel,
+                            chatViewModel = checkNotNull(chatViewModel),
                             onProductTap = { productId -> navController.navigate("product_detail/$productId") },
                         )
                     }
@@ -68,7 +81,7 @@ fun AppNavGraph(
                     }
                     composable("explore") {
                         ExploreScreen(
-                            chatViewModel = chatViewModel,
+                            chatViewModel = checkNotNull(chatViewModel),
                             onChatSend = { navController.navigate("home") {
                                 popUpTo("home") { saveState = true }
                                 launchSingleTop = true
@@ -223,30 +236,32 @@ fun AppNavGraph(
                 }
             }
 
-            // 挂画式历史侧边栏 — 真实数据
-            HistoryDrawer(
-                visible = drawerVisible,
-                onDismiss = { drawerVisible = false },
-                conversations = uiState.conversations,
-                currentConversationId = uiState.currentConversationId,
-                onSessionClick = { convId ->
-                    chatViewModel.loadConversation(convId)
-                },
-                onNewChat = {
-                    chatViewModel.createNewConversation()
-                },
-                onDeleteConversation = { convId ->
-                    chatViewModel.deleteConversation(convId)
-                },
-                onProfileClick = {
-                    drawerVisible = false
-                    navController.navigate("profile") {
-                        popUpTo("home") { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-            )
+            if (chatViewModel != null && uiState != null) {
+                // 挂画式历史侧边栏 — 真实数据
+                HistoryDrawer(
+                    visible = drawerVisible,
+                    onDismiss = { drawerVisible = false },
+                    conversations = uiState!!.conversations,
+                    currentConversationId = uiState!!.currentConversationId,
+                    onSessionClick = { convId ->
+                        chatViewModel.loadConversation(convId)
+                    },
+                    onNewChat = {
+                        chatViewModel.createNewConversation()
+                    },
+                    onDeleteConversation = { convId ->
+                        chatViewModel.deleteConversation(convId)
+                    },
+                    onProfileClick = {
+                        drawerVisible = false
+                        navController.navigate("profile") {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
+            }
         }
     }
 }

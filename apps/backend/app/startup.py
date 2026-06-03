@@ -5,7 +5,6 @@ Idempotent — skips if collection already contains data. Designed for one-click
 """
 import json
 import logging
-import time
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -92,8 +91,9 @@ def _build_payload(prod: dict) -> dict:
     }
 
 
-def _wait_for_qdrant() -> bool:
-    """Block until Qdrant health check passes or retries exhausted."""
+async def _wait_for_qdrant() -> bool:
+    """Wait until Qdrant health check passes or retries exhausted."""
+    import asyncio
     for i in range(MAX_RETRIES):
         try:
             r = httpx.get(f"{settings.QDRANT_URL}/healthz", timeout=5.0)
@@ -103,7 +103,7 @@ def _wait_for_qdrant() -> bool:
         except Exception:
             pass
         logger.debug("Waiting for Qdrant... (%d/%d)", i + 1, MAX_RETRIES)
-        time.sleep(RETRY_INTERVAL_S)
+        await asyncio.sleep(RETRY_INTERVAL_S)
     return False
 
 
@@ -123,6 +123,12 @@ async def ensure_qdrant_data() -> None:
 
     Idempotent: if collection already has data, skips immediately.
     """
+    # Apply HuggingFace endpoint override for model downloads (mirror for China)
+    if settings.HF_ENDPOINT:
+        import os
+        os.environ.setdefault("HF_ENDPOINT", settings.HF_ENDPOINT)
+        logger.info("HF_ENDPOINT=%s", settings.HF_ENDPOINT)
+
     if not settings.AUTO_IMPORT_DATA:
         logger.info("AUTO_IMPORT_DATA=false, skipping data seed")
         _state.phase = "ready"
@@ -135,7 +141,7 @@ async def ensure_qdrant_data() -> None:
         return
 
     # Wait for Qdrant
-    if not _wait_for_qdrant():
+    if not await _wait_for_qdrant():
         logger.error("Qdrant unavailable after %d retries, skipping data import", MAX_RETRIES)
         _state.phase = "ready"
         _state.message = "Qdrant unreachable — data import skipped"

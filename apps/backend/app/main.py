@@ -178,10 +178,31 @@ for prefix in ["/api/v1"]:
     app.include_router(cart.router, prefix=prefix, tags=["cart"])
     app.include_router(order.router, prefix=prefix, tags=["order"])
 
-# 静态文件 — 商品图片 (data/images/)
+# 商品图片服务 — FastAPI 路由替代 StaticFiles mount
+# 解决中文路径 URL 编码兼容性问题（StaticFiles mount 对中文字符处理不一致）
 IMAGES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "data" / "images"
+
 if IMAGES_DIR.exists():
-    app.mount("/images", StaticFiles(directory=str(IMAGES_DIR)), name="images")
+    @app.get("/images/{file_path:path}")
+    async def serve_image(file_path: str):
+        """通过 FastAPI 路由参数（自动 URL 解码）提供商品图片。
+
+        路径格式: /images/<category>/<filename.jpg>
+        示例: /images/T恤/p_clothes_021_live.jpg
+        FastAPI 自动将 %E6%81%A4 解码为 恤，并传递给 file_path 参数。
+        避免 StaticFiles mount 对非 ASCII 路径的处理差异。
+        """
+        from fastapi.responses import FileResponse
+
+        image_file = IMAGES_DIR / file_path
+        if not image_file.exists() or not image_file.is_file():
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        return FileResponse(
+            path=str(image_file),
+            media_type="image/jpeg" if image_file.suffix.lower() in (".jpg", ".jpeg") else "image/png",
+        )
 
 # ── 健康检查 ──────────────────────────────────────────────
 @app.get("/health")

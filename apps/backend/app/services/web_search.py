@@ -11,7 +11,7 @@ from ddgs import DDGS
 logger = logging.getLogger("web_search")
 
 # 代理配置 — 从环境变量 DDGS_PROXY 读取，默认使用项目 Clash 代理
-_DDGS_PROXY = os.getenv("DDGS_PROXY", "http://172.24.48.1:7897")
+_DDGS_PROXY = os.getenv("DDGS_PROXY", "")
 
 
 async def search_web(query: str, max_results: int = 5) -> list[dict]:

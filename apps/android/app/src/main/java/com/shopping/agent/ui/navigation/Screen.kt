@@ -12,6 +12,7 @@ sealed class Screen(val route: String) {
 
     // 二级页面
     data object Chat : Screen("chat")
+    data object Cart : Screen("cart")
     data object CategoryList : Screen("category_list")
     data object ProductDetail : Screen("product_detail/{productId}") {
         fun createRoute(productId: String) = "product_detail/$productId"

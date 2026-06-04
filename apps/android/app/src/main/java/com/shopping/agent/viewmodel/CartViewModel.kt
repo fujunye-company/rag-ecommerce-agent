@@ -1,11 +1,11 @@
 package com.shopping.agent.viewmodel
 
 import android.app.Application
-import android.content.Context
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.Gson
 import com.shopping.agent.core.network.NetworkConfig
+import com.shopping.agent.data.local.UserRepository
 import com.shopping.agent.data.model.CartItem
 import com.shopping.agent.data.model.Product
 import kotlinx.coroutines.Dispatchers
@@ -16,233 +16,588 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
+/** 购物车 UI 状态 */
 data class CartUiState(
+    /** 购物车全部商品列表 */
     val items: List<CartItem> = emptyList(),
+    /** 是否处于管理模式 */
+    val isManageMode: Boolean = false,
+    /** 当前选中的商品 productId 集合（仅当前缓存生效） */
+    val selectedProductIds: Set<String> = emptySet(),
+    /** 选中商品总价（两位小数） */
+    val selectedTotalPrice: Double = 0.0,
+    /** 全部商品总价 */
     val totalPrice: Double = 0.0,
+    /** 是否正在加载 */
     val isLoading: Boolean = false,
+    /** 加载错误信息 */
     val error: String? = null,
-    val orderResult: String? = null,  // 下单结果信息
+    /** 下单结果信息 */
+    val orderResult: String? = null,
+    /** 快速清理面板是否可见 */
+    val showQuickClean: Boolean = false,
+    /** 快速清理中选中的商品 productId 集合 */
+    val quickCleanSelectedIds: Set<String> = emptySet(),
 )
+
+/** 购物车商品数量 */
+val CartUiState.itemCount: Int get() = items.size
 
 class CartViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(CartUiState())
     val uiState: StateFlow<CartUiState> = _uiState.asStateFlow()
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .build()
+    private val repository = UserRepository(application)
 
-    private val baseUrl = NetworkConfig.BASE_URL
-    private val prefs = application.getSharedPreferences("cart_prefs", Context.MODE_PRIVATE)
-
-    // 持久化 sessionId：安装后首次生成，之后复用
-    private val sessionId: String
-        get() {
-            val existing = prefs.getString("cart_session_id", null)
-            if (existing != null) return existing
+    /** 会话 ID，用于兼容旧数据 */
+    private val sessionId: String by lazy {
+        val prefs = application.getSharedPreferences("cart_prefs", android.content.Context.MODE_PRIVATE)
+        val existing = prefs.getString("cart_session_id", null)
+        if (existing != null) {
+            existing
+        } else {
             val newId = java.util.UUID.randomUUID().toString()
             prefs.edit().putString("cart_session_id", newId).apply()
-            return newId
+            newId
         }
+    }
 
+    // ═══════════════════════════════════════════════════════════
+    // 后端同步辅助方法
+    // ═══════════════════════════════════════════════════════════
+
+    /** 获取当前用户 ID（用于后端 user_id 参数） */
+    private fun getUserId(): String = repository.getUserId()
+
+    /** 调用后端 API：添加商品到购物车 */
+    private suspend fun syncAddToBackend(product: Product, quantity: Int = 1): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val userId = getUserId()
+                val baseUrl = NetworkConfig.BASE_URL
+                val body = JSONObject().apply {
+                    put("session_id", sessionId)
+                    put("product_id", product.productId)
+                    put("title", product.title)
+                    put("price", product.price)
+                    put("quantity", quantity)
+                    put("user_id", userId)
+                }
+                val request = Request.Builder()
+                    .url("$baseUrl/api/v1/cart/add")
+                    .post(body.toString().toRequestBody("application/json".toMediaType()))
+                    .build()
+                val response = NetworkConfig.httpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    Log.d("CartVM", "后端同步：添加 ${product.title.take(20)} 成功")
+                    true
+                } else {
+                    Log.w("CartVM", "后端同步：添加失败 ${response.code}")
+                    false
+                }
+            } catch (e: Exception) {
+                Log.e("CartVM", "后端同步：添加异常 ${e.message}", e)
+                false
+            }
+        }
+    }
+
+    /** 调用后端 API：从购物车删除商品 */
+    private suspend fun syncRemoveFromBackend(productId: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val userId = getUserId()
+                val baseUrl = NetworkConfig.BASE_URL
+                val body = JSONObject().apply {
+                    put("session_id", sessionId)
+                    put("product_id", productId)
+                    put("user_id", userId)
+                }
+                val request = Request.Builder()
+                    .url("$baseUrl/api/v1/cart/remove")
+                    .post(body.toString().toRequestBody("application/json".toMediaType()))
+                    .build()
+                val response = NetworkConfig.httpClient.newCall(request).execute()
+                response.isSuccessful.also {
+                    if (!it) Log.w("CartVM", "后端同步：删除失败 ${response.code}")
+                }
+            } catch (e: Exception) {
+                Log.e("CartVM", "后端同步：删除异常 ${e.message}", e)
+                false
+            }
+        }
+    }
+
+    /** 调用后端 API：更新商品数量 */
+    private suspend fun syncUpdateQuantityToBackend(productId: String, quantity: Int): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val userId = getUserId()
+                val baseUrl = NetworkConfig.BASE_URL
+                val body = JSONObject().apply {
+                    put("session_id", sessionId)
+                    put("product_id", productId)
+                    put("quantity", quantity)
+                    put("user_id", userId)
+                }
+                val request = Request.Builder()
+                    .url("$baseUrl/api/v1/cart/quantity")
+                    .put(body.toString().toRequestBody("application/json".toMediaType()))
+                    .build()
+                val response = NetworkConfig.httpClient.newCall(request).execute()
+                response.isSuccessful.also {
+                    if (!it) Log.w("CartVM", "后端同步：修改数量失败 ${response.code}")
+                }
+            } catch (e: Exception) {
+                Log.e("CartVM", "后端同步：修改数量异常 ${e.message}", e)
+                false
+            }
+        }
+    }
+
+    /** 调用后端 API：清空购物车 */
+    private suspend fun syncClearBackend(): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val userId = getUserId()
+                val baseUrl = NetworkConfig.BASE_URL
+                val body = JSONObject().apply {
+                    put("session_id", sessionId)
+                    put("user_id", userId)
+                }
+                val request = Request.Builder()
+                    .url("$baseUrl/api/v1/cart/clear")
+                    .post(body.toString().toRequestBody("application/json".toMediaType()))
+                    .build()
+                val response = NetworkConfig.httpClient.newCall(request).execute()
+                response.isSuccessful.also {
+                    if (!it) Log.w("CartVM", "后端同步：清空失败 ${response.code}")
+                }
+            } catch (e: Exception) {
+                Log.e("CartVM", "后端同步：清空异常 ${e.message}", e)
+                false
+            }
+        }
+    }
+
+    /** 从后端拉取最新购物车数据并刷新本地 SQLite */
+    private suspend fun syncFromBackend(): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                repository.syncCartFromBackend(sessionId)
+                true
+            } catch (e: Exception) {
+                Log.e("CartVM", "从后端同步购物车失败", e)
+                false
+            }
+        }
+    }
+
+    /** 加载购物车数据（先从后端同步 → 再从本地加载） */
     fun loadCart() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val response = withContext(Dispatchers.IO) {
-                    val request = Request.Builder()
-                        .url("$baseUrl/api/v1/cart?session_id=$sessionId")
-                        .get()
-                        .build()
-                    client.newCall(request).execute()
+                // 先从后端拉取最新数据刷新本地数据库
+                withContext(Dispatchers.IO) {
+                    repository.syncCartFromBackend(sessionId)
                 }
-                if (response.isSuccessful) {
-                    val body = response.body?.string() ?: "{}"
-                    val json = JSONObject(body)
-                    val itemsArray = json.optJSONArray("items") ?: org.json.JSONArray()
-                    val items = mutableListOf<CartItem>()
-                    for (i in 0 until itemsArray.length()) {
-                        val item = itemsArray.getJSONObject(i)
-                        val product = Product(
-                            productId = item.optString("product_id", ""),
-                            title = item.optString("title", ""),
-                            price = item.optDouble("price", 0.0),
-                            imageUrl = NetworkConfig.resolveImageUrl(item.optString("image_url", "").takeIf { it.isNotEmpty() && it != "null" }),
-                            brand = item.optString("brand", "").takeIf { it.isNotEmpty() && it != "null" },
-                            category = item.optString("category", ""),
-                        )
-                        items.add(CartItem(product, item.optInt("quantity", 1)))
-                    }
-                    val total = items.sumOf { it.product.price * it.quantity }
-                    _uiState.update { it.copy(items = items, totalPrice = total, isLoading = false) }
-                } else {
-                    _uiState.update { it.copy(isLoading = false, error = "加载失败") }
+                // 再从本地加载显示
+                val items = withContext(Dispatchers.IO) {
+                    repository.getCartItemsForCurrentUser(sessionId)
+                }
+                val total = items.sumOf { it.product.price * it.quantity }
+                val selectedIds = items.filter { it.isSelected }.map { it.product.productId }.toSet()
+                val selectedTotal = items.filter { it.isSelected }.sumOf { it.product.price * it.quantity }
+                _uiState.update {
+                    it.copy(
+                        items = items,
+                        totalPrice = total,
+                        selectedProductIds = selectedIds,
+                        selectedTotalPrice = selectedTotal,
+                        isLoading = false,
+                    )
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                // 后端同步失败时，回退到仅从本地加载
+                try {
+                    val items = withContext(Dispatchers.IO) {
+                        repository.getCartItemsForCurrentUser(sessionId)
+                    }
+                    val total = items.sumOf { it.product.price * it.quantity }
+                    val selectedIds = items.filter { it.isSelected }.map { it.product.productId }.toSet()
+                    val selectedTotal = items.filter { it.isSelected }.sumOf { it.product.price * it.quantity }
+                    _uiState.update {
+                        it.copy(
+                            items = items,
+                            totalPrice = total,
+                            selectedProductIds = selectedIds,
+                            selectedTotalPrice = selectedTotal,
+                            isLoading = false,
+                        )
+                    }
+                } catch (e2: Exception) {
+                    _uiState.update { it.copy(isLoading = false, error = e2.message) }
+                }
             }
         }
     }
 
+    /** 切换管理模式 */
+    fun toggleManageMode() {
+        val currentState = _uiState.value
+        if (currentState.isManageMode) {
+            // 退出管理模式：从数据库重新加载选中状态
+            viewModelScope.launch {
+                try {
+                    val items = withContext(Dispatchers.IO) {
+                        repository.getCartItemsForCurrentUser(sessionId)
+                    }
+                    val selectedIds = items.filter { it.isSelected }.map { it.product.productId }.toSet()
+                    val selectedTotal = items.filter { it.isSelected }.sumOf { it.product.price * it.quantity }
+                    _uiState.update {
+                        it.copy(
+                            isManageMode = false,
+                            items = items,
+                            selectedProductIds = selectedIds,
+                            selectedTotalPrice = selectedTotal,
+                        )
+                    }
+                } catch (_: Exception) {
+                    _uiState.update { it.copy(isManageMode = false) }
+                }
+            }
+        } else {
+            // 进入管理模式：清空选中缓存，不从数据库读取
+            _uiState.update {
+                it.copy(isManageMode = true, selectedProductIds = emptySet(), selectedTotalPrice = 0.0)
+            }
+        }
+    }
+
+    /** 切换单个商品选中状态 */
+    fun toggleItemSelection(productId: String) {
+        _uiState.update { state ->
+            val newSelected = state.selectedProductIds.toMutableSet()
+            if (newSelected.contains(productId)) {
+                newSelected.remove(productId)
+            } else {
+                newSelected.add(productId)
+            }
+            val selectedTotal = state.items
+                .filter { newSelected.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(
+                selectedProductIds = newSelected,
+                selectedTotalPrice = selectedTotal,
+            )
+        }
+    }
+
+    /** 全选 / 取消全选所有商品 */
+    fun toggleSelectAll() {
+        _uiState.update { state ->
+            val allIds = state.items.map { it.product.productId }.toSet()
+            val allSelected = allIds.all { state.selectedProductIds.contains(it) }
+            val newSelected = if (allSelected) {
+                emptySet<String>()
+            } else {
+                allIds
+            }
+            val selectedTotal = state.items
+                .filter { newSelected.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(
+                selectedProductIds = newSelected,
+                selectedTotalPrice = selectedTotal,
+            )
+        }
+    }
+
+    /** 全选 / 取消全选指定商家的商品 */
+    fun toggleBrandSelection(brand: String) {
+        _uiState.update { state ->
+            val brandProductIds = state.items
+                .filter { it.product.brand == brand }
+                .map { it.product.productId }
+                .toSet()
+            val allBrandSelected = brandProductIds.all { state.selectedProductIds.contains(it) }
+            val newSelected = state.selectedProductIds.toMutableSet()
+            if (allBrandSelected) {
+                newSelected.removeAll(brandProductIds)
+            } else {
+                newSelected.addAll(brandProductIds)
+            }
+            val selectedTotal = state.items
+                .filter { newSelected.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(
+                selectedProductIds = newSelected,
+                selectedTotalPrice = selectedTotal,
+            )
+        }
+    }
+
+    /** 检查指定商家商品是否全部选中 */
+    fun isBrandFullySelected(brand: String): Boolean {
+        val state = _uiState.value
+        val brandProductIds = state.items
+            .filter { it.product.brand == brand }
+            .map { it.product.productId }
+            .toSet()
+        if (brandProductIds.isEmpty()) return false
+        return brandProductIds.all { state.selectedProductIds.contains(it) }
+    }
+
+    /** 增加商品数量（先调后端，成功后写本地） */
+    fun increaseQuantity(productId: String) {
+        _uiState.update { state ->
+            val updated = state.items.map { item ->
+                if (item.product.productId == productId && item.quantity < MAX_QUANTITY) {
+                    item.copy(quantity = item.quantity + 1)
+                } else item
+            }
+            val total = updated.sumOf { it.product.price * it.quantity }
+            val selectedTotal = updated
+                .filter { state.selectedProductIds.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(items = updated, totalPrice = total, selectedTotalPrice = selectedTotal)
+        }
+        viewModelScope.launch {
+            val item = _uiState.value.items.find { it.product.productId == productId } ?: return@launch
+            // 先调后端
+            if (!syncUpdateQuantityToBackend(productId, item.quantity)) {
+                loadCart()
+                return@launch
+            }
+            withContext(Dispatchers.IO) {
+                repository.updateCartItemQuantity(productId, item.quantity)
+            }
+        }
+    }
+
+    /** 减少商品数量，减至 0 则删除（先调后端，成功后写本地） */
+    fun decreaseQuantity(productId: String) {
+        val item = _uiState.value.items.find { it.product.productId == productId } ?: return
+        if (item.quantity <= 1) {
+            removeFromCart(productId)
+            return
+        }
+        _uiState.update { state ->
+            val updated = state.items.map { item ->
+                if (item.product.productId == productId) {
+                    item.copy(quantity = item.quantity - 1)
+                } else item
+            }
+            val total = updated.sumOf { it.product.price * it.quantity }
+            val selectedTotal = updated
+                .filter { state.selectedProductIds.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(items = updated, totalPrice = total, selectedTotalPrice = selectedTotal)
+        }
+        viewModelScope.launch {
+            val updatedItem = _uiState.value.items.find { it.product.productId == productId } ?: return@launch
+            if (!syncUpdateQuantityToBackend(productId, updatedItem.quantity)) {
+                loadCart()
+                return@launch
+            }
+            withContext(Dispatchers.IO) {
+                repository.updateCartItemQuantity(productId, updatedItem.quantity)
+            }
+        }
+    }
+
+    /** 更新商品数量，用户手动输入（先调后端，成功后写本地） */
+    fun updateQuantity(productId: String, quantity: Int) {
+        val clamped = quantity.coerceIn(1, MAX_QUANTITY)
+        _uiState.update { state ->
+            val updated = state.items.map { item ->
+                if (item.product.productId == productId) {
+                    item.copy(quantity = clamped)
+                } else item
+            }
+            val total = updated.sumOf { it.product.price * it.quantity }
+            val selectedTotal = updated
+                .filter { state.selectedProductIds.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(items = updated, totalPrice = total, selectedTotalPrice = selectedTotal)
+        }
+        viewModelScope.launch {
+            if (!syncUpdateQuantityToBackend(productId, clamped)) {
+                loadCart()
+                return@launch
+            }
+            withContext(Dispatchers.IO) {
+                repository.updateCartItemQuantity(productId, clamped)
+            }
+        }
+    }
+
+    /** 从购物车移除单件商品（先调后端 API，成功后删本地） */
+    fun removeFromCart(productId: String) {
+        // 乐观更新 UI
+        _uiState.update { state ->
+            val updated = state.items.filter { it.product.productId != productId }
+            val newSelected = state.selectedProductIds - productId
+            val total = updated.sumOf { it.product.price * it.quantity }
+            val selectedTotal = updated
+                .filter { newSelected.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(
+                items = updated,
+                totalPrice = total,
+                selectedProductIds = newSelected,
+                selectedTotalPrice = selectedTotal,
+            )
+        }
+        viewModelScope.launch {
+            // 先调后端删除
+            val backendOk = syncRemoveFromBackend(productId)
+            if (!backendOk) {
+                // 后端失败，从本地重新加载恢复状态
+                loadCart()
+                return@launch
+            }
+            // 后端成功，删除本地
+            withContext(Dispatchers.IO) {
+                repository.removeCartItem(productId)
+            }
+        }
+    }
+
+    /** 执行删除选中商品（先调后端，成功后删本地） */
+    fun performDeleteSelected() {
+        val idsToDelete = _uiState.value.selectedProductIds.toList()
+        if (idsToDelete.isEmpty()) return
+        // 乐观更新 UI
+        _uiState.update { state ->
+            val updated = state.items.filter { it.product.productId !in idsToDelete }
+            val total = updated.sumOf { it.product.price * it.quantity }
+            state.copy(
+                items = updated,
+                totalPrice = total,
+                selectedProductIds = emptySet(),
+                selectedTotalPrice = 0.0,
+            )
+        }
+        viewModelScope.launch {
+            // 逐个调后端删除
+            var allOk = true
+            for (pid in idsToDelete) {
+                if (!syncRemoveFromBackend(pid)) { allOk = false }
+            }
+            if (!allOk) {
+                loadCart()
+                return@launch
+            }
+            withContext(Dispatchers.IO) {
+                repository.deleteCartItems(idsToDelete)
+            }
+        }
+    }
+
+    /** 添加商品到购物车（先调后端 API，成功后写本地） */
     fun addToCart(product: Product) {
         viewModelScope.launch {
             val existing = _uiState.value.items.find { it.product.productId == product.productId }
             if (existing != null) {
-                _uiState.update {
-                    val updated = it.items.map { item ->
-                        if (item.product.productId == product.productId)
-                            item.copy(quantity = item.quantity + 1)
-                        else item
-                    }
-                    it.copy(items = updated, totalPrice = updated.sumOf { c -> c.product.price * c.quantity })
-                }
+                updateQuantity(product.productId, existing.quantity + 1)
             } else {
-                val newItem = CartItem(product, 1)
-                _uiState.update {
-                    val updated = it.items + newItem
-                    it.copy(items = updated, totalPrice = updated.sumOf { c -> c.product.price * c.quantity })
+                // 1. 先调后端 API 入库
+                val backendOk = syncAddToBackend(product, 1)
+                if (!backendOk) {
+                    _uiState.update { it.copy(error = "加购失败：后端同步异常") }
+                    return@launch
                 }
-            }
-
-            try {
+                // 2. 后端成功后写本地 SQLite
+                val newItem = CartItem(product, 1, isSelected = true)
+                _uiState.update { state ->
+                    val updated = state.items + newItem
+                    val total = updated.sumOf { it.product.price * it.quantity }
+                    val newSelected = state.selectedProductIds + product.productId
+                    val selectedTotal = updated
+                        .filter { newSelected.contains(it.product.productId) }
+                        .sumOf { it.product.price * it.quantity }
+                    state.copy(
+                        items = updated,
+                        totalPrice = total,
+                        selectedProductIds = newSelected,
+                        selectedTotalPrice = selectedTotal,
+                    )
+                }
                 withContext(Dispatchers.IO) {
-                    val body = JSONObject().apply {
-                        put("session_id", sessionId)
-                        put("product_id", product.productId)
-                    }
-                    val request = Request.Builder()
-                        .url("$baseUrl/api/v1/cart/add")
-                        .post(body.toString().toRequestBody("application/json".toMediaType()))
-                        .build()
-                    client.newCall(request).execute()
+                    repository.saveCartItemForCurrentUser(product, sessionId, 1)
                 }
-            } catch (e: Exception) {
-                android.util.Log.e("CartViewModel", "addToCart server sync failed", e)
-                _uiState.update { it.copy(error = "加购同步失败，请下拉刷新") }
             }
         }
     }
 
-    fun removeFromCart(productId: String) {
-        viewModelScope.launch {
-            val previousItems = _uiState.value.items
-            val previousTotal = _uiState.value.totalPrice
-            _uiState.update {
-                val updated = it.items.filter { item -> item.product.productId != productId }
-                it.copy(items = updated, totalPrice = updated.sumOf { c -> c.product.price * c.quantity })
-            }
-            try {
-                withContext(Dispatchers.IO) {
-                    val body = JSONObject().apply {
-                        put("session_id", sessionId)
-                        put("product_id", productId)
-                    }
-                    val request = Request.Builder()
-                        .url("$baseUrl/api/v1/cart/remove")
-                        .post(body.toString().toRequestBody("application/json".toMediaType()))
-                        .build()
-                    client.newCall(request).execute()
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("CartViewModel", "removeFromCart server sync failed", e)
-                _uiState.update { it.copy(items = previousItems, totalPrice = previousTotal, error = "删除同步失败，请下拉刷新") }
-            }
-        }
-    }
-
-    fun updateQuantity(productId: String, quantity: Int) {
-        if (quantity <= 0) { removeFromCart(productId); return }
-        viewModelScope.launch {
-            val previousItems = _uiState.value.items
-            val previousTotal = _uiState.value.totalPrice
-            _uiState.update {
-                val updated = it.items.map { item ->
-                    if (item.product.productId == productId) item.copy(quantity = quantity)
-                    else item
-                }
-                it.copy(items = updated, totalPrice = updated.sumOf { c -> c.product.price * c.quantity })
-            }
-            try {
-                withContext(Dispatchers.IO) {
-                    val body = JSONObject().apply {
-                        put("session_id", sessionId)
-                        put("product_id", productId)
-                        put("quantity", quantity)
-                    }
-                    val request = Request.Builder()
-                        .url("$baseUrl/api/v1/cart/quantity")
-                        .put(body.toString().toRequestBody("application/json".toMediaType()))
-                        .build()
-                    client.newCall(request).execute()
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("CartViewModel", "updateQuantity server sync failed", e)
-                _uiState.update { it.copy(items = previousItems, totalPrice = previousTotal, error = "修改同步失败，请下拉刷新") }
-            }
-        }
-    }
-
+    /** 清空购物车（先调后端，成功后清本地） */
     fun clearCart() {
+        _uiState.update { it.copy(items = emptyList(), totalPrice = 0.0, selectedProductIds = emptySet(), selectedTotalPrice = 0.0) }
         viewModelScope.launch {
-            val previousItems = _uiState.value.items
-            val previousTotal = _uiState.value.totalPrice
-            _uiState.update { it.copy(items = emptyList(), totalPrice = 0.0) }
-            try {
-                withContext(Dispatchers.IO) {
-                    val body = JSONObject().apply { put("session_id", sessionId) }
-                    val request = Request.Builder()
-                        .url("$baseUrl/api/v1/cart/clear")
-                        .post(body.toString().toRequestBody("application/json".toMediaType()))
-                        .build()
-                    client.newCall(request).execute()
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("CartViewModel", "clearCart server sync failed", e)
-                _uiState.update { it.copy(items = previousItems, totalPrice = previousTotal, error = "清空同步失败，请下拉刷新") }
+            if (!syncClearBackend()) {
+                loadCart()
+                return@launch
+            }
+            withContext(Dispatchers.IO) {
+                repository.clearCart(sessionId)
             }
         }
     }
 
+    /** 下单（先调后端清除已下单商品，成功后删本地） */
     fun placeOrder() {
         if (_uiState.value.items.isEmpty()) return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             try {
-                val response = withContext(Dispatchers.IO) {
-                    val body = JSONObject().apply {
-                        put("session_id", sessionId)
-                        put("address", "默认地址")
-                    }
-                    val request = Request.Builder()
-                        .url("$baseUrl/api/v1/orders")
-                        .post(body.toString().toRequestBody("application/json".toMediaType()))
-                        .build()
-                    client.newCall(request).execute()
+                // 使用选中的商品下单，若未选中任何商品则用全部商品
+                val selectedItems = _uiState.value.items.filter {
+                    _uiState.value.selectedProductIds.contains(it.product.productId)
+                }.ifEmpty { _uiState.value.items }
+                val orderedIds = selectedItems.map { it.product.productId }
+                val orderNo = "ORD${System.currentTimeMillis()}"
+                val total = selectedItems.sumOf { it.product.price * it.quantity }
+
+                // 从后端删除已下单商品
+                var allOk = true
+                for (pid in orderedIds) {
+                    if (!syncRemoveFromBackend(pid)) { allOk = false }
                 }
-                if (response.isSuccessful) {
-                    val body = response.body?.string() ?: "{}"
-                    val json = JSONObject(body)
-                    val orderNo = json.optString("order_no", "")
-                    val total = json.optDouble("total", 0.0)
-                    _uiState.update {
-                        it.copy(
-                            items = emptyList(),
-                            totalPrice = 0.0,
-                            isLoading = false,
-                            orderResult = "下单成功！\n订单号：$orderNo\n实付：¥${"%.2f".format(total)}"
-                        )
-                    }
-                } else {
-                    val body = response.body?.string() ?: ""
-                    _uiState.update { it.copy(isLoading = false, error = "下单失败：${response.code}") }
+                if (!allOk) {
+                    _uiState.update { it.copy(isLoading = false, error = "下单失败：后端同步异常") }
+                    return@launch
+                }
+
+                // 后端成功后，删除本地数据库中的已下单商品
+                withContext(Dispatchers.IO) {
+                    repository.deleteCartItems(orderedIds)
+                }
+
+                // 仅移除已下单的商品，保留未选中的商品
+                val remainingItems = _uiState.value.items.filter {
+                    it.product.productId !in orderedIds
+                }
+                val remainingTotal = remainingItems.sumOf { it.product.price * it.quantity }
+                val remainingSelectedIds = _uiState.value.selectedProductIds - orderedIds.toSet()
+                val remainingSelectedTotal = remainingItems
+                    .filter { remainingSelectedIds.contains(it.product.productId) }
+                    .sumOf { it.product.price * it.quantity }
+                _uiState.update {
+                    it.copy(
+                        items = remainingItems,
+                        totalPrice = remainingTotal,
+                        selectedProductIds = remainingSelectedIds,
+                        selectedTotalPrice = remainingSelectedTotal,
+                        isLoading = false,
+                        orderResult = "下单成功！\n订单号：$orderNo\n实付：¥${"%.2f".format(total)}"
+                    )
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = "网络错误：${e.message}") }
@@ -250,9 +605,87 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** 关闭下单成功弹窗 */
     fun dismissOrderResult() {
         _uiState.update { it.copy(orderResult = null) }
     }
 
-    val itemCount: Int get() = _uiState.value.items.sumOf { it.quantity }
+    // ═══════════════════════════════════════════════════════
+    // 快速清理面板
+    // ═══════════════════════════════════════════════════════
+
+    /** 打开快速清理面板 */
+    fun openQuickClean() {
+        _uiState.update { it.copy(showQuickClean = true, quickCleanSelectedIds = emptySet()) }
+    }
+
+    /** 关闭快速清理面板 */
+    fun closeQuickClean() {
+        _uiState.update { it.copy(showQuickClean = false, quickCleanSelectedIds = emptySet()) }
+    }
+
+    /** 切换快速清理中商品的选中状态 */
+    fun toggleQuickCleanSelection(productId: String) {
+        _uiState.update { state ->
+            val newSet = state.quickCleanSelectedIds.toMutableSet()
+            if (newSet.contains(productId)) {
+                newSet.remove(productId)
+            } else {
+                newSet.add(productId)
+            }
+            state.copy(quickCleanSelectedIds = newSet)
+        }
+    }
+
+    /** 快速清理中全选/取消全选 */
+    fun toggleQuickCleanSelectAll() {
+        _uiState.update { state ->
+            val allIds = state.items.map { it.product.productId }.toSet()
+            val allSelected = allIds.all { state.quickCleanSelectedIds.contains(it) }
+            state.copy(
+                quickCleanSelectedIds = if (allSelected) emptySet() else allIds
+            )
+        }
+    }
+
+    /** 快速清理 — 删除选中的商品（先调后端，成功后删本地） */
+    fun performQuickCleanDelete() {
+        val idsToDelete = _uiState.value.quickCleanSelectedIds.toList()
+        if (idsToDelete.isEmpty()) return
+        // 乐观更新 UI
+        _uiState.update { state ->
+            val updated = state.items.filter { it.product.productId !in idsToDelete }
+            val total = updated.sumOf { it.product.price * it.quantity }
+            val newSelected = state.selectedProductIds - idsToDelete.toSet()
+            val selectedTotal = updated
+                .filter { newSelected.contains(it.product.productId) }
+                .sumOf { it.product.price * it.quantity }
+            state.copy(
+                items = updated,
+                totalPrice = total,
+                selectedProductIds = newSelected,
+                selectedTotalPrice = selectedTotal,
+                showQuickClean = false,
+                quickCleanSelectedIds = emptySet(),
+            )
+        }
+        viewModelScope.launch {
+            var allOk = true
+            for (pid in idsToDelete) {
+                if (!syncRemoveFromBackend(pid)) { allOk = false }
+            }
+            if (!allOk) {
+                loadCart()
+                return@launch
+            }
+            withContext(Dispatchers.IO) {
+                repository.deleteCartItems(idsToDelete)
+            }
+        }
+    }
+
+    companion object {
+        /** 商品数量最大值 */
+        const val MAX_QUANTITY = 1000
+    }
 }

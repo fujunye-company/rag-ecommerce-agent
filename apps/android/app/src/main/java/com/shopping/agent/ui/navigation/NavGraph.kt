@@ -20,6 +20,7 @@ import com.shopping.agent.ui.components.MainBottomNavBar
 import com.shopping.agent.ui.components.bottomNavItems
 import com.shopping.agent.ui.screens.*
 import com.shopping.agent.viewmodel.ChatViewModel
+import com.shopping.agent.viewmodel.ProductDetailViewModel
 
 private val tabRoutes = bottomNavItems.map { it.route }.toSet()
 private val chatRoutes = setOf("home", "explore")
@@ -46,11 +47,15 @@ fun AppNavGraph(
         (currentRoute == null && startDestination in chatRoutes)
 
     // 共享 ChatViewModel（多对话支持）。登录/注册/找回密码页不提前初始化，避免未登录首屏触发聊天 DB/TTS 启动链路。
-    val chatViewModel: ChatViewModel? = if (shouldInitChat) {
-        viewModel(viewModelStoreOwner = appViewModelStoreOwner)
-    } else {
-        null
+    // 使用 mutableStateOf 保持 ViewModel 引用，避免导航过渡期 shouldInitChat 切换导致 checkNotNull 崩溃
+    val chatViewModelRef = remember { mutableStateOf<ChatViewModel?>(null) }
+    if (shouldInitChat) {
+        if (chatViewModelRef.value == null) {
+            chatViewModelRef.value = viewModel(viewModelStoreOwner = appViewModelStoreOwner)
+        }
     }
+    // 注意：不在此处将 chatViewModelRef 设为 null — 否则 navigate 到非 chat page 时仍在 backstack 中的 composable("home") 会因 checkNotNull 崩溃
+    val chatViewModel = chatViewModelRef.value
     val uiState = chatViewModel?.uiState?.collectAsState()?.value
 
     CompositionLocalProvider(LocalOnMenuClick provides { drawerVisible = true }) {
@@ -96,9 +101,16 @@ fun AppNavGraph(
                         ProfileScreen(
                             onSettingsClick = { navController.navigate("settings") },
                             onCustomerServiceClick = { navController.navigate("customer_service") },
+                            onCartClick = {
+                                navController.navigate(Screen.Cart.route) {
+                                    popUpTo("home") { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
                         )
                     }
-                    composable("cart") { CartScreen(onBack = { navController.popBackStack() }) }
+                    composable(Screen.Cart.route) { CartScreen() }
                     composable("settings") {
                         val ctx = androidx.compose.ui.platform.LocalContext.current
                         val repo = remember { com.shopping.agent.data.local.UserRepository(ctx) }
@@ -228,9 +240,13 @@ fun AppNavGraph(
                     }
                     composable("product_detail/{productId}",
                         arguments = listOf(navArgument("productId") { type = NavType.StringType })) { entry ->
+                        val detailViewModel: ProductDetailViewModel = viewModel(
+                            viewModelStoreOwner = entry
+                        )
                         ProductDetailScreen(
                             productId = entry.arguments?.getString("productId") ?: "",
                             onBack = { navController.popBackStack() },
+                            viewModel = detailViewModel,
                         )
                     }
                 }

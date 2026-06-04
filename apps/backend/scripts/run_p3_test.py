@@ -21,9 +21,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 EVAL_CASES_PATH = os.path.join(BASE_DIR, "data", "test_cases", "eval_cases.json")
 OUTPUT_PATH = os.path.join(BASE_DIR, "data", "test_cases", "p3_results.json")
-QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
-COLLECTION = os.environ.get("QDRANT_COLLECTION", "products")
-EMBEDDING_MODEL = "BAAI/bge-large-zh-v1.5"
+QDRANT_URL = "http://localhost:6333"
+COLLECTION = "products"
+
+_HF_EMBEDDING = "BAAI/bge-large-zh-v1.5"
+_LOCAL_EMBEDDING = os.path.join(BASE_DIR, "data", "models", "bge-large-zh-v1.5")
+EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL",
+    _LOCAL_EMBEDDING if os.path.isdir(_LOCAL_EMBEDDING) else _HF_EMBEDDING)
 
 
 def load_all_products() -> list[dict]:

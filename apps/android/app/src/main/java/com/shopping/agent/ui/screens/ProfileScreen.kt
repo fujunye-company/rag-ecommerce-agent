@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HeadsetMic
@@ -23,8 +24,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.shopping.agent.data.local.UserRepository
+import com.shopping.agent.data.model.CartItem
 import com.shopping.agent.ui.theme.*
 import com.shopping.agent.data.mock.MockProfile
 import kotlinx.coroutines.Dispatchers
@@ -321,23 +325,142 @@ private fun CouponCard(
 }
 
 /**
+ * 购物车预览模块 — 横向商品卡片列表。
+ *
+ * 从数据库加载真实购物车数据，最多显示 4 件商品。
+ * 购物车为空时显示"购物车空空如也~"提示。
+ *
+ * @param onCartClick 点击整个卡片时的回调，导航到购物车页面
+ * @param cartItems 从数据库加载的购物车商品列表
+ */
+@Composable
+private fun CartPreviewSection(
+    onCartClick: () -> Unit,
+    cartItems: List<CartItem>,
+    modifier: Modifier = Modifier,
+) {
+    val displayItems = remember(cartItems) { cartItems.take(MAX_CART_PREVIEW_ITEMS) }
+    val cartCount = cartItems.size
+    val isEmpty = cartItems.isEmpty()
+
+    Card(
+        onClick = onCartClick,
+        shape = RadiusLg,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "购物车",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                )
+                if (!isEmpty) {
+                    Text(
+                        "${cartCount}件商品",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+
+            if (isEmpty) {
+                // 空购物车状态
+                Text(
+                    text = "购物车空空如也~",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+            } else {
+                // 横向商品卡片列表
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    displayItems.forEach { item ->
+                        CartProductMiniCard(
+                            item = item,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** 购物车预览区块最多显示的商品数量 */
+private const val MAX_CART_PREVIEW_ITEMS = 4
+
+/**
+ * 购物车预览迷你商品卡片。
+ * 显示商品图片 + 标题 + 价格。
+ */
+@Composable
+private fun CartProductMiniCard(
+    item: CartItem,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        // 商品图
+        AsyncImage(
+            model = item.product.imageUrl ?: "",
+            contentDescription = item.product.title,
+            modifier = Modifier
+                .size(56.dp)
+                .clip(RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Crop,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            item.product.title,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            "¥${item.product.price}",
+            style = MaterialTheme.typography.labelMedium,
+            color = TextPrice,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
+/**
  * 我的 — 完整页面。
  *
- * 启动时从 SQLite 加载用户头像并传递给 [ProfileHeader] 展示。
+ * 启动时从 SQLite 加载用户头像、昵称和购物车数据。
  * 子模块：用户头部、购物车预览、我的订单、常用功能 2×3 网格、领券中心。
  *
  * @param onSettingsClick 设置图标点击回调，导航到设置页
  * @param onCustomerServiceClick 客服图标点击回调，导航到客服页面
+ * @param onCartClick 购物车卡片点击回调，导航到购物车页面
  */
 @Composable
 fun ProfileScreen(
     onSettingsClick: () -> Unit = {},
     onCustomerServiceClick: () -> Unit = {},
+    onCartClick: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val repository = remember { UserRepository(context) }
     var avatarBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     var displayName by remember { mutableStateOf("fujunye") }
+    var cartItems by remember { mutableStateOf<List<CartItem>>(emptyList()) }
 
     // 懒加载用户头像和昵称：DB 读取均在 IO 线程异步执行
     LaunchedEffect(Unit) {
@@ -374,6 +497,18 @@ fun ProfileScreen(
         }
     }
 
+    // 懒加载购物车数据
+    LaunchedEffect(Unit) {
+        try {
+            val prefs = context.getSharedPreferences("cart_prefs", android.content.Context.MODE_PRIVATE)
+            val sessionId = prefs.getString("cart_session_id", "") ?: ""
+            val items = withContext(Dispatchers.IO) { repository.getCartItemsForCurrentUser(sessionId) }
+            cartItems = items
+        } catch (_: Exception) {
+            cartItems = emptyList()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -390,7 +525,10 @@ fun ProfileScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            // ===== A02: 我的订单 =====
+            // ===== A02: 购物车预览 =====
+            CartPreviewSection(onCartClick = onCartClick, cartItems = cartItems)
+
+            // ===== A03: 我的订单 =====
             OrderStatusSection()
 
             // ===== A04: 常用功能 =====

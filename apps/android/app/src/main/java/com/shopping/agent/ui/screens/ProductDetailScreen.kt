@@ -28,7 +28,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.shopping.agent.data.model.*
 import com.shopping.agent.ui.theme.*
@@ -55,7 +54,7 @@ fun ProductDetailScreen(
     onBack: () -> Unit,
     onAddToCart: (String) -> Unit = {},
     onBuyNow: (String) -> Unit = {},
-    viewModel: ProductDetailViewModel = viewModel(),
+    viewModel: ProductDetailViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -100,7 +99,7 @@ fun ProductDetailScreen(
                 Text("商品加载失败", color = Color.Gray)
             }
         } else {
-            val product = uiState.product!!
+            val product = uiState.product ?: return@Scaffold
             // 底部内边距由 Scaffold 处理，顶部不留间距（图片贴顶）
             val contentPadding = PaddingValues(
                 start = innerPadding.calculateStartPadding(LayoutDirection.Ltr),
@@ -403,7 +402,7 @@ private fun CouponBenefitCard(coupons: List<CouponInfo>, savedAmount: Int) {
                     Modifier.fillMaxWidth().padding(vertical = 3.dp),
                     shape = RoundedCornerShape(6.dp),
                     color = bg,
-                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                    border = ButtonDefaults.outlinedButtonBorder(enabled = true).copy(
                         brush = Brush.horizontalGradient(listOf(border, border))
                     ).let { null },
                 ) {
@@ -469,7 +468,7 @@ private fun LogisticsGuaranteeCard(delivery: DeliveryInfo, guarantee: List<Strin
             // Guarantee badges
             if (guarantee.isNotEmpty()) {
                 Spacer(Modifier.height(10.dp))
-                Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     guarantee.forEach { item ->
@@ -519,7 +518,7 @@ private fun ProductSpecGrid(specs: List<SpecItem>) {
                     // Fill empty cell if odd count
                     if (row.size < 2) Spacer(Modifier.weight(1f))
                 }
-                Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
     }
@@ -668,7 +667,7 @@ private fun ShopInfoCard(
             }
 
             Spacer(Modifier.height(10.dp))
-            Divider(color = MaterialTheme.colorScheme.outlineVariant)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             Spacer(Modifier.height(10.dp))
 
             // Score row

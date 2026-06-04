@@ -7,17 +7,19 @@ Also adds pg_uuid to payload so PG lookups work from retrieval results.
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from uuid import uuid5, UUID
+import os
 import time
 
 QDRANT_NAMESPACE = UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-COLLECTION = "products"
+COLLECTION = os.environ.get("QDRANT_COLLECTION", "products")
+QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 
 def product_uuid(product_id: str) -> str:
     return str(uuid5(QDRANT_NAMESPACE, product_id))
 
 
 def main():
-    client = QdrantClient(url="http://localhost:6333", timeout=60)
+    client = QdrantClient(url=QDRANT_URL, timeout=60)
     count = client.count(collection_name=COLLECTION, exact=True).count
     print(f"Qdrant points: {count}")
 

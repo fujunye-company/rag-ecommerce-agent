@@ -21,8 +21,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE_DIR)
 EVAL_CASES_PATH = os.path.join(BASE_DIR, "data", "test_cases", "eval_cases.json")
 OUTPUT_PATH = os.path.join(BASE_DIR, "data", "test_cases", "p3_results.json")
-QDRANT_URL = "http://localhost:6333"
-COLLECTION = "products"
+QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
+COLLECTION = os.environ.get("QDRANT_COLLECTION", "products")
 EMBEDDING_MODEL = "BAAI/bge-large-zh-v1.5"
 
 

@@ -8,7 +8,7 @@ if sys.platform == "win32":
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-BASE = "http://localhost:8080/api/v1"
+BASE = os.environ.get("API_BASE_URL", "http://localhost:8080/api/v1")
 EVAL_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "test_cases", "eval_cases.json")
 OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "..", "data", "test_cases", "eval_quick_results.json")
 

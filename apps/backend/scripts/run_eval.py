@@ -1,8 +1,8 @@
 """RAGAS 评测脚本 — 对接 /api/chat 实时评测"""
-import json, time, asyncio
+import json, time, asyncio, os
 import aiohttp
 
-BASE = "http://localhost:8000/api"
+BASE = os.environ.get("API_BASE_URL", "http://localhost:8080/api/v1")
 EVAL_FILE = "data/test_cases/eval_cases.json"
 OUTPUT_FILE = "data/test_cases/eval_results.json"
 

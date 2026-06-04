@@ -5,6 +5,7 @@ RAGAS 自动评测脚本
 收集回答+上下文后计算 RAGAS 指标。
 """
 import json
+import os
 import sys
 import asyncio
 import time
@@ -16,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 EVAL_CASES_PATH = Path(__file__).parent / "eval_cases.json"
 OUTPUT_PATH = Path(__file__).parent / "eval_results.json"
 
-API_BASE = "http://localhost:8000"
+API_BASE = os.environ.get("API_BASE_URL", "http://localhost:8080")
 
 
 async def call_chat_api(query: str, session_id: str = "eval-session") -> dict:

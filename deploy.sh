@@ -11,6 +11,10 @@ cd "$SCRIPT_DIR"
 COMPOSE_FILE="infrastructure/docker-compose.yml"
 ENV_EXAMPLE="infrastructure/env/.env.docker.example"
 ENV_FILE="infrastructure/env/.env.docker"
+BACKEND_URL="${BACKEND_URL:-http://localhost:8080}"
+BACKEND_PORT="${BACKEND_URL##*:}"
+BACKEND_PORT="${BACKEND_PORT%%/*}"
+export APP_PORT="${APP_PORT:-$BACKEND_PORT}"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -47,7 +51,7 @@ if ! docker compose version >/dev/null 2>&1; then
 fi
 
 # Port checks
-for port in 8080 5433 6333; do
+for port in "$BACKEND_PORT" 5433 6333; do
     if command -v ss >/dev/null 2>&1; then
         if ss -tlnp 2>/dev/null | grep -q ":${port} "; then
             warn "Port ${port} is in use — may conflict"
@@ -95,12 +99,12 @@ ELAPSED=0
 INTERVAL=3
 
 while [ $ELAPSED -lt $MAX_WAIT ]; do
-    READY_JSON=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ready 2>/dev/null || echo "000")
+    READY_JSON=$(curl -s -o /dev/null -w "%{http_code}" "$BACKEND_URL/ready" 2>/dev/null || echo "000")
     if [ "$READY_JSON" = "200" ]; then
         # Parse progress
-        STATUS=$(curl -s http://localhost:8080/ready 2>/dev/null | python -c "import sys,json; print(json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "?")
-        ITEMS=$(curl -s http://localhost:8080/ready 2>/dev/null | python -c "import sys,json; print(json.load(sys.stdin)['progress']['qdrant_item_count'])" 2>/dev/null || echo "0")
-        MSG=$(curl -s http://localhost:8080/ready 2>/dev/null | python -c "import sys,json; print(json.load(sys.stdin).get('message',''))" 2>/dev/null || echo "")
+        STATUS=$(curl -s "$BACKEND_URL/ready" 2>/dev/null | python -c "import sys,json; print(json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "?")
+        ITEMS=$(curl -s "$BACKEND_URL/ready" 2>/dev/null | python -c "import sys,json; print(json.load(sys.stdin)['progress']['qdrant_item_count'])" 2>/dev/null || echo "0")
+        MSG=$(curl -s "$BACKEND_URL/ready" 2>/dev/null | python -c "import sys,json; print(json.load(sys.stdin).get('message',''))" 2>/dev/null || echo "")
         echo -ne "\r       [$ELAPSED""s] phase=$STATUS items=$ITEMS msg=$MSG          "
         if [ "$STATUS" = "ready" ]; then
             echo ""
@@ -122,8 +126,8 @@ fi
 # ── Phase 3: Readiness report ────────────────────────────
 log "Phase 3: Readiness report"
 
-HEALTH_JSON=$(curl -s http://localhost:8080/health 2>/dev/null || echo '{"status":"unreachable"}')
-READY_JSON=$(curl -s http://localhost:8080/ready 2>/dev/null || echo '{}')
+HEALTH_JSON=$(curl -s "$BACKEND_URL/health" 2>/dev/null || echo '{"status":"unreachable"}')
+READY_JSON=$(curl -s "$BACKEND_URL/ready" 2>/dev/null || echo '{}')
 
 echo ""
 echo "============================================================"
@@ -137,14 +141,14 @@ COLLECTION=$(echo "$HEALTH_JSON" | python -c "import sys,json; print(json.load(s
 VEC_SIZE=$(echo "$HEALTH_JSON" | python -c "import sys,json; print(json.load(sys.stdin).get('vector_size',0))" 2>/dev/null || echo "?")
 ITEM_COUNT=$(echo "$READY_JSON" | python -c "import sys,json; print(json.load(sys.stdin)['progress']['qdrant_item_count'])" 2>/dev/null || echo "?")
 
-echo "  Backend:      running (port 8080)"
+echo "  Backend:      running ($BACKEND_URL)"
 echo "  PostgreSQL:   $DB_STATUS"
 echo "  Qdrant:       $QDRANT_STATUS ($COLLECTION, $ITEM_COUNT vectors, ${VEC_SIZE}-dim)"
 echo "  LLM:          Doubao-Seed-2.0-lite"
 echo ""
-echo "  API Docs:     http://localhost:8080/docs"
-echo "  Health:       http://localhost:8080/health"
-echo "  Ready:        http://localhost:8080/ready"
+echo "  API Docs:     $BACKEND_URL/docs"
+echo "  Health:       $BACKEND_URL/health"
+echo "  Ready:        $BACKEND_URL/ready"
 
 # Validate data import actually produced vectors
 if [ "$ITEM_COUNT" = "0" ] || [ "$ITEM_COUNT" = "?" ]; then
@@ -158,9 +162,9 @@ fi
 # Detect LAN IP for Android connection
 LAN_IP=$(ip route get 1 2>/dev/null | awk '{print $7; exit}' 2>/dev/null || ifconfig 2>/dev/null | awk '/inet / && !/127.0.0.1/ {print $2; exit}' || hostname -I 2>/dev/null | awk '{print $1}' || echo "")
 if [ -n "$LAN_IP" ]; then
-    echo "  Android APK:  cd apps/android && ./gradlew assembleDebug -PapiUrl=http://$LAN_IP:8080"
+    echo "  Android APK:  cd apps/android && ./gradlew assembleDebug -PapiUrl=http://$LAN_IP:$BACKEND_PORT"
 else
-    echo "  Android APK:  cd apps/android && ./gradlew assembleDebug -PapiUrl=http://<YOUR-IP>:8080"
+    echo "  Android APK:  cd apps/android && ./gradlew assembleDebug -PapiUrl=http://<YOUR-IP>:$BACKEND_PORT"
 fi
 echo ""
 echo "  Demo script:  docs/submission/DEMO_RUNBOOK.md"

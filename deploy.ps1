@@ -11,6 +11,9 @@ Set-Location $ScriptDir
 $ComposeFile = "infrastructure/docker-compose.yml"
 $EnvExample = "infrastructure/env/.env.docker.example"
 $EnvFile = "infrastructure/env/.env.docker"
+$BackendUrl = if ($env:BACKEND_URL) { $env:BACKEND_URL } else { "http://localhost:8080" }
+$BackendPort = ([Uri]$BackendUrl).Port
+if (-not $env:APP_PORT) { $env:APP_PORT = "$BackendPort" }
 
 function Write-Step { param($msg) Write-Host "[DEPLOY] $msg" -ForegroundColor Green }
 function Write-Warn  { param($msg) Write-Host "[WARN]  $msg" -ForegroundColor Yellow }
@@ -72,7 +75,7 @@ $interval = 3
 
 while ($elapsed -lt $maxWait) {
     try {
-        $response = Invoke-WebRequest -Uri "http://localhost:8080/ready" -TimeoutSec 3 -UseBasicParsing
+        $response = Invoke-WebRequest -Uri "$BackendUrl/ready" -TimeoutSec 3 -UseBasicParsing
         $readyJson = $response.Content | ConvertFrom-Json
         $statusMsg = "[$elapsed" + "s] phase=$($readyJson.status) items=$($readyJson.progress.qdrant_item_count)"
         Write-Host "`r       $statusMsg" -NoNewline
@@ -97,8 +100,8 @@ if ($elapsed -ge $maxWait) {
 Write-Step "Phase 3: Readiness report"
 
 try {
-    $healthJson = (Invoke-WebRequest -Uri "http://localhost:8080/health" -TimeoutSec 5 -UseBasicParsing).Content | ConvertFrom-Json
-    $readyJson = (Invoke-WebRequest -Uri "http://localhost:8080/ready" -TimeoutSec 5 -UseBasicParsing).Content | ConvertFrom-Json
+    $healthJson = (Invoke-WebRequest -Uri "$BackendUrl/health" -TimeoutSec 5 -UseBasicParsing).Content | ConvertFrom-Json
+    $readyJson = (Invoke-WebRequest -Uri "$BackendUrl/ready" -TimeoutSec 5 -UseBasicParsing).Content | ConvertFrom-Json
 } catch {
     Write-Err "Cannot reach backend health endpoint"
     exit 1
@@ -108,14 +111,14 @@ Write-Host ""
 Write-Host "============================================================"
 Write-Host "  DEPLOY READINESS REPORT"
 Write-Host "============================================================"
-Write-Host "  Backend:      running (port 8080)"
+Write-Host "  Backend:      running ($BackendUrl)"
 Write-Host "  PostgreSQL:   $($healthJson.database)"
 Write-Host "  Qdrant:       $($healthJson.qdrant) ($($healthJson.collection), $($readyJson.progress.qdrant_item_count) vectors, $($healthJson.vector_size)-dim)"
 Write-Host "  LLM:          Doubao-Seed-2.0-lite"
 Write-Host ""
-Write-Host "  API Docs:     http://localhost:8080/docs"
-Write-Host "  Health:       http://localhost:8080/health"
-Write-Host "  Ready:        http://localhost:8080/ready"
+Write-Host "  API Docs:     $BackendUrl/docs"
+Write-Host "  Health:       $BackendUrl/health"
+Write-Host "  Ready:        $BackendUrl/ready"
 
 # Validate data import produced vectors
 $itemCount = $readyJson.progress.qdrant_item_count
@@ -127,7 +130,7 @@ if ($itemCount -eq 0) {
     Write-Warn "=============================================================="
 }
 
-Write-Host "  Android APK:  cd apps/android; .\gradlew.bat assembleDebug -PapiUrl=http://<YOUR-IP>:8080"
+Write-Host "  Android APK:  cd apps/android; .\gradlew.bat assembleDebug -PapiUrl=http://<YOUR-IP>:$BackendPort"
 Write-Host ""
 Write-Host "  Demo script:  docs/submission/DEMO_RUNBOOK.md"
 Write-Host "============================================================"

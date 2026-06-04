@@ -6,14 +6,17 @@ Align product_id in Qdrant payloads and PG:
 """
 import json
 import asyncio
+import os
 import asyncpg
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from uuid import uuid5, UUID
 
 QDRANT_NAMESPACE = UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-COLLECTION = "products"
-BASE = "/mnt/c/Users/fujunye/Desktop/Hermes/04-rag-ecommerce"
+COLLECTION = os.environ.get("QDRANT_COLLECTION", "products")
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://shopping:shopping123@localhost:5433/shopping_agent")
+QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 
 def product_uuid(product_id: str) -> str:
     return str(uuid5(QDRANT_NAMESPACE, product_id))
@@ -21,7 +24,7 @@ def product_uuid(product_id: str) -> str:
 
 async def fix_pg():
     """Add source_product_id to PG products."""
-    conn = await asyncpg.connect('postgresql://shopping:shopping123@localhost:5433/shopping_agent')
+    conn = await asyncpg.connect(DATABASE_URL)
 
     with open(f"{BASE}/apps/backend/data/qdrant/seed_products.json", "r") as f:
         seed = json.load(f)
@@ -58,7 +61,7 @@ async def fix_pg():
 
 def fix_qdrant():
     """Update Qdrant: set payload.product_id to UUID5 via re-upsert (no re-embedding)."""
-    client = QdrantClient(url="http://localhost:6333", timeout=60)
+    client = QdrantClient(url=QDRANT_URL, timeout=60)
 
     # Scroll all with vectors
     print("Scrolling Qdrant points with vectors...")
@@ -102,8 +105,8 @@ def fix_qdrant():
 
 
 async def verify():
-    conn = await asyncpg.connect('postgresql://shopping:shopping123@localhost:5433/shopping_agent')
-    client = QdrantClient(url="http://localhost:6333", timeout=10)
+    conn = await asyncpg.connect(DATABASE_URL)
+    client = QdrantClient(url=QDRANT_URL, timeout=10)
 
     # Get all Qdrant product UUIDs
     qd_uuids = set()

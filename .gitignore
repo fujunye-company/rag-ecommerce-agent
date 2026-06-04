@@ -50,7 +50,6 @@ infrastructure/env/.env.docker
 
 # Android release binaries + local config
 /apps/android/app/release
-/apps/android/gradle.properties
 
 # Downloaded ML models (large files, download via SETUP.md)
 /apps/backend/data/models/bge-large-zh-v1.5

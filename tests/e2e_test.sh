@@ -2,7 +2,7 @@
 # 拾物 App 端到端集成测试
 # 使用: bash tests/e2e_test.sh
 
-BASE="http://localhost:8000"
+BASE="${API_BASE_URL:-http://localhost:8080}"
 PASS=0
 FAIL=0
 

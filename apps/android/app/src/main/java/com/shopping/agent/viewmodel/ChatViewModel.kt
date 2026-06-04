@@ -186,6 +186,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 streamingText = "",
                 streamingCards = emptyList(),
                 clarifyChips = emptyList(),
+                clarifyQuestion = "",
                 searchStatus = "",
                 screenState = ScreenState.Idle,
                 inputText = "",
@@ -212,6 +213,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     streamingText = "",
                     streamingCards = emptyList(),
                     clarifyChips = savedChips,
+                    clarifyQuestion = "",
                     searchStatus = "",
                     screenState = if (messages.isNotEmpty()) ScreenState.Content(true) else ScreenState.Idle,
                 )
@@ -235,6 +237,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                             currentConversationId = next.id,
                             messages = messages,
                             conversations = metas,
+                            streamingText = "",
+                            streamingCards = emptyList(),
+                            clarifyChips = emptyList(),
+                            clarifyQuestion = "",
+                            searchStatus = "",
                             screenState = if (messages.isNotEmpty()) ScreenState.Content(true) else ScreenState.Idle,
                         )
                     }
@@ -248,6 +255,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                             currentConversationId = newId,
                             messages = emptyList(),
                             conversations = emptyList(),
+                            streamingText = "",
+                            streamingCards = emptyList(),
+                            clarifyChips = emptyList(),
+                            clarifyQuestion = "",
+                            searchStatus = "",
                             screenState = ScreenState.Idle,
                         )
                     }
@@ -288,6 +300,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 streamingText = "",
                 streamingCards = emptyList(),
                 clarifyChips = emptyList(),
+                clarifyQuestion = "",
                 searchStatus = "AI 正在思考…",
             )
         }
@@ -509,7 +522,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                         .distinct()
                                         .take(4)
                                     val excludeChips = brands.map { "排除 $it" }
-                                    _uiState.update { it.copy(clarifyChips = excludeChips) }
+                                    _uiState.update { it.copy(clarifyChips = excludeChips, clarifyQuestion = "") }
                                     // 持久化排除 chips，按对话独立存储
                                     userRepo.setSetting("clarify_chips_$convId", Gson().toJson(excludeChips))
                                 } else {
@@ -581,7 +594,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onClarifyChipClick(chip: String) {
-        _uiState.update { it.copy(inputText = chip, clarifyChips = emptyList()) }
+        _uiState.update { it.copy(inputText = chip, clarifyChips = emptyList(), clarifyQuestion = "") }
         viewModelScope.launch {
             delay(50)
             sendMessage()

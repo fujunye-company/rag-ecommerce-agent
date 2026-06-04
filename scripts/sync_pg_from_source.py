@@ -19,7 +19,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SEED_PATH = os.path.join(BASE, 'apps', 'backend', 'data', 'qdrant', 'seed_products.json')
 EXPANDED_PATH = os.path.join(BASE, 'apps', 'backend', 'data', 'qdrant', 'products_expanded_100.json')
 
-DB_URL = 'postgresql://shopping:shopping123@localhost:5433/shopping_agent'
+DB_URL = os.environ.get('DATABASE_URL', 'postgresql://shopping:shopping123@localhost:5433/shopping_agent')
 
 
 def product_uuid(product_id: str) -> str:

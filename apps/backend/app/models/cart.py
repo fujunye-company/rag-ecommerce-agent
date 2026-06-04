@@ -14,6 +14,7 @@ class CartItem(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    user_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     product_id: Mapped[str] = mapped_column(String(256), nullable=False)
     title: Mapped[str] = mapped_column(String(256), nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)

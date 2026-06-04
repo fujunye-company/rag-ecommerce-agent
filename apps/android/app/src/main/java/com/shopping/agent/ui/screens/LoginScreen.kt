@@ -36,6 +36,30 @@ private enum class LoginTab(val label: String) {
 }
 
 /**
+ * 登录成功后尝试从后端同步购物车数据到本地 SQLite。
+ *
+ * 前置条件：当前用户 user_id 必须在本地 user_profile 表中存在。
+ * 同步失败不影响登录流程（静默处理）。
+ *
+ * @param repository 用户数据仓库
+ * @param context Android Context，用于读取 SharedPreferences
+ */
+private suspend fun syncCartIfPossible(
+    repository: UserRepository,
+    context: android.content.Context,
+) {
+    try {
+        val prefs = context.getSharedPreferences("cart_prefs", android.content.Context.MODE_PRIVATE)
+        val sessionId = prefs.getString("cart_session_id", "") ?: ""
+        if (sessionId.isNotEmpty()) {
+            repository.syncCartFromBackend(sessionId)
+        }
+    } catch (_: Exception) {
+        // 同步失败不影响登录流程
+    }
+}
+
+/**
  * 登录页面 — 支持手机号/邮箱密码登录、验证码登录和游客登录。
  *
  * 功能：
@@ -138,6 +162,8 @@ fun LoginScreen(
                         repository.saveCredentials(currentTab.name.lowercase(), encryptedPwd)
                         repository.markAsLoggedIn()
                         repository.saveLoginState("non_guest")
+                        // 登录成功后从后端同步购物车数据到本地 SQLite
+                        syncCartIfPossible(repository, context)
                     }
                     Toast.makeText(context, "登录成功", Toast.LENGTH_SHORT).show()
                     onLoginSuccess()
@@ -168,6 +194,8 @@ fun LoginScreen(
                     withContext(Dispatchers.IO) {
                         repository.markAsLoggedIn()
                         repository.saveLoginState("non_guest")
+                        // 登录成功后从后端同步购物车数据到本地 SQLite
+                        syncCartIfPossible(repository, context)
                     }
                     Toast.makeText(context, "登录成功", Toast.LENGTH_SHORT).show()
                     onLoginSuccess()
@@ -383,6 +411,8 @@ fun LoginScreen(
                                     repository.deleteCredentials()
                                     // 游客登录也记录登录状态，下次启动跳过登录页
                                     repository.saveLoginState("guest")
+                                    // 游客登录后从后端同步购物车数据到本地 SQLite
+                                    syncCartIfPossible(repository, context)
                                 }
                             } catch (_: Exception) {}
                             onGuestLogin()

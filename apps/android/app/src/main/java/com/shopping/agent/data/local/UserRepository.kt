@@ -41,7 +41,7 @@ class UserRepository(context: Context) {
      * 从数据库查询当前用户 UUID（"sw" 前缀的 TEXT 主键）。
      * 若表为空则自动创建默认用户行，确保所有涉及 user_profile 的操作都能正常读写。
      */
-    private fun getUserId(): String {
+    fun getUserId(): String {
         val db = this.db.readableDatabase
         val cursor = db.rawQuery(
             "SELECT id FROM ${LocalDatabase.TABLE_USER} LIMIT 1", null
@@ -301,6 +301,7 @@ class UserRepository(context: Context) {
             put("image_url", product.imageUrl ?: "")
             put("rating", product.rating.toDouble())
             put("quantity", quantity)
+            put("is_selected", 1)
             put("added_at", System.currentTimeMillis())
         }
         db.writableDatabase.insertWithOnConflict(
@@ -326,7 +327,14 @@ class UserRepository(context: Context) {
                 imageUrl = NetworkConfig.resolveImageUrl(cursor.getString(cursor.getColumnIndexOrThrow("image_url")).takeIf { it.isNotEmpty() }),
                 rating = cursor.getDouble(cursor.getColumnIndexOrThrow("rating")).toFloat(),
             )
-            list.add(CartItem(product, cursor.getInt(cursor.getColumnIndexOrThrow("quantity"))))
+            // 安全读取 is_selected 列，防止 v8 迁移未运行时闪退
+            val isSelectedCol = cursor.getColumnIndex("is_selected")
+            val isSelected = isSelectedCol >= 0 && cursor.getInt(isSelectedCol) == 1
+            list.add(CartItem(
+                product,
+                cursor.getInt(cursor.getColumnIndexOrThrow("quantity")),
+                isSelected,
+            ))
         }
         cursor.close()
         list
@@ -1004,6 +1012,7 @@ class UserRepository(context: Context) {
             put("image_url", product.imageUrl ?: "")
             put("rating", product.rating.toDouble())
             put("quantity", quantity)
+            put("is_selected", 1)
             put("added_at", System.currentTimeMillis())
         }
         db.writableDatabase.insertWithOnConflict(
@@ -1023,6 +1032,135 @@ class UserRepository(context: Context) {
             imageUrl = NetworkConfig.resolveImageUrl(cursor.getString(cursor.getColumnIndexOrThrow("image_url")).takeIf { it.isNotEmpty() }),
             rating = cursor.getDouble(cursor.getColumnIndexOrThrow("rating")).toFloat(),
         )
-        return CartItem(product, cursor.getInt(cursor.getColumnIndexOrThrow("quantity")))
+        // 安全读取 is_selected 列，防止 v8 迁移未运行时闪退
+        val isSelectedCol = cursor.getColumnIndex("is_selected")
+        val isSelected = isSelectedCol >= 0 && cursor.getInt(isSelectedCol) == 1
+        return CartItem(
+            product,
+            cursor.getInt(cursor.getColumnIndexOrThrow("quantity")),
+            isSelected,
+        )
+    }
+
+    /** 更新购物车商品的选中状态 */
+    suspend fun updateCartItemSelection(productId: String, isSelected: Boolean) = withContext(Dispatchers.IO) {
+        val cv = ContentValues().apply {
+            put("is_selected", if (isSelected) 1 else 0)
+        }
+        db.writableDatabase.update(LocalDatabase.TABLE_CART, cv, "product_id=?", arrayOf(productId))
+    }
+
+    /** 批量更新购物车商品的选中状态 */
+    suspend fun updateCartItemsSelection(productIds: List<String>, isSelected: Boolean) = withContext(Dispatchers.IO) {
+        val cv = ContentValues().apply {
+            put("is_selected", if (isSelected) 1 else 0)
+        }
+        val writableDb = db.writableDatabase
+        productIds.forEach { productId ->
+            writableDb.update(LocalDatabase.TABLE_CART, cv, "product_id=?", arrayOf(productId))
+        }
+    }
+
+    /** 更新购物车商品数量 */
+    suspend fun updateCartItemQuantity(productId: String, quantity: Int) = withContext(Dispatchers.IO) {
+        val cv = ContentValues().apply {
+            put("quantity", quantity)
+        }
+        db.writableDatabase.update(LocalDatabase.TABLE_CART, cv, "product_id=?", arrayOf(productId))
+    }
+
+    /** 删除购物车中指定商品 */
+    suspend fun deleteCartItems(productIds: List<String>) = withContext(Dispatchers.IO) {
+        val writableDb = db.writableDatabase
+        productIds.forEach { productId ->
+            writableDb.delete(LocalDatabase.TABLE_CART, "product_id=?", arrayOf(productId))
+        }
+    }
+
+    /** 获取购物车商品总数 */
+    suspend fun getCartItemCount(): Int = withContext(Dispatchers.IO) {
+        val userId = getUserId()
+        if (userId.isEmpty()) return@withContext 0
+        val cursor = db.readableDatabase.rawQuery(
+            "SELECT COUNT(*) FROM ${LocalDatabase.TABLE_CART} WHERE user_id=?",
+            arrayOf(userId)
+        )
+        val count = if (cursor.moveToFirst()) cursor.getInt(0) else 0
+        cursor.close()
+        count
+    }
+
+    /**
+     * 从后端同步购物车数据到本地 SQLite。
+     *
+     * 触发时机：App 启动 & 登录成功。
+     * 前置条件：当前用户 user_id 必须在本地 user_profile 表中存在（否则跳过同步）。
+     *
+     * @param sessionId 本地持久化的 session_id，用于后端查询购物车
+     */
+    suspend fun syncCartFromBackend(sessionId: String) = withContext(Dispatchers.IO) {
+        val userId = getUserId()
+        // 用户画像必须存在，否则不执行同步
+        if (userId.isEmpty()) {
+            Log.w("UserRepository", "syncCartFromBackend: user_id 不存在，跳过同步")
+            return@withContext
+        }
+
+        val client = NetworkConfig.httpClient
+        val baseUrl = NetworkConfig.BASE_URL
+
+        try {
+            // 传递 user_id 参数，后端按 user_id + session_id 联合匹配购物车数据
+            val request = okhttp3.Request.Builder()
+                .url("$baseUrl/api/v1/cart?session_id=$sessionId&user_id=$userId")
+                .get()
+                .build()
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) {
+                Log.w("UserRepository", "syncCartFromBackend: 后端返回 ${response.code}")
+                return@withContext
+            }
+
+            val body = response.body?.string() ?: return@withContext
+            val json = org.json.JSONObject(body)
+            val itemsArray = json.optJSONArray("items") ?: org.json.JSONArray()
+
+            val writableDb = db.writableDatabase
+            var syncedCount = 0
+            for (i in 0 until itemsArray.length()) {
+                val item = itemsArray.getJSONObject(i)
+                val productId = item.optString("product_id", "")
+                val title = item.optString("title", "")
+                val price = item.optDouble("price", 0.0)
+                val quantity = item.optInt("quantity", 1)
+                val imageUrl = item.optString("image_url", "")
+                    .takeIf { it.isNotEmpty() && it != "null" }
+                val brand = item.optString("brand", "")
+                    .takeIf { it.isNotEmpty() && it != "null" }
+                val category = item.optString("category", "")
+
+                val cv = ContentValues().apply {
+                    put("product_id", productId)
+                    put("session_id", sessionId)
+                    put("user_id", userId)
+                    put("title", title)
+                    put("price", price)
+                    put("brand", brand ?: "")
+                    put("category", category)
+                    put("image_url", imageUrl ?: "")
+                    put("quantity", quantity)
+                    put("is_selected", 1)
+                    put("added_at", System.currentTimeMillis())
+                }
+                writableDb.insertWithOnConflict(
+                    LocalDatabase.TABLE_CART, null, cv,
+                    android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE
+                )
+                syncedCount++
+            }
+            Log.i("UserRepository", "syncCartFromBackend: 同步完成，共 $syncedCount 件商品")
+        } catch (e: Exception) {
+            Log.e("UserRepository", "syncCartFromBackend: 同步失败", e)
+        }
     }
 }

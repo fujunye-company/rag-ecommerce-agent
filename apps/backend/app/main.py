@@ -48,6 +48,16 @@ async def lifespan(app: FastAPI):
         try:
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
+                # 迁移：为已有 cart_items 表添加 user_id 列（v1→v2）
+                try:
+                    await conn.execute(text(
+                        "ALTER TABLE cart_items ADD COLUMN IF NOT EXISTS user_id VARCHAR(64)"
+                    ))
+                    await conn.execute(text(
+                        "CREATE INDEX IF NOT EXISTS ix_cart_items_user_id ON cart_items(user_id)"
+                    ))
+                except Exception:
+                    pass  # 列/索引已存在或数据库不支持 IF NOT EXISTS
             logger.info("数据库表创建/验证完成")
             _startup._state.db_done = True
         except Exception as exc:

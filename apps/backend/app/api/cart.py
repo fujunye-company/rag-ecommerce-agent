@@ -32,28 +32,34 @@ class CartAddRequest(BaseModel):
     product_id: str
     title: str = ""     # 客户端标识用，服务端忽略
     price: float = 0    # 客户端标识用，服务端忽略（防伪造）
+    user_id: str = ""   # 可选：关联本地用户画像，实现多端购物车匹配
 
 
 class CartRemoveRequest(BaseModel):
     session_id: str
     product_id: str
+    user_id: str = ""   # 可选
 
 
 class CartQuantityRequest(BaseModel):
     session_id: str
     product_id: str
     quantity: int
+    user_id: str = ""   # 可选
 
 
 @router.get("/cart")
 async def get_cart(
     session_id: str = Query(...),
+    user_id: str = Query(""),
     db: AsyncSession = Depends(get_db),
 ):
-    """获取购物车 — 返回商品详情含 image_url/brand/category"""
+    """获取购物车 — 返回商品详情含 image_url/brand/category。
+    可选 user_id 用于匹配特定用户的购物车数据。
+    """
     _validate_uuid(session_id)
-    items = await cart_service.get_cart(db, session_id)
-    total = await cart_service.get_cart_total(db, session_id)
+    items = await cart_service.get_cart(db, session_id, user_id)
+    total = await cart_service.get_cart_total(db, session_id, user_id)
 
     cart_items = []
     for i in items:
@@ -91,7 +97,8 @@ async def add_item(body: CartAddRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="商品不存在")
 
     item = await cart_service.add_to_cart(
-        db, body.session_id, body.product_id, product.title, product.price
+        db, body.session_id, body.product_id, product.title, product.price,
+        user_id=body.user_id,
     )
     return {"id": str(item.id), "quantity": item.quantity}
 
@@ -106,7 +113,7 @@ async def add_item_alias(body: CartAddRequest, db: AsyncSession = Depends(get_db
 async def remove_item(body: CartRemoveRequest, db: AsyncSession = Depends(get_db)):
     """删除购物车商品"""
     _validate_uuid(body.session_id)
-    ok = await cart_service.remove_from_cart(db, body.session_id, body.product_id)
+    ok = await cart_service.remove_from_cart(db, body.session_id, body.product_id, user_id=body.user_id)
     return {"deleted": ok}
 
 
@@ -114,7 +121,7 @@ async def remove_item(body: CartRemoveRequest, db: AsyncSession = Depends(get_db
 async def remove_item_alias(body: CartRemoveRequest, db: AsyncSession = Depends(get_db)):
     """[Android 兼容] 删除购物车商品"""
     _validate_uuid(body.session_id)
-    ok = await cart_service.remove_from_cart(db, body.session_id, body.product_id)
+    ok = await cart_service.remove_from_cart(db, body.session_id, body.product_id, user_id=body.user_id)
     return {"deleted": ok}
 
 
@@ -122,7 +129,7 @@ async def remove_item_alias(body: CartRemoveRequest, db: AsyncSession = Depends(
 async def update_quantity(body: CartQuantityRequest, db: AsyncSession = Depends(get_db)):
     """修改商品数量"""
     _validate_uuid(body.session_id)
-    ok = await cart_service.update_quantity(db, body.session_id, body.product_id, body.quantity)
+    ok = await cart_service.update_quantity(db, body.session_id, body.product_id, body.quantity, user_id=body.user_id)
     return {"updated": ok}
 
 
@@ -130,28 +137,30 @@ async def update_quantity(body: CartQuantityRequest, db: AsyncSession = Depends(
 async def update_quantity_alias(body: CartQuantityRequest, db: AsyncSession = Depends(get_db)):
     """[Android 兼容] 修改商品数量"""
     _validate_uuid(body.session_id)
-    ok = await cart_service.update_quantity(db, body.session_id, body.product_id, body.quantity)
+    ok = await cart_service.update_quantity(db, body.session_id, body.product_id, body.quantity, user_id=body.user_id)
     return {"updated": ok}
 
 
 @router.delete("/cart")
 async def clear_cart(
     session_id: str = Query(...),
+    user_id: str = Query(""),
     db: AsyncSession = Depends(get_db),
 ):
-    """清空购物车"""
+    """清空购物车，可选 user_id 仅清空特定用户的商品"""
     _validate_uuid(session_id)
-    await cart_service.clear_cart(db, session_id)
+    await cart_service.clear_cart(db, session_id, user_id=user_id)
     return {"cleared": True}
 
 
 class CartClearRequest(BaseModel):
     session_id: str
+    user_id: str = ""   # 可选
 
 
 @router.post("/cart/clear")
 async def clear_cart_alias(body: CartClearRequest, db: AsyncSession = Depends(get_db)):
     """[Android 兼容] 清空购物车"""
     _validate_uuid(body.session_id)
-    await cart_service.clear_cart(db, body.session_id)
+    await cart_service.clear_cart(db, body.session_id, user_id=body.user_id)
     return {"cleared": True}

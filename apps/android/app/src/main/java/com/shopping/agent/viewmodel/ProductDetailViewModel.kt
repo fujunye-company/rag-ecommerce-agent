@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.shopping.agent.core.network.NetworkConfig
+import com.shopping.agent.data.local.UserRepository
 import com.shopping.agent.data.model.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,8 +35,12 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
 
     private val prefs = application.getSharedPreferences("detail_prefs", Context.MODE_PRIVATE)
     private val cartPrefs = application.getSharedPreferences("cart_prefs", Context.MODE_PRIVATE)
+    private val repository = UserRepository(application)
 
     private val client = NetworkConfig.httpClient
+
+    /** 加载商品时缓存的 Product 对象，用于加购时写入数据库 */
+    private var cachedProduct: Product? = null
 
     private val baseUrl = NetworkConfig.BASE_URL
 
@@ -50,6 +55,9 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
 
     fun loadProduct(productId: String) {
         _uiState.update { it.copy(isLoading = true) }
+        // 缓存 mock Product 对象，用于加购写入数据库
+        val sourceProduct = com.shopping.agent.data.mock.mockProducts.find { it.productId == productId }
+        cachedProduct = sourceProduct
         viewModelScope.launch {
             // 优先从后端 API 获取商品详情
             val apiDetail = fetchProductFromApi(productId)
@@ -102,24 +110,52 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
         _uiState.update { it.copy(isFollowingShop = newState) }
     }
 
+    /** 将当前商品加入购物车（先调后端 API，成功后写本地 SQLite）。 */
     fun addToCart() {
-        val product = _uiState.value.product ?: return
+        val detail = _uiState.value.product ?: return
+        val product = cachedProduct
+        if (product == null) {
+            _uiState.update { it.copy(addToCartResult = "加购失败：商品数据异常") }
+            return
+        }
         viewModelScope.launch {
             try {
-                withContext(Dispatchers.IO) {
-                    val body = JSONObject().apply {
-                        put("session_id", sessionId)
-                        put("product_id", product.productId)
+                // 1. 先调后端 API 入库
+                val backendOk = withContext(Dispatchers.IO) {
+                    try {
+                        val userId = repository.getUserId()
+                        val baseUrl = NetworkConfig.BASE_URL
+                        val body = org.json.JSONObject().apply {
+                            put("session_id", sessionId)
+                            put("product_id", product.productId)
+                            put("title", product.title)
+                            put("price", product.price)
+                            put("user_id", userId)
+                        }
+                        val request = Request.Builder()
+                            .url("$baseUrl/api/v1/cart/add")
+                            .post(body.toString().toRequestBody("application/json".toMediaType()))
+                            .build()
+                        val response = client.newCall(request).execute()
+                        response.isSuccessful
+                    } catch (e: Exception) {
+                        android.util.Log.e("ProductDetailVM", "后端加购失败", e)
+                        false
                     }
-                    val request = Request.Builder()
-                        .url("$baseUrl/api/v1/cart/add")
-                        .post(body.toString().toRequestBody("application/json".toMediaType()))
-                        .build()
-                    client.newCall(request).execute()
                 }
-                _uiState.update { it.copy(addToCartResult = "已将「${product.title.take(12)}…」加入购物车") }
+                if (!backendOk) {
+                    _uiState.update { it.copy(addToCartResult = "加购失败：后端同步异常") }
+                    return@launch
+                }
+
+                // 2. 后端成功后写本地 SQLite
+                withContext(Dispatchers.IO) {
+                    repository.saveCartItemForCurrentUser(product, sessionId, 1)
+                }
+                _uiState.update {
+                    it.copy(addToCartResult = "已将「${detail.title.take(12)}…」加入购物车")
+                }
             } catch (e: Exception) {
-                android.util.Log.e("ProductDetailVM", "addToCart failed: ${e.message}", e)
                 _uiState.update { it.copy(addToCartResult = "加购失败：${e.message}") }
             }
         }

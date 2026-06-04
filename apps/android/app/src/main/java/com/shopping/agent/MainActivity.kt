@@ -57,6 +57,22 @@ class MainActivity : ComponentActivity() {
                         }
                     } catch (_: Exception) { false }
                     startDestination = if (isLoggedIn) "home" else "login"
+
+                    // 登录状态下启动时从后端同步购物车数据到本地 SQLite
+                    if (isLoggedIn) {
+                        try {
+                            val prefs = getSharedPreferences("cart_prefs", android.content.Context.MODE_PRIVATE)
+                            val sessionId = prefs.getString("cart_session_id", "") ?: ""
+                            if (sessionId.isNotEmpty()) {
+                                withContext(Dispatchers.IO) {
+                                    UserRepository(this@MainActivity).syncCartFromBackend(sessionId)
+                                }
+                            }
+                        } catch (_: Exception) {
+                            // 同步失败不影响启动流程
+                        }
+                    }
+
                     // 确保开屏动画至少展示 1.5 秒
                     delay(1500)
                     showSplash = false

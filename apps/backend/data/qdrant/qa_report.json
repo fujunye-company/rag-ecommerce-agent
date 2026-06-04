@@ -1,0 +1,49 @@
+{
+  "expansion_date": "2026-05-27",
+  "source": "ecommerce_agent_dataset (100 products, 4 categories)",
+  "mapped_count": 100,
+  "category_count": 20,
+  "categories": [
+    "T恤",
+    "双肩包",
+    "口红",
+    "咖啡",
+    "坚果",
+    "外套",
+    "户外",
+    "手机",
+    "洗发水",
+    "瑜伽",
+    "电脑",
+    "精华液",
+    "耳机",
+    "裤装",
+    "跑鞋",
+    "运动鞋",
+    "防晒",
+    "零食",
+    "面霜",
+    "饮料"
+  ],
+  "existing_audit": {
+    "total": 190,
+    "no_image_url": 0,
+    "placeholder_url": 190
+  },
+  "expanded_quality": {
+    "with_image": 100,
+    "with_highlights": 100,
+    "avg_highlights": 4.0,
+    "with_attributes": 100,
+    "with_scenarios": 100,
+    "rating_coverage": 100,
+    "avg_rating": 3.3
+  },
+  "qdrant_total": 290,
+  "issues": [
+    "p_beauty_025: highlights only 1 items",
+    "p_digital_002: highlights only 1 items",
+    "p_clothes_019: highlights only 1 items",
+    "p_clothes_021: highlights only 1 items"
+  ]
+}

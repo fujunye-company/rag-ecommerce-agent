@@ -77,3 +77,6 @@ apps/android/.kotlin/
 
 # Garbage files
 products.*
+
+# Local validation reports with machine-specific absolute paths
+data/images/image_validation.json

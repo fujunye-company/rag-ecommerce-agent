@@ -23,12 +23,20 @@ import com.shopping.agent.viewmodel.GuideUiState
 fun HomeScreen(
     chatViewModel: ChatViewModel,
     onProductTap: (String) -> Unit = {},
+    onCheckoutRequested: () -> Unit = {},
 ) {
     val uiState by chatViewModel.uiState.collectAsState()
 
     // 首次进入时尝试发送问候（ViewModel 内部保证有历史消息时不覆盖）
     LaunchedEffect(Unit) {
         chatViewModel.sendDailyGreeting()
+    }
+
+    LaunchedEffect(uiState.checkoutNavigationRequest) {
+        if (uiState.checkoutNavigationRequest > 0) {
+            onCheckoutRequested()
+            chatViewModel.consumeCheckoutNavigation()
+        }
     }
 
     // ── 统一 Column 布局（与比价页一致）──

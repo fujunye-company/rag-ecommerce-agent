@@ -5,6 +5,8 @@ from pydantic import BaseModel
 class ChatRequest(BaseModel):
     message: str
     conversation_id: str | None = None
+    cart_session_id: str | None = None
+    user_id: str = ""
     image_url: str | None = None
     context: dict | None = None
 

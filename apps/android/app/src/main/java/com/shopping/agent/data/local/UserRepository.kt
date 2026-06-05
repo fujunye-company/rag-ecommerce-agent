@@ -1100,19 +1100,17 @@ class UserRepository(context: Context) {
      */
     suspend fun syncCartFromBackend(sessionId: String) = withContext(Dispatchers.IO) {
         val userId = getUserId()
-        // 用户画像必须存在，否则不执行同步
-        if (userId.isEmpty()) {
-            Log.w("UserRepository", "syncCartFromBackend: user_id 不存在，跳过同步")
-            return@withContext
-        }
-
         val client = NetworkConfig.httpClient
         val baseUrl = NetworkConfig.BASE_URL
 
         try {
-            // 传递 user_id 参数，后端按 user_id + session_id 联合匹配购物车数据
+            val cartUrl = if (userId.isNotEmpty()) {
+                "$baseUrl/api/v1/cart?session_id=$sessionId&user_id=$userId"
+            } else {
+                "$baseUrl/api/v1/cart?session_id=$sessionId"
+            }
             val request = okhttp3.Request.Builder()
-                .url("$baseUrl/api/v1/cart?session_id=$sessionId&user_id=$userId")
+                .url(cartUrl)
                 .get()
                 .build()
             val response = client.newCall(request).execute()
@@ -1126,6 +1124,11 @@ class UserRepository(context: Context) {
             val itemsArray = json.optJSONArray("items") ?: org.json.JSONArray()
 
             val writableDb = db.writableDatabase
+            if (userId.isNotEmpty()) {
+                writableDb.delete(LocalDatabase.TABLE_CART, "user_id=?", arrayOf(userId))
+            } else {
+                writableDb.delete(LocalDatabase.TABLE_CART, "session_id=?", arrayOf(sessionId))
+            }
             var syncedCount = 0
             for (i in 0 until itemsArray.length()) {
                 val item = itemsArray.getJSONObject(i)

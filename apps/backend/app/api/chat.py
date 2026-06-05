@@ -29,6 +29,11 @@ router = APIRouter()
 async def chat(request: ChatRequest):
     # 获取或创建会话
     session_id, state = await get_or_create_session(request.conversation_id)
+    runtime_state = dict(state or {})
+    if request.cart_session_id:
+        runtime_state["cart_session_id"] = request.cart_session_id
+    if request.user_id:
+        runtime_state["user_id"] = request.user_id
 
     # 持久化用户消息
     await save_message(session_id, "user", request.message)
@@ -39,7 +44,7 @@ async def chat(request: ChatRequest):
             async for event in generate_response(
                 message=request.message,
                 conversation_id=session_id,
-                state=state,
+                state=runtime_state,
             ):
                 # 收集 text_delta 内容用于持久化
                 try:

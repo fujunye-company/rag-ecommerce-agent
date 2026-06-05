@@ -32,10 +32,17 @@ class SseClient(
 
     // ── 文本聊天 ──────────────────────────────────────────
 
-    fun connect(message: String, conversationId: String? = null): Flow<SSEEvent> = flow {
+    fun connect(
+        message: String,
+        conversationId: String? = null,
+        cartSessionId: String? = null,
+        userId: String = "",
+    ): Flow<SSEEvent> = flow {
         val json = JSONObject().apply {
             put("message", message)
             conversationId?.let { put("conversation_id", it) }
+            cartSessionId?.takeIf { it.isNotBlank() }?.let { put("cart_session_id", it) }
+            if (userId.isNotBlank()) put("user_id", userId)
         }
 
         val requestBody = json.toString()

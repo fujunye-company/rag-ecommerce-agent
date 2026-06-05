@@ -16,7 +16,7 @@ RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
 # 应用代码
 COPY . .
 
-# 加速 HF 下载（Rust HF Transfer，断点续传）
+# 加速 HF 下载（使用 Rust 实现的 HF Transfer，断点续传）
 # 模型优先从挂载卷 data/models/ 加载，其次 HF cache，最后才下载
 ENV HF_HUB_ENABLE_HF_TRANSFER=1
 

@@ -5,6 +5,8 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.shopping.agent.core.network.NetworkConfig
+import com.shopping.agent.data.local.CartEvents
+import com.shopping.agent.data.local.CartSessionManager
 import com.shopping.agent.data.local.UserRepository
 import com.shopping.agent.data.model.CartItem
 import com.shopping.agent.data.model.Product
@@ -56,14 +58,14 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
 
     /** 会话 ID，用于兼容旧数据 */
     private val sessionId: String by lazy {
-        val prefs = application.getSharedPreferences("cart_prefs", android.content.Context.MODE_PRIVATE)
-        val existing = prefs.getString("cart_session_id", null)
-        if (existing != null) {
-            existing
-        } else {
-            val newId = java.util.UUID.randomUUID().toString()
-            prefs.edit().putString("cart_session_id", newId).apply()
-            newId
+        CartSessionManager.getOrCreate(application)
+    }
+
+    init {
+        viewModelScope.launch {
+            CartEvents.changes.collect {
+                loadCart()
+            }
         }
     }
 

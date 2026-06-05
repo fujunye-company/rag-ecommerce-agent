@@ -1,6 +1,5 @@
 package com.shopping.agent.ui.screens
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.shopping.agent.core.network.NetworkConfig
+import com.shopping.agent.data.local.CartSessionManager
 import com.shopping.agent.data.local.UserRepository
 import com.shopping.agent.data.model.CartItem
 import com.shopping.agent.data.model.Product
@@ -53,7 +53,7 @@ fun CheckoutScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val repository = remember { UserRepository(context) }
-    val sessionId = remember { getCartSessionId(context) }
+    val sessionId = remember { CartSessionManager.getOrCreate(context) }
 
     var isLoading by remember { mutableStateOf(true) }
     var isSubmitting by remember { mutableStateOf(false) }
@@ -266,15 +266,6 @@ private fun CheckoutSummaryCard(count: Int, total: Double) {
             }
         }
     }
-}
-
-private fun getCartSessionId(context: Context): String {
-    val prefs = context.getSharedPreferences("cart_prefs", Context.MODE_PRIVATE)
-    val existing = prefs.getString("cart_session_id", null)
-    if (existing != null) return existing
-    val created = java.util.UUID.randomUUID().toString()
-    prefs.edit().putString("cart_session_id", created).apply()
-    return created
 }
 
 private fun fetchProduct(productId: String): Product {

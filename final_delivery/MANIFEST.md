@@ -29,7 +29,7 @@ final_delivery/
 
 - 文件：`final_delivery/apk/app-debug.apk`
 - 大小：25,211,332 bytes
-- SHA256：`1AE9A40961A20F632CD0862B81FDB920B3F9C3E4E4EAB98D4781737B6C3A5A72`
+- SHA256：`51C452132D292478FFFFB8672354FA7F892586F4D34A61E5A1F3266EC42C2935`
 - 构建命令：`cd apps/android && .\gradlew.bat assembleDebug`
 - 构建环境：JDK 17.0.18，`JAVA_HOME=C:\Program Files\Java\jdk-17`
 
@@ -58,10 +58,13 @@ final_delivery/
 ## 本轮验证摘要
 
 - Android Debug 构建通过。
-- 后端测试通过：`76 passed, 3 skipped`。
+- 后端测试通过：`81 passed, 4 skipped`。
 - 后端健康检查通过：PostgreSQL connected，Qdrant ok，`products` collection 共 290 条向量。
 - 购物车到下单闭环已接通：购物车选中商品可进入确认页，下单后进入订单详情页。
 - 立即购买已接入独立确认页：商品详情页点击立即购买进入 `CheckoutScreen`，提交后生成订单详情。
+- 4.1 对话式购物闭环已接通：对话推荐后说“把第一个加入购物车”会写入统一 `cart_session_id`，购物车页同步可见；支持对话修改数量、下单确认、确认后生成订单并清空购物车。
+- 4.1 自然语言购物车管理增强：支持“耳机数量调整为2”“第一个加一件”“第一个减一件”“第一个买两件”“改到3件”等数量话术，并避免把数量数字误判为商品序号。
+- 4.1 下单确认交互修正：对话引导后输入“确认下单”不再由后端直接创建订单/返回“已下单”文案，Android 会跳转到确认下单页，由页面完成最终提交。
 - SSE 首屏与严格首文本 token 复测通过：`first_event` / `first_text` 平均 47.2 ms、最大 65 ms，全部小于 1 秒。
 - 推荐、排除、对比三个 RAG 场景基准均返回 3 张商品卡。
 

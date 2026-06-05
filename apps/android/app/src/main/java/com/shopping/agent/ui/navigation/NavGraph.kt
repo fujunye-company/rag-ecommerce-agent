@@ -79,6 +79,9 @@ fun AppNavGraph(
                         HomeScreen(
                             chatViewModel = checkNotNull(chatViewModel),
                             onProductTap = { productId -> navController.navigate("product_detail/$productId") },
+                            onCheckoutRequested = {
+                                navController.navigate(Screen.Checkout.createRoute("cart"))
+                            },
                         )
                     }
                     composable("compare_tab") {

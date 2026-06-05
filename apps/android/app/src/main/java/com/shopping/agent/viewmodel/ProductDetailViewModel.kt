@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.shopping.agent.core.network.NetworkConfig
+import com.shopping.agent.data.local.CartEvents
+import com.shopping.agent.data.local.CartSessionManager
 import com.shopping.agent.data.local.UserRepository
 import com.shopping.agent.data.model.*
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +36,6 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
     val uiState: StateFlow<ProductDetailUiState> = _uiState.asStateFlow()
 
     private val prefs = application.getSharedPreferences("detail_prefs", Context.MODE_PRIVATE)
-    private val cartPrefs = application.getSharedPreferences("cart_prefs", Context.MODE_PRIVATE)
     private val repository = UserRepository(application)
 
     private val client = NetworkConfig.httpClient
@@ -46,11 +47,7 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
 
     private val sessionId: String
         get() {
-            val existing = cartPrefs.getString("cart_session_id", null)
-            if (existing != null) return existing
-            val newId = java.util.UUID.randomUUID().toString()
-            cartPrefs.edit().putString("cart_session_id", newId).apply()
-            return newId
+            return CartSessionManager.getOrCreate(getApplication())
         }
 
     fun loadProduct(productId: String) {
@@ -158,6 +155,7 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
                 _uiState.update {
                     it.copy(addToCartResult = "已将「${detail.title.take(12)}…」加入购物车")
                 }
+                CartEvents.notifyChanged()
             } catch (e: Exception) {
                 _uiState.update { it.copy(addToCartResult = "加购失败：${e.message}") }
             }

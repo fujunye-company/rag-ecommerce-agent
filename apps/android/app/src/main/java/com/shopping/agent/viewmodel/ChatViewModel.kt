@@ -4,6 +4,8 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.shopping.agent.data.local.CartEvents
+import com.shopping.agent.data.local.CartSessionManager
 import com.shopping.agent.data.local.UserRepository
 import com.shopping.agent.data.mock.mockProducts
 import com.shopping.agent.data.model.*
@@ -17,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
 import com.google.gson.Gson
@@ -42,6 +45,7 @@ data class GuideUiState(
 
     val screenState: ScreenState = ScreenState.Idle,
     val sessionId: String = UUID.randomUUID().toString(),
+    val checkoutNavigationRequest: Int = 0,
 )
 
 sealed class ScreenState {
@@ -62,6 +66,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val userRepo = UserRepository(application)
     private val ttsManager = TtsManager(application)
     private val initComplete = CompletableDeferred<Unit>()
+    private val cartSessionId = CartSessionManager.getOrCreate(application)
 
     init {
         viewModelScope.launch {
@@ -284,6 +289,29 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         val text = _uiState.value.inputText.trim()
         if (text.isEmpty()) return
 
+        if (shouldOpenCheckout(text)) {
+            val userMessage = ChatMessage(
+                id = UUID.randomUUID().toString(),
+                role = MessageRole.User,
+                content = text,
+                status = MessageStatus.Sent,
+            )
+            viewModelScope.launch {
+                userRepo.saveMessage(userMessage, _uiState.value.currentConversationId)
+                syncCartAfterChatIfNeeded(text)
+            }
+            _uiState.update {
+                it.copy(
+                    messages = it.messages + userMessage,
+                    inputText = "",
+                    searchStatus = "",
+                    screenState = ScreenState.Content(false),
+                    checkoutNavigationRequest = it.checkoutNavigationRequest + 1,
+                )
+            }
+            return
+        }
+
         val userMessage = ChatMessage(
             id = UUID.randomUUID().toString(),
             role = MessageRole.User,
@@ -359,7 +387,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         val convId = _uiState.value.currentConversationId
 
         try {
-                chatRepository.sendMessage(text, _uiState.value.currentConversationId)
+                chatRepository.sendMessage(
+                    text = text,
+                    conversationId = _uiState.value.currentConversationId,
+                    cartSessionId = cartSessionId,
+                    userId = userRepo.getUserId(),
+                )
                     .collect { event ->
                         when (event) {
                             is SSEEvent.Progress -> {
@@ -511,6 +544,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                     userRepo.updateConversationTitle(convId, text.take(30))
                                 }
 
+                                syncCartAfterChatIfNeeded(text)
                                 refreshConversationList()
 
                                 // 反选 chips
@@ -591,6 +625,47 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
             }
+    }
+
+    private suspend fun syncCartAfterChatIfNeeded(text: String) {
+        if (!isCartRelatedText(text)) return
+        try {
+            withContext(kotlinx.coroutines.Dispatchers.IO) {
+                userRepo.syncCartFromBackend(cartSessionId)
+            }
+            CartEvents.notifyChanged()
+        } catch (e: Exception) {
+            android.util.Log.w("ChatViewModel", "Cart sync after chat failed: ${e.message}")
+        }
+    }
+
+    private fun isCartRelatedText(text: String): Boolean {
+        val keywords = listOf(
+            "购物车", "加购", "加入", "加到", "添加", "放入",
+            "删除", "移除", "清空", "数量", "改成", "改为",
+            "设为", "设置为", "调整为", "调到", "改到", "加一件", "减一件",
+            "下单", "结算", "确认下单"
+        )
+        return keywords.any { text.contains(it, ignoreCase = true) }
+    }
+
+    private fun shouldOpenCheckout(text: String): Boolean {
+        val normalized = text.trim()
+        val confirmKeywords = listOf("确认下单", "确认", "确定", "是的", "没错", "结算", "下单")
+        if (confirmKeywords.none { normalized == it || normalized.contains(it) }) return false
+        return _uiState.value.messages
+            .asReversed()
+            .take(6)
+            .any { message ->
+                message.role == MessageRole.Assistant &&
+                    (message.content.contains("订单确认") ||
+                        message.content.contains("输入「确认下单」") ||
+                        message.content.contains("合计："))
+            }
+    }
+
+    fun consumeCheckoutNavigation() {
+        _uiState.update { it.copy(checkoutNavigationRequest = 0) }
     }
 
     fun onClarifyChipClick(chip: String) {

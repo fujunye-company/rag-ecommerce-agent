@@ -12,13 +12,18 @@ class ChatRepository {
     private val _messages = mutableListOf<ChatMessage>()
     val messages: List<ChatMessage> get() = _messages.toList()
 
-    fun sendMessage(text: String, conversationId: String? = null): Flow<SSEEvent> {
+    fun sendMessage(
+        text: String,
+        conversationId: String? = null,
+        cartSessionId: String? = null,
+        userId: String = "",
+    ): Flow<SSEEvent> {
         _messages.add(ChatMessage(
             id = UUID.randomUUID().toString(),
             role = MessageRole.User,
             content = text,
         ))
-        return sseClient.connect(text, conversationId)
+        return sseClient.connect(text, conversationId, cartSessionId, userId)
     }
 
     fun addAssistantMessage(content: String, products: List<com.shopping.agent.data.model.Product> = emptyList()) {

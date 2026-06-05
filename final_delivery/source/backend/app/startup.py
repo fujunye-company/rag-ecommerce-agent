@@ -170,6 +170,8 @@ def _check_complete_cache(repo_id: str) -> bool:
         hf_cache = scan_cache_dir()
         for repo in hf_cache.repos:
             if repo.repo_id == repo_id and repo.size_on_disk > 0:
+                # Check the repo has at least the model weight files (>1MB total)
+                # This distinguishes complete from partially downloaded
                 return repo.size_on_disk > 1_000_000
         return False
     except Exception:
@@ -185,18 +187,22 @@ def _ensure_model_available():
     model_ref = settings.EMBEDDING_MODEL  # Already resolved by resolve_model_path()
     repo_id = "BAAI/bge-large-zh-v1.5"
 
+    # 1. Local path with valid model files — use directly, zero download
     if os.path.isdir(model_ref) and _check_local_model(model_ref):
         logger.info("Model found locally: %s", model_ref)
         _state.model_source = "local"
         _state.message = f"Model found locally"
         return model_ref
 
+    # 2. Check if already complete in HF cache
     if _check_complete_cache(repo_id):
         logger.info("Model found in HF cache: %s", repo_id)
         _state.model_source = "cache"
         _state.message = f"Model found in HF cache"
         return repo_id
 
+    # 3. Download with resume — snapshot_download handles:
+    #    - Fresh download, partial resume, or no-op if complete
     _state.phase = "downloading_model"
     _state.model_source = "download"
     _state.model_download_pct = 0

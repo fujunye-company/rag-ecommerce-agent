@@ -32,6 +32,8 @@ logger = logging.getLogger("agent")
 class AgentState(TypedDict, total=False):
     query: str
     session_id: str
+    cart_session_id: str
+    user_id: str
     intent: str
     confidence: float
     slots: dict
@@ -952,7 +954,13 @@ async def node_generate(state: AgentState) -> AgentState:
 def _extract_cart_action(query: str) -> str:
     """从用户查询中提取购物车操作类型"""
     q = query.lower()
-    if any(kw in q for kw in ["数量", "改成", "改为", "设为", "设置为"]):
+    quantity_patterns = [
+        r"(?:数量|数目|件数|个数)",
+        r"(?:改成|改为|设为|设置为|调整为|调为|调到|改到|变成)\s*[0-9一二两三四五六七八九十]",
+        r"(?:买|要|来)\s*[0-9一二两三四五六七八九十]+\s*(?:件|个|台|本|双|套|份)",
+        r"(?:加|增加|再加|多买|减|减少|少买|去掉)\s*[0-9一二两三四五六七八九十]+\s*(?:件|个|台|本|双|套|份)",
+    ]
+    if any(re.search(pattern, q) for pattern in quantity_patterns):
         return "quantity"
     if any(kw in q for kw in ["清空", "全部删除", "全部移除"]):
         return "clear"
@@ -968,18 +976,112 @@ def _extract_cart_action(query: str) -> str:
 
 
 def _parse_quantity(query: str) -> int | None:
-    """解析自然语言数量，如“数量改成2”“改为两个”“×3”."""
-    cn_nums = {
-        "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5,
-        "六": 6, "七": 7, "八": 8, "九": 9, "十": 10,
-    }
-    m = re.search(r"(?:数量|改成|改为|设为|设置为|加到|减到|x|×)\s*([0-9]+|[一二两三四五六七八九十])", query, re.I)
-    if not m:
-        return None
-    raw = m.group(1)
+    """解析“设置为 N 件”类绝对数量。"""
+    patterns = [
+        r"(?:数量|数目|件数|个数).{0,8}?(?:改成|改为|设为|设置为|调整为|调为|调到|改到|变成|到|为)?\s*([0-9]+|[一二两三四五六七八九十]+)",
+        r"(?:改成|改为|设为|设置为|调整为|调为|调到|改到|变成)\s*([0-9]+|[一二两三四五六七八九十]+)",
+        r"(?:买|要|来)\s*([0-9]+|[一二两三四五六七八九十]+)\s*(?:件|个|台|本|双|套|份)",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, query, re.I)
+        if match:
+            return _quantity_token_to_int(match.group(1))
+
+    for match in re.finditer(r"([0-9]+|[一二两三四五六七八九十]+)\s*(?:件|个|台|本|双|套|份)", query, re.I):
+        if match.start() > 0 and query[match.start() - 1] == "第":
+            continue
+        return _quantity_token_to_int(match.group(1))
+
+    return None
+
+
+def _parse_quantity_delta(query: str) -> int | None:
+    """解析“加一件/减两件”类相对数量。"""
+    match = re.search(
+        r"(?:加|增加|再加|多买)\s*([0-9]+|[一二两三四五六七八九十]+)\s*(?:件|个|台|本|双|套|份)",
+        query,
+        re.I,
+    )
+    if match:
+        return _quantity_token_to_int(match.group(1))
+
+    match = re.search(
+        r"(?:减|减少|少买|去掉)\s*([0-9]+|[一二两三四五六七八九十]+)\s*(?:件|个|台|本|双|套|份)",
+        query,
+        re.I,
+    )
+    if match:
+        value = _quantity_token_to_int(match.group(1))
+        return -value if value is not None else None
+
+    return None
+
+
+def _quantity_token_to_int(raw: str) -> int | None:
     if raw.isdigit():
         return max(0, int(raw))
+    cn_nums = {
+        "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5,
+        "六": 6, "七": 7, "八": 8, "九": 9,
+    }
+    if raw == "十":
+        return 10
+    if raw.startswith("十") and len(raw) == 2:
+        return 10 + cn_nums.get(raw[1], 0)
+    if raw.endswith("十") and len(raw) == 2:
+        return cn_nums.get(raw[0], 0) * 10
+    if "十" in raw and len(raw) == 3:
+        return cn_nums.get(raw[0], 0) * 10 + cn_nums.get(raw[2], 0)
     return cn_nums.get(raw)
+
+
+def _cart_item_matches_query(item, query: str) -> bool:
+    normalized_query = re.sub(r"\s+", "", query.lower())
+    normalized_title = re.sub(r"\s+", "", (item.title or "").lower())
+    brand = re.sub(r"\s+", "", (getattr(item, "brand", None) or "").lower())
+    category = re.sub(r"\s+", "", (getattr(item, "category", None) or "").lower())
+
+    if normalized_title and normalized_title[:4] in normalized_query:
+        return True
+    if brand and brand in normalized_query:
+        return True
+    if category and category in normalized_query:
+        return True
+
+    ignored = {
+        "购物车", "里面", "里的", "商品", "数量", "改成", "改为", "设为", "设置为",
+        "调整为", "调到", "改到", "变成", "买", "要", "来", "加", "减", "件", "个",
+        "第一", "第二", "第三", "第四", "第五",
+    }
+    candidates = set()
+    for part in re.findall(r"[\u4e00-\u9fff]{2,}", normalized_query):
+        for length in range(min(6, len(part)), 1, -1):
+            for start in range(0, len(part) - length + 1):
+                token = part[start:start + length]
+                if token not in ignored and not any(stop in token for stop in ignored):
+                    candidates.add(token)
+    candidates.update(re.findall(r"[a-z0-9]{2,}", normalized_query))
+
+    return any(token in normalized_title for token in candidates)
+
+
+def _extract_cart_item_index(query: str, item_count: int) -> tuple[int | None, str | None]:
+    ordinal_map = {
+        "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5,
+        "1": 1, "2": 2, "3": 3, "4": 4, "5": 5,
+    }
+    match = re.search(r"第\s*([一二两三四五12345])\s*(?:个|件|项|款|样|种)?", query)
+    if not match:
+        match = re.search(r"([一二两三四五12345])\s*号", query)
+    if not match:
+        return None, None
+
+    idx = ordinal_map.get(match.group(1))
+    if idx is None:
+        return None, None
+    if idx > item_count:
+        return None, f"购物车只有 {item_count} 件商品，没有第 {idx} 个。"
+    return idx - 1, None
 
 
 async def _find_product_for_cart(query: str, state: "AgentState") -> dict | None:
@@ -1004,7 +1106,7 @@ async def _find_product_for_cart(query: str, state: "AgentState") -> dict | None
             if product_cards and idx <= len(product_cards):
                 card = product_cards[idx - 1]
                 return {
-                    "id": card.get("id", ""),
+                    "id": card.get("product_id") or card.get("id", ""),
                     "title": card.get("title", ""),
                     "price": card.get("price", 0),
                 }
@@ -1015,7 +1117,7 @@ async def _find_product_for_cart(query: str, state: "AgentState") -> dict | None
             title = card.get("title", "")
             if title and len(title) >= 3 and title[:4] in query:
                 return {
-                    "id": card.get("id", ""),
+                    "id": card.get("product_id") or card.get("id", ""),
                     "title": title,
                     "price": card.get("price", 0),
                 }
@@ -1055,73 +1157,66 @@ async def _find_product_for_cart(query: str, state: "AgentState") -> dict | None
     return None
 
 
-async def _remove_from_cart(query: str, session_id: str, db) -> str:
+async def _remove_from_cart(query: str, session_id: str, db, user_id: str = "") -> str:
     """从购物车中删除商品，按序号或名字匹配"""
-    items = await cart_service.get_cart(db, session_id)
+    items = await cart_service.get_cart(db, session_id, user_id=user_id)
     if not items:
         return "购物车是空的，没有可删除的商品。"
 
-    # 1. 序号匹配
-    ordinal_map = {
-        "一": 1, "二": 2, "三": 3, "四": 4, "五": 5,
-        "1": 1, "2": 2, "3": 3, "4": 4, "5": 5,
-    }
-    for word in sorted(ordinal_map.keys(), key=len, reverse=True):
-        if word in query:
-            idx = ordinal_map[word]
-            if idx <= len(items):
-                item = items[idx - 1]
-                await cart_service.remove_from_cart(db, session_id, str(item.product_id))
-                return f"✅ 已从购物车删除「{item.title}」。"
-            else:
-                return f"购物车只有 {len(items)} 件商品，没有第 {idx} 个。"
+    item_index, index_error = _extract_cart_item_index(query, len(items))
+    if index_error:
+        return index_error
+    if item_index is not None:
+        item = items[item_index]
+        await cart_service.remove_from_cart(db, session_id, str(item.product_id), user_id=user_id)
+        return f"✅ 已从购物车删除「{item.title}」。"
 
     # 2. 按商品名匹配
     for item in items:
-        if item.title and len(item.title) >= 3 and item.title[:4] in query:
-            await cart_service.remove_from_cart(db, session_id, str(item.product_id))
+        if _cart_item_matches_query(item, query):
+            await cart_service.remove_from_cart(db, session_id, str(item.product_id), user_id=user_id)
             return f"✅ 已从购物车删除「{item.title}」。"
 
     return f"没有找到要删除的商品。当前购物车有 {len(items)} 件商品，请指定序号或商品名。"
 
 
-async def _update_cart_quantity(query: str, session_id: str, db) -> str:
+async def _update_cart_quantity(query: str, session_id: str, db, user_id: str = "") -> str:
     """按序号或商品名修改购物车数量。"""
     quantity = _parse_quantity(query)
-    if quantity is None:
-        return "请告诉我想改成几件，例如「把第一个数量改成 2」。"
+    quantity_delta = _parse_quantity_delta(query)
+    if quantity_delta is not None:
+        quantity = None
+    if quantity is None and quantity_delta is None:
+        return "请告诉我想改成几件，例如「把第一个数量改成 2」或「把蓝牙耳机加一件」。"
 
-    items = await cart_service.get_cart(db, session_id)
+    items = await cart_service.get_cart(db, session_id, user_id=user_id)
     if not items:
         return "购物车是空的，暂时没有可修改数量的商品。"
 
-    ordinal_map = {
-        "一": 1, "二": 2, "三": 3, "四": 4, "五": 5,
-        "1": 1, "2": 2, "3": 3, "4": 4, "5": 5,
-    }
     target = None
-    for word in sorted(ordinal_map.keys(), key=len, reverse=True):
-        if word in query:
-            idx = ordinal_map[word]
-            if idx <= len(items):
-                target = items[idx - 1]
-                break
-            return f"购物车只有 {len(items)} 件商品，没有第 {idx} 个。"
+    item_index, index_error = _extract_cart_item_index(query, len(items))
+    if index_error:
+        return index_error
+    if item_index is not None:
+        target = items[item_index]
 
     if target is None:
         for item in items:
-            if item.title and len(item.title) >= 3 and item.title[:4] in query:
+            if _cart_item_matches_query(item, query):
                 target = item
                 break
 
     if target is None:
         return "没有找到要修改数量的商品，请指定序号或商品名。"
 
+    if quantity is None and quantity_delta is not None:
+        quantity = max(0, target.quantity + quantity_delta)
+
     if quantity == 0:
-        await cart_service.remove_from_cart(db, session_id, str(target.product_id))
+        await cart_service.remove_from_cart(db, session_id, str(target.product_id), user_id=user_id)
         return f"已将「{target.title}」数量改为 0，并从购物车移除。"
 
-    await cart_service.update_quantity(db, session_id, str(target.product_id), quantity)
+    await cart_service.update_quantity(db, session_id, str(target.product_id), quantity, user_id=user_id)
     return f"已将「{target.title}」数量改为 {quantity} 件。"
 
 
@@ -1130,12 +1225,19 @@ async def _update_cart_quantity(query: str, session_id: str, db) -> str:
 async def node_cart(state: "AgentState") -> "AgentState":
     """购物车操作节点：调用 cart_service.py 执行 CRUD"""
     query = state["query"]
-    session_id = state.get("session_id", "")
+    conversation_session_id = state.get("session_id", "")
+    session_id = state.get("cart_session_id") or conversation_session_id
+    user_id = state.get("user_id", "") or ""
 
     # 确定 cart_action
     cart_action = _extract_cart_action(query)
     state["cart_action"] = cart_action
-    logger.info("Cart node: action=%s, session=%s", cart_action, session_id[:8] if session_id else "none")
+    logger.info(
+        "Cart node: action=%s, cart_session=%s, user=%s",
+        cart_action,
+        session_id[:8] if session_id else "none",
+        user_id[:12] if user_id else "anon",
+    )
 
     if not session_id:
         state["response"] = "会话未初始化，无法操作购物车。请刷新页面重试。"
@@ -1146,8 +1248,8 @@ async def node_cart(state: "AgentState") -> "AgentState":
         from app.core.database import AsyncSessionLocal
         async with AsyncSessionLocal() as db:
             if cart_action == "view":
-                items = await cart_service.get_cart(db, session_id)
-                total = await cart_service.get_cart_total(db, session_id)
+                items = await cart_service.get_cart(db, session_id, user_id=user_id)
+                total = await cart_service.get_cart_total(db, session_id, user_id=user_id)
                 if items:
                     item_lines = [f"{i+1}. {it.title} ×{it.quantity}  ¥{it.price:.0f}"
                                   for i, it in enumerate(items)]
@@ -1165,10 +1267,11 @@ async def node_cart(state: "AgentState") -> "AgentState":
                 if product and product.get("id") and len(product.get("id","")) > 10:
                     await cart_service.add_to_cart(
                         db, session_id,
-                        product["id"], product["title"], product["price"]
+                        product["id"], product["title"], product["price"],
+                        user_id=user_id,
                     )
-                    items = await cart_service.get_cart(db, session_id)
-                    total = await cart_service.get_cart_total(db, session_id)
+                    items = await cart_service.get_cart(db, session_id, user_id=user_id)
+                    total = await cart_service.get_cart_total(db, session_id, user_id=user_id)
                     state["response"] = (
                         f"✅ 已将「{product['title']}」(¥{product['price']:.0f}) 加入购物车。\n"
                         f"当前购物车共 {len(items)} 件，合计 ¥{total:.0f}。"
@@ -1182,24 +1285,24 @@ async def node_cart(state: "AgentState") -> "AgentState":
                 state["product_cards"] = []
 
             elif cart_action == "quantity":
-                state["response"] = await _update_cart_quantity(query, session_id, db)
+                state["response"] = await _update_cart_quantity(query, session_id, db, user_id=user_id)
                 await db.commit()
                 state["product_cards"] = []
 
             elif cart_action == "remove":
-                state["response"] = await _remove_from_cart(query, session_id, db)
+                state["response"] = await _remove_from_cart(query, session_id, db, user_id=user_id)
                 await db.commit()
                 state["product_cards"] = []
 
             elif cart_action == "clear":
-                await cart_service.clear_cart(db, session_id)
+                await cart_service.clear_cart(db, session_id, user_id=user_id)
                 await db.commit()
                 state["response"] = "🗑️ 购物车已清空。"
                 state["product_cards"] = []
 
             elif cart_action == "checkout":
-                items = await cart_service.get_cart(db, session_id)
-                total = await cart_service.get_cart_total(db, session_id)
+                items = await cart_service.get_cart(db, session_id, user_id=user_id)
+                total = await cart_service.get_cart_total(db, session_id, user_id=user_id)
                 if not items:
                     state["response"] = "购物车是空的，无法下单。请先添加商品。"
                     state["product_cards"] = []
@@ -1208,27 +1311,9 @@ async def node_cart(state: "AgentState") -> "AgentState":
                 # 判断是"查看订单"还是"确认下单"
                 is_confirm = any(kw in query for kw in ["确认下单", "确认", "是的", "确定", "没错"])
                 if is_confirm:
-                    from app.services import order_service as osvc
-                    items_snapshot = [
-                        {"product_id": it.product_id, "title": it.title,
-                         "price": it.price, "quantity": it.quantity}
-                        for it in items
-                    ]
-                    order = await osvc.create_order(db, session_id, items_snapshot, total)
-                    item_list = "\n".join(
-                        [f"  {it.title} ×{it.quantity}  ¥{it.price * it.quantity:.0f}"
-                         for it in items]
-                    )
                     state["response"] = (
-                        f"✅ 下单成功！\n\n📦 订单号：{order.order_no}\n"
-                        f"{item_list}\n"
-                        f"━━━━━━━━━━━━━━\n"
-                        f"💰 实付：¥{total:.0f}\n\n"
-                        f"（演示环境，不会实际扣款。感谢您的购买！）"
+                        "正在为你打开确认下单页面，请在页面核对商品、收货地址和金额后提交订单。"
                     )
-                    await cart_service.clear_cart(db, session_id)
-                    await db.commit()
-                    logger.info("Order confirmed: %s, cart cleared for session %s", order.order_no, session_id[:8])
                 else:
                     item_lines = [f"{i+1}. {it.title} ×{it.quantity} — ¥{it.price * it.quantity:.0f}"
                                   for i, it in enumerate(items)]
@@ -2033,11 +2118,24 @@ async def generate_response(
         initial_state: AgentState = {
             "query": message,
             "session_id": conversation_id or "",
+            "cart_session_id": (state or {}).get("cart_session_id", "") if isinstance(state, dict) else "",
+            "user_id": (state or {}).get("user_id", "") if isinstance(state, dict) else "",
             "slots": (state or {}).get("slots", {}) if isinstance(state, dict) else {},
+            "product_cards": (state or {}).get("product_cards", []) if isinstance(state, dict) else [],
             "history": conversation_history,
         }
 
         after_intent = await node_classify_intent(initial_state)
+
+        cart_keywords = [
+            "购物车", "加购", "加入购物车", "加到购物车", "添加到购物车",
+            "删除", "移除", "清空", "数量改", "改成", "改为",
+            "设为", "设置为", "调整为", "调到", "改到", "加一件", "减一件",
+            "下单", "结算", "结账", "确认下单",
+        ]
+        if any(kw in message for kw in cart_keywords):
+            logger.info("Intent override: cart keyword detected, forcing cart_operation")
+            after_intent["intent"] = "cart_operation"
 
         # 闲聊直接回复
         if after_intent.get("intent") == "chitchat":

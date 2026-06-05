@@ -10,6 +10,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -139,7 +141,7 @@ fun PaymentSettingsScreen(
                     SettingsDivider()
                     // 微信
                     PaymentMethodRow(
-                        icon = Icons.Default.Chat,
+                        icon = Icons.AutoMirrored.Filled.Chat,
                         title = "微信支付",
                         subtitle = "使用微信支付",
                         selected = defaultPaymentMethod == "微信",
@@ -169,7 +171,7 @@ fun PaymentSettingsScreen(
                                 color = if (settings.paymentPassword.isNotEmpty()) Success else Warning,
                             )
                         }
-                        Icon(Icons.Filled.KeyboardArrowRight, "进入",
+                        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "进入",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                     }
                 }

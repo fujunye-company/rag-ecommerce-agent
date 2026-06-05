@@ -54,6 +54,7 @@ fun ProductDetailScreen(
     onBack: () -> Unit,
     onAddToCart: (String) -> Unit = {},
     onBuyNow: (String) -> Unit = {},
+    onCustomerServiceClick: () -> Unit = {},
     viewModel: ProductDetailViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -78,6 +79,7 @@ fun ProductDetailScreen(
                 isFollowingShop = uiState.isFollowingShop,
                 onToggleFavorite = { viewModel.toggleFavorite() },
                 onToggleFollowShop = { viewModel.toggleFollowShop() },
+                onCustomerServiceClick = onCustomerServiceClick,
                 onAddToCart = {
                     viewModel.addToCart()
                     onAddToCart(productId)
@@ -700,6 +702,7 @@ private fun ProductBottomActionBar(
     isFollowingShop: Boolean,
     onToggleFavorite: () -> Unit,
     onToggleFollowShop: () -> Unit,
+    onCustomerServiceClick: () -> Unit = {},
     onAddToCart: () -> Unit,
     onBuyNow: () -> Unit,
 ) {
@@ -715,7 +718,7 @@ private fun ProductBottomActionBar(
         ) {
             // Left icon buttons
             BottomActionIcon(Icons.Default.Store, "店铺", isActive = false, onClick = onToggleFollowShop)
-            BottomActionIcon(Icons.Default.HeadsetMic, "客服", isActive = false, onClick = {})
+            BottomActionIcon(Icons.Default.HeadsetMic, "客服", isActive = false, onClick = onCustomerServiceClick)
             BottomActionIcon(
                 if (isFavorited) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                 "收藏",

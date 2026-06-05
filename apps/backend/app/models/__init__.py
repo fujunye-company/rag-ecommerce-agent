@@ -6,5 +6,10 @@ from app.models.feedback import Feedback
 from app.models.knowledge import KnowledgeVersion
 from app.models.cart import CartItem
 from app.models.order import Order
+from app.models.favorite import Favorite
+from app.models.footprint import Footprint
 
-__all__ = ["Product", "Session", "Message", "Feedback", "KnowledgeVersion", "CartItem", "Order"]
+__all__ = [
+    "Product", "Session", "Message", "Feedback", "KnowledgeVersion",
+    "CartItem", "Order", "Favorite", "Footprint",
+]

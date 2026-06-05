@@ -27,6 +27,11 @@ sealed class Screen(val route: String) {
     data object Settings : Screen("settings")
     data object History : Screen("history")
 
+    // 收藏页面
+    data object Favorites : Screen("favorites")
+    // 足迹页面
+    data object Footprints : Screen("footprints")
+
     // 设置子页面
     data object ShippingAddress : Screen("shipping_address")
     data object PaymentSettings : Screen("payment_settings")

@@ -8,8 +8,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -248,7 +248,7 @@ private fun CheckoutSummaryCard(count: Int, total: Double) {
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.ReceiptLong, null, tint = Primary)
+                Icon(Icons.AutoMirrored.Filled.ReceiptLong, null, tint = Primary)
                 Spacer(Modifier.width(8.dp))
                 Text("订单汇总", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             }

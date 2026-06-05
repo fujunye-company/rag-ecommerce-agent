@@ -294,6 +294,8 @@ async def ready():
             "qdrant_collection_exists": state["collection_exists"],
             "qdrant_item_count": state["item_count"],
             "reranker_warm": state["reranker_warm"],
+            "model_source": state.get("model_source", ""),
+            "model_download_pct": state.get("model_download_pct", 0),
         },
         "message": state["message"],
     })

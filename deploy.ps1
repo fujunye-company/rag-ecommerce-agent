@@ -38,6 +38,15 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "       Docker: running"
 
+# Model prefetch hint
+$modelDir = "apps\backend\data\models\bge-large-zh-v1.5"
+if ((Test-Path $modelDir) -and (Test-Path "$modelDir\config.json")) {
+    Write-Host "       Model: pre-downloaded (local), first boot will be fast"
+} else {
+    Write-Warn "Model not pre-downloaded. First boot will download ~1.3GB."
+    Write-Host "       Tip: python scripts\prefetch_model.py --all  to pre-download now"
+}
+
 # Env file — auto-copy from example if missing
 if (-not (Test-Path $EnvFile)) {
     if (Test-Path $EnvExample) {
@@ -69,17 +78,40 @@ docker compose -f $ComposeFile up -d --build
 
 # ── Phase 2: Wait for ready ──────────────────────────────
 Write-Step "Phase 2: Waiting for backend to be ready..."
-$maxWait = 600
+$maxWait = if ($env:MAX_WAIT) { [int]$env:MAX_WAIT } else { 900 }
 $elapsed = 0
 $interval = 3
 
+$modelSourceShown = ""
 while ($elapsed -lt $maxWait) {
     try {
         $response = Invoke-WebRequest -Uri "$BackendUrl/ready" -TimeoutSec 3 -UseBasicParsing
         $readyJson = $response.Content | ConvertFrom-Json
-        $statusMsg = "[$elapsed" + "s] phase=$($readyJson.status) items=$($readyJson.progress.qdrant_item_count)"
-        Write-Host "`r       $statusMsg" -NoNewline
-        if ($readyJson.status -eq "ready") {
+        $status = $readyJson.status
+        $items = $readyJson.progress.qdrant_item_count
+        $modelSrc = $readyJson.progress.model_source
+        $modelPct = $readyJson.progress.model_download_pct
+
+        if ($modelSrc -and $modelSrc -ne $modelSourceShown) {
+            $modelSourceShown = $modelSrc
+            switch ($modelSrc) {
+                "local"    { Write-Host "       Model: local path (no download needed)" }
+                "cache"    { Write-Host "       Model: HF cache hit (no download needed)" }
+                "download" { Write-Host "       Model: downloading from HF (resumable)..." }
+            }
+        }
+
+        if ($status -eq "downloading_model") {
+            Write-Host "`r       [$elapsed" + "s] Downloading model... ${modelPct}%" -NoNewline
+        } elseif ($status -eq "seeding") {
+            Write-Host "`r       [$elapsed" + "s] Vectorizing products... ${items} done" -NoNewline
+        } elseif ($status -eq "warming_reranker") {
+            Write-Host "`r       [$elapsed" + "s] Warming reranker..." -NoNewline
+        } else {
+            Write-Host "`r       [$elapsed" + "s] $($readyJson.message)" -NoNewline
+        }
+
+        if ($status -eq "ready") {
             Write-Host ""
             break
         }

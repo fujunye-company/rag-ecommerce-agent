@@ -10,15 +10,13 @@
 """
 import asyncio
 import logging
-import os
 import threading
 from typing import List, Dict, Optional
 
 logger = logging.getLogger("reranker")
 
-# 模块加载时设定离线模式（线程安全，仅一次）
-os.environ.setdefault("HF_HUB_OFFLINE", "1")
-os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+# 离线模式由部署环境按需设定 (HF_HUB_OFFLINE / TRANSFORMERS_OFFLINE)
+# 模块加载时不再全局强制离线，由 startup 流程确保模型可用
 
 # 延迟加载
 _reranker_model = None

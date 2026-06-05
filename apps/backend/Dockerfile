@@ -3,7 +3,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# 系统依赖
+# 系统依赖（curl 用于 healthcheck）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -16,8 +16,9 @@ RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
 # 应用代码
 COPY . .
 
-# 模型文件（如需离线，Mounted volume）
-# VOLUME /root/.cache
+# 加速 HF 下载（使用 Rust 实现的 HF Transfer，断点续传）
+# 模型优先从挂载卷 data/models/ 加载，其次 HF cache，最后才下载
+ENV HF_HUB_ENABLE_HF_TRANSFER=1
 
 EXPOSE 8080
 ENV APP_PORT=8080

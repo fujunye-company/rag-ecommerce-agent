@@ -44,6 +44,15 @@ if ! docker info >/dev/null 2>&1; then
 fi
 info "Docker: running"
 
+# Model prefetch hint (optional, speeds up first boot)
+MODEL_DIR="apps/backend/data/models/bge-large-zh-v1.5"
+if [ -d "$MODEL_DIR" ] && [ -f "$MODEL_DIR/config.json" ]; then
+    info "Model: pre-downloaded (local), first boot will be fast"
+else
+    warn "Model not pre-downloaded. First boot will download ~1.3GB."
+    info "  Tip: python scripts/prefetch_model.py --all  to pre-download now"
+fi
+
 # docker compose plugin
 if ! docker compose version >/dev/null 2>&1; then
     err "docker compose plugin not found. Please install Docker Compose v2."
@@ -94,18 +103,43 @@ docker compose -f "$COMPOSE_FILE" up -d --build
 
 # ── Phase 2: Wait for ready ──────────────────────────────
 log "Phase 2: Waiting for backend to be ready..."
-MAX_WAIT=600  # 10 minutes (first boot may download HF models)
+MAX_WAIT=${MAX_WAIT:-900}  # 15 minutes (first boot may download HF models)
 ELAPSED=0
 INTERVAL=3
+MODEL_SOURCE_SHOWN=""
 
 while [ $ELAPSED -lt $MAX_WAIT ]; do
-    READY_JSON=$(curl -s -o /dev/null -w "%{http_code}" "$BACKEND_URL/ready" 2>/dev/null || echo "000")
-    if [ "$READY_JSON" = "200" ]; then
-        # Parse progress
-        STATUS=$(curl -s "$BACKEND_URL/ready" 2>/dev/null | python -c "import sys,json; print(json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "?")
-        ITEMS=$(curl -s "$BACKEND_URL/ready" 2>/dev/null | python -c "import sys,json; print(json.load(sys.stdin)['progress']['qdrant_item_count'])" 2>/dev/null || echo "0")
-        MSG=$(curl -s "$BACKEND_URL/ready" 2>/dev/null | python -c "import sys,json; print(json.load(sys.stdin).get('message',''))" 2>/dev/null || echo "")
-        echo -ne "\r       [$ELAPSED""s] phase=$STATUS items=$ITEMS msg=$MSG          "
+    READY_JSON=$(curl -s "$BACKEND_URL/ready" 2>/dev/null)
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BACKEND_URL/ready" 2>/dev/null || echo "000")
+
+    if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "503" ]; then
+        STATUS=$(echo "$READY_JSON" | python -c "import sys,json; print(json.load(sys.stdin).get('status','?'))" 2>/dev/null || echo "?")
+        ITEMS=$(echo "$READY_JSON" | python -c "import sys,json; print(json.load(sys.stdin)['progress']['qdrant_item_count'])" 2>/dev/null || echo "0")
+        MSG=$(echo "$READY_JSON" | python -c "import sys,json; print(json.load(sys.stdin).get('message',''))" 2>/dev/null || echo "")
+        MODEL_SRC=$(echo "$READY_JSON" | python -c "import sys,json; print(json.load(sys.stdin)['progress'].get('model_source',''))" 2>/dev/null || echo "")
+        MODEL_PCT=$(echo "$READY_JSON" | python -c "import sys,json; print(json.load(sys.stdin)['progress'].get('model_download_pct',0))" 2>/dev/null || echo "0")
+
+        # Show model source once
+        if [ -n "$MODEL_SRC" ] && [ "$MODEL_SRC" != "$MODEL_SOURCE_SHOWN" ]; then
+            MODEL_SOURCE_SHOWN="$MODEL_SRC"
+            case "$MODEL_SRC" in
+                local)   info "Model: local path (no download needed)" ;;
+                cache)   info "Model: HF cache hit (no download needed)" ;;
+                download) info "Model: downloading from ${HF_ENDPOINT:-HF} (resumable)..." ;;
+            esac
+        fi
+
+        # Show progress line
+        if [ "$STATUS" = "downloading_model" ]; then
+            echo -ne "\r       [$ELAPSED""s] Downloading model... ${MODEL_PCT}%                    "
+        elif [ "$STATUS" = "seeding" ]; then
+            echo -ne "\r       [$ELAPSED""s] Vectorizing products... ${ITEMS} done                "
+        elif [ "$STATUS" = "warming_reranker" ]; then
+            echo -ne "\r       [$ELAPSED""s] Warming reranker...                                 "
+        else
+            echo -ne "\r       [$ELAPSED""s] $MSG                              "
+        fi
+
         if [ "$STATUS" = "ready" ]; then
             echo ""
             break

@@ -5,11 +5,13 @@ Idempotent — skips if collection already contains data. Designed for one-click
 """
 import json
 import logging
+import os
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
 import httpx
+from huggingface_hub import scan_cache_dir, snapshot_download
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qdrant_models
 from sentence_transformers import SentenceTransformer
@@ -40,12 +42,14 @@ RETRY_INTERVAL_S = 6
 
 @dataclass
 class StartupState:
-    phase: str = "initializing"  # initializing | seeding | warming_reranker | ready
+    phase: str = "initializing"  # initializing | downloading_model | seeding | warming_reranker | ready
     db_done: bool = False
     collection_exists: bool = False
     item_count: int = 0
     reranker_warm: bool = False
     message: str = ""
+    model_source: str = ""  # "local" | "cache" | "download"
+    model_download_pct: int = 0  # 0-100 progress during download
 
 
 _state = StartupState()
@@ -59,6 +63,8 @@ def get_startup_state() -> dict:
         "item_count": _state.item_count,
         "reranker_warm": _state.reranker_warm,
         "message": _state.message,
+        "model_source": _state.model_source,
+        "model_download_pct": _state.model_download_pct,
     }
 
 
@@ -131,6 +137,95 @@ def _load_products() -> list[dict]:
     return products
 
 
+def _check_local_model(model_path: str) -> bool:
+    """Check if a local directory contains a valid SentenceTransformer model.
+
+    A valid model must have config.json AND at least one model weight file.
+    """
+    if not os.path.isdir(model_path):
+        return False
+    config = os.path.isfile(os.path.join(model_path, "config.json"))
+    if not config:
+        return False
+    # Check for model weights: pytorch_model.bin or model.safetensors or 1_Pooling/
+    weight_files = [
+        f for f in os.listdir(model_path)
+        if os.path.isfile(os.path.join(model_path, f))
+        and (f.startswith("pytorch_model") or f.startswith("model"))
+        and (f.endswith(".bin") or f.endswith(".safetensors"))
+    ]
+    if weight_files:
+        return True
+    # SentenceTransformer models may store weights in subdirectories (e.g. 1_Pooling/)
+    for entry in os.listdir(model_path):
+        subdir = os.path.join(model_path, entry)
+        if os.path.isdir(subdir) and os.path.isfile(os.path.join(subdir, "config.json")):
+            return True
+    return False
+
+
+def _check_complete_cache(repo_id: str) -> bool:
+    """Check if model is fully cached (not just a partial download)."""
+    try:
+        hf_cache = scan_cache_dir()
+        for repo in hf_cache.repos:
+            if repo.repo_id == repo_id and repo.size_on_disk > 0:
+                # Check the repo has at least the model weight files (>1MB total)
+                # This distinguishes complete from partially downloaded
+                return repo.size_on_disk > 1_000_000
+        return False
+    except Exception:
+        return False
+
+
+def _ensure_model_available():
+    """Resolve embedding model: local > cached > download with resume.
+
+    Uses settings.EMBEDDING_MODEL (resolved by config.py) to determine
+    the model path/repo. Returns the path/name to pass to SentenceTransformer.
+    """
+    model_ref = settings.EMBEDDING_MODEL  # Already resolved by resolve_model_path()
+    repo_id = "BAAI/bge-large-zh-v1.5"
+
+    # 1. Local path with valid model files — use directly, zero download
+    if os.path.isdir(model_ref) and _check_local_model(model_ref):
+        logger.info("Model found locally: %s", model_ref)
+        _state.model_source = "local"
+        _state.message = f"Model found locally"
+        return model_ref
+
+    # 2. Check if already complete in HF cache
+    if _check_complete_cache(repo_id):
+        logger.info("Model found in HF cache: %s", repo_id)
+        _state.model_source = "cache"
+        _state.message = f"Model found in HF cache"
+        return repo_id
+
+    # 3. Download with resume — snapshot_download handles:
+    #    - Fresh download, partial resume, or no-op if complete
+    _state.phase = "downloading_model"
+    _state.model_source = "download"
+    _state.model_download_pct = 0
+    _state.message = f"Downloading model {repo_id} (resumable)..."
+    logger.info("Downloading model %s (resumable, mirror=%s)...", repo_id, settings.HF_ENDPOINT)
+
+    try:
+        snapshot_download(
+            repo_id=repo_id,
+            resume_download=True,
+            max_workers=2,
+            local_files_only=False,
+        )
+    except Exception:
+        logger.warning("snapshot_download failed, letting SentenceTransformer handle it")
+        _state.message = f"snapshot_download failed, falling back to SentenceTransformer"
+
+    _state.model_download_pct = 100
+    _state.message = f"Model download complete: {repo_id}"
+    _state.phase = "seeding"
+    return repo_id
+
+
 async def ensure_qdrant_data() -> None:
     """Ensure Qdrant collection exists and contains product vectors.
 
@@ -138,7 +233,6 @@ async def ensure_qdrant_data() -> None:
     """
     # Apply HuggingFace endpoint override for model downloads (mirror for China)
     if settings.HF_ENDPOINT:
-        import os
         os.environ.setdefault("HF_ENDPOINT", settings.HF_ENDPOINT)
         logger.info("HF_ENDPOINT=%s", settings.HF_ENDPOINT)
 
@@ -179,12 +273,15 @@ async def ensure_qdrant_data() -> None:
         _state.message = f"Loading {len(products)} products..."
         logger.info("Auto-import: loading %d products from %s", len(products), JSONL_PATH)
 
-        # Load embedding model (synchronous, CPU — runs in asyncio.to_thread in caller)
+        # Resolve embedding model — local > HF cache > download with resume
+        model_source = _ensure_model_available()
+
+        # Load embedding model
         import asyncio
         loop = asyncio.get_running_loop()
         model = await loop.run_in_executor(
             None,
-            lambda: SentenceTransformer(settings.EMBEDDING_MODEL)
+            lambda: SentenceTransformer(model_source)
         )
         dim = model.get_sentence_embedding_dimension()
         logger.info("Embedding model ready, dim=%d", dim)

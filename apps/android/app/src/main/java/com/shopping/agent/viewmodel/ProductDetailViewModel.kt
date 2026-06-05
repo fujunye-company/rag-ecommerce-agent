@@ -62,6 +62,9 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
             // 优先从后端 API 获取商品详情
             val apiDetail = fetchProductFromApi(productId)
             val detail = apiDetail ?: buildMockDetail(productId)
+            if (cachedProduct == null) {
+                cachedProduct = detail.toCartProduct()
+            }
             val faved = prefs.getBoolean("fav_$productId", false)
             val following = prefs.getBoolean("follow_${detail.shop.name}", false)
             _uiState.update {
@@ -113,7 +116,7 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
     /** 将当前商品加入购物车（先调后端 API，成功后写本地 SQLite）。 */
     fun addToCart() {
         val detail = _uiState.value.product ?: return
-        val product = cachedProduct
+        val product = cachedProduct ?: detail.toCartProduct()
         if (product == null) {
             _uiState.update { it.copy(addToCartResult = "加购失败：商品数据异常") }
             return
@@ -170,6 +173,31 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
 
     fun dismissResult() {
         _uiState.update { it.copy(addToCartResult = null) }
+    }
+
+    private fun ProductDetailData.toCartProduct(): Product? {
+        if (productId.isBlank() || title.isBlank() || title.startsWith("商品未找到")) return null
+        val image = images.firstOrNull()
+        val specsMap = specs.associate { it.label to it.value }
+        val brand = shop.name
+            .removeSuffix("官方旗舰店")
+            .removeSuffix("旗舰店")
+            .takeIf { it.isNotBlank() && it != "未知店铺" && it != "品牌" }
+        return Product(
+            productId = productId,
+            title = title,
+            brand = brand,
+            category = "",
+            price = price.current,
+            rating = shop.score.toFloat(),
+            ratingCount = reviews.count,
+            highlights = tags,
+            attributes = specsMap,
+            imageUrl = image,
+            imageUrls = images,
+            source = "商品详情",
+            rankReason = tags.joinToString("|"),
+        )
     }
 
     companion object {

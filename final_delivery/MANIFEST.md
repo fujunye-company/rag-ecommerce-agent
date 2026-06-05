@@ -1,58 +1,70 @@
-# 拾物 — 比赛交付清单
+# RAG 多模态电商智能导购 Agent 交付清单
 
-> AI 全栈挑战赛 第3届 · 华南理工大学 2026
-> 交付日期：2026-05-28
-
----
+交付日期：2026-06-05
 
 ## 目录结构
 
-```
+```text
 final_delivery/
-├── MANIFEST.md          ← 本文件
+├── MANIFEST.md
 ├── apk/
-│   └── app-debug.apk    ← Android 安装包（编译后放入）
+│   └── app-debug.apk
 ├── source/
-│   ├── backend/         ← 复制自 apps/backend/
-│   └── android/         ← 复制自 apps/android/
+│   ├── backend/
+│   └── android/
 └── docs/
-    ├── REQS.md          ← 竞赛核心需求（已对齐）
-    ├── ARCHITECTURE.md  ← 系统架构说明
-    ├── DEMO-SCRIPT.md   ← 3-5 分钟演示脚本
-    ├── PERFORMANCE.md   ← 性能基准报告
-    ├── EVALUATION.md    ← RAGAS 评测报告（待运行）
-    └── CHANGELOG.md     ← 变更日志
+    ├── README.md
+    ├── ANDROID_README.md
+    ├── API.md
+    ├── ARCHITECTURE.md
+    ├── EVALUATION.md
+    ├── CHANGELOG.md
+    ├── DEMO_RUNBOOK.md
+    ├── REQS.md
+    ├── TTFT_BENCHMARK.md
+    └── ttft_benchmark_20260605.json
 ```
 
----
+## APK
 
-## 打包步骤
+- 文件：`final_delivery/apk/app-debug.apk`
+- 大小：25,211,332 bytes
+- SHA256：`1AE9A40961A20F632CD0862B81FDB920B3F9C3E4E4EAB98D4781737B6C3A5A72`
+- 构建命令：`cd apps/android && .\gradlew.bat assembleDebug`
+- 构建环境：JDK 17.0.18，`JAVA_HOME=C:\Program Files\Java\jdk-17`
 
-```bash
-# 1. 编译 Android APK
-cd apps/android && ./gradlew assembleDebug
-cp app/build/outputs/apk/debug/app-debug.apk ../../final_delivery/apk/
+## 源码范围
 
-# 2. 复制源码
-cp -r apps/backend final_delivery/source/
-cp -r apps/android final_delivery/source/
+`final_delivery/source/backend` 来自 `apps/backend`，包含后端应用、脚本、测试和必要种子数据。
 
-# 3. 复制文档
-cp docs/background/REQS-竞赛核心需求.md final_delivery/docs/REQS.md
-cp docs/notes/DEMO-SCRIPT.md final_delivery/docs/
-cp docs/notes/PERFORMANCE.md final_delivery/docs/
-cp docs/CHANGELOG.md final_delivery/docs/
+已排除：
+- `.env`
+- `.venv`
+- `.pytest_cache`
+- `__pycache__`
+- `uploads`
+- 本地模型权重与缓存：`data/models`、`data/hf_home`、`data/qdrant_storage`
+- 临时日志、字节码和备份文件
 
-# 4. 清理敏感信息
-rm -f final_delivery/source/backend/.env
-```
+`final_delivery/source/android` 来自 `apps/android`，包含 Android 工程源码和 Gradle 配置。
 
----
+已排除：
+- `.gradle`
+- `build` / `app/build`
+- `local.properties`
+- `*.jks` / `*.keystore`
+- `*.apk`
 
-## 交付物检查
+## 本轮验证摘要
 
-- [x] APK 可安装运行（24.1MB debug APK 编译通过）
-- [x] 源码不含 .env / API Key（Git 历史已清理，文档已脱敏）
-- [x] README 含使用说明（SETUP.md + README.md 覆盖前后端部署）
-- [x] 文档齐全（架构/性能/演示脚本/DATA-CONTRACT/CHANGELOG）
-- [x] 9 场景 ≥ 5 可演示（8/9 全栈完成，S7 场景推荐后端就绪）
+- Android Debug 构建通过。
+- 后端测试通过：`76 passed, 3 skipped`。
+- 后端健康检查通过：PostgreSQL connected，Qdrant ok，`products` collection 共 290 条向量。
+- 购物车到下单闭环已接通：购物车选中商品可进入确认页，下单后进入订单详情页。
+- 立即购买已接入独立确认页：商品详情页点击立即购买进入 `CheckoutScreen`，提交后生成订单详情。
+- SSE 首屏与严格首文本 token 复测通过：`first_event` / `first_text` 平均 47.2 ms、最大 65 ms，全部小于 1 秒。
+- 推荐、排除、对比三个 RAG 场景基准均返回 3 张商品卡。
+
+## 说明
+
+`first_event` 和 `first_text` 均已满足小于 1 秒；完整基准数据见 `final_delivery/docs/TTFT_BENCHMARK.md` 与 `ttft_benchmark_20260605.json`。

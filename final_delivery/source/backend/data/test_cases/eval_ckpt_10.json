@@ -1,0 +1,2031 @@
+{
+  "total": 10,
+  "passed": 9,
+  "failed": 1,
+  "metrics": {
+    "intent_accuracy": 0.9,
+    "precision_at_3": 0.0,
+    "pass_rate": 0.9,
+    "avg_latency_ms": 4042.2,
+    "ragas": {
+      "error": "ragas not installed"
+    }
+  },
+  "details": [
+    {
+      "case_id": "s2_003",
+      "scenario": "multi_turn",
+      "query": "便宜一点的",
+      "expected_intent": "commodity_recommend",
+      "actual_intent": "commodity_recommend",
+      "intent_match": true,
+      "response": "抱歉，暂时没有找到符合您要求的商品。可以试试调整条件重新搜索吗？",
+      "product_ids": [],
+      "ground_truth_ids": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_chunks": [],
+      "latency_ms": 3420.0,
+      "status": "ok"
+    },
+    {
+      "case_id": "s2_004",
+      "scenario": "multi_turn",
+      "query": "有没有红色的",
+      "expected_intent": "commodity_recommend",
+      "actual_intent": "commodity_recommend",
+      "intent_match": true,
+      "response": "抱歉，检索到的商品信息中未提及任何颜色选项（如红色），无法确认是否有红色款。暂未找到合适商品。",
+      "product_ids": [
+        "849995632524",
+        "704499024253",
+        "329922436305",
+        "938714568472",
+        "373742854902"
+      ],
+      "ground_truth_ids": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_chunks": [
+        {
+          "id": 329922436305,
+          "score": 0.2914024,
+          "payload": {
+            "product_id": "JD2102664",
+            "title": "Redmi K80 第三代骁龙8 6550mAh大电池 2K旗舰直屏 5G手机",
+            "category": "Electronics/Phones",
+            "brand": "Xiaomi",
+            "price": 1849.0,
+            "rating": 4.8,
+            "rating_count": 300000,
+            "attributes": {
+              "芯片": "骁龙8 Gen3",
+              "屏幕": "6.67英寸 2K直屏",
+              "存储": "12GB+256GB",
+              "电池": "6550mAh",
+              "快充": "90W"
+            },
+            "highlights": [
+              "骁龙8 Gen3",
+              "2K旗舰直屏",
+              "6550mAh大电池"
+            ],
+            "scenarios": [
+              "游戏",
+              "日常使用",
+              "长续航"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(81,50%25,80%25)/333?text=Redmi%20K80%20%E7%AC%AC%E4%B8%89%E4%BB%A3%E9%AA%81%E9%BE%998%20655",
+              "https://placehold.co/400x400/hsl(81,50%25,90%25)/333?text=Redmi%20K80%20%E7%AC%AC%E4%B8%89%E4%BB%A3%E9%AA%81%E9%BE%998%20655+2"
+            ]
+          },
+          "rerank_score": 0.5039,
+          "final_score": 0.4401
+        },
+        {
+          "id": 13354064004,
+          "score": 0.29287654,
+          "payload": {
+            "product_id": "JD2126492",
+            "title": "Redmi Turbo 4 Pro 第四代骁龙8s 7550mAh 90W快充 5G手机",
+            "category": "Electronics/Phones",
+            "brand": "Xiaomi",
+            "price": 1699.0,
+            "rating": 4.7,
+            "rating_count": 500000,
+            "attributes": {
+              "芯片": "第四代骁龙8s",
+              "屏幕": "6.83英寸护眼大屏",
+              "存储": "12GB+256GB",
+              "电池": "7550mAh",
+              "快充": "90W"
+            },
+            "highlights": [
+              "骁龙8s Gen4",
+              "7550mAh超大电池",
+              "IP68防水"
+            ],
+            "scenarios": [
+              "游戏",
+              "长续航",
+              "日常使用"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(97,50%25,80%25)/333?text=Redmi%20Turbo%204%20Pro%20%E7%AC%AC%E5%9B%9B",
+              "https://placehold.co/400x400/hsl(97,50%25,90%25)/333?text=Redmi%20Turbo%204%20Pro%20%E7%AC%AC%E5%9B%9B+2"
+            ]
+          },
+          "rerank_score": 0.5027,
+          "final_score": 0.4397
+        },
+        {
+          "id": 849995632524,
+          "score": 0.2939284,
+          "payload": {
+            "product_id": "JD2718739",
+            "title": "iPhone 17 Pro 256GB 苹果旗舰手机 A19 Pro 钛金属",
+            "category": "Electronics/Phones",
+            "brand": "Apple",
+            "price": 8699.0,
+            "rating": 4.9,
+            "rating_count": 200000,
+            "attributes": {
+              "芯片": "苹果A19 Pro",
+              "屏幕": "6.3英寸OLED 3000nit",
+              "存储": "256GB",
+              "运行内存": "12GB",
+              "摄像头": "4800万三摄 8倍光变"
+            },
+            "highlights": [
+              "A19 Pro芯片",
+              "钛金属边框",
+              "8倍光学变焦"
+            ],
+            "scenarios": [
+              "专业摄影",
+              "高性能游戏",
+              "商务办公"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(127,50%25,80%25)/333?text=iPhone%2017%20Pro%20256GB%20",
+              "https://placehold.co/400x400/hsl(127,50%25,90%25)/333?text=iPhone%2017%20Pro%20256GB%20+2"
+            ]
+          },
+          "rerank_score": 0.5004,
+          "final_score": 0.4384
+        },
+        {
+          "id": 94145273380,
+          "score": 0.28588942,
+          "payload": {
+            "product_id": "JD10090009-A",
+            "title": "OPPO 100W 小方瓶超级闪充氮化镓充电器 磁力集结线套装",
+            "category": "Electronics/Accessories",
+            "brand": "OPPO",
+            "price": 169.0,
+            "rating": 4.6,
+            "rating_count": 8000,
+            "attributes": {
+              "功率": "100W",
+              "类型": "氮化镓充电器",
+              "接口": "Type-C",
+              "设计": "可折叠插脚",
+              "特色": "磁力集结线"
+            },
+            "highlights": [
+              "100W超级闪充",
+              "氮化镓技术",
+              "磁力集结线"
+            ],
+            "scenarios": [
+              "OPPO快充",
+              "出差",
+              "桌面充电"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(51,50%25,80%25)/333?text=OPPO%20100W%20%E5%B0%8F%E6%96%B9%E7%93%B6%E8%B6%85%E7%BA%A7%E9%97%AA%E5%85%85%E6%B0%AE%E5%8C%96%E9%95%93",
+              "https://placehold.co/400x400/hsl(51,50%25,90%25)/333?text=OPPO%20100W%20%E5%B0%8F%E6%96%B9%E7%93%B6%E8%B6%85%E7%BA%A7%E9%97%AA%E5%85%85%E6%B0%AE%E5%8C%96%E9%95%93+2"
+            ]
+          },
+          "rerank_score": 0.5003,
+          "final_score": 0.436
+        },
+        {
+          "id": 704499024253,
+          "score": 0.27984503,
+          "payload": {
+            "product_id": "JD2718819",
+            "title": "iPhone 17 Pro Max 256GB 苹果旗舰手机",
+            "category": "Electronics/Phones",
+            "brand": "Apple",
+            "price": 9699.0,
+            "rating": 4.9,
+            "rating_count": 500000,
+            "attributes": {
+              "芯片": "苹果A19 Pro",
+              "屏幕": "6.9英寸OLED",
+              "存储": "256GB",
+              "运行内存": "12GB",
+              "摄像头": "4800万三摄 8倍长焦"
+            },
+            "highlights": [
+              "A19 Pro芯片",
+              "6.9英寸大屏",
+              "4800万8倍长焦"
+            ],
+            "scenarios": [
+              "旗舰体验",
+              "专业摄影",
+              "商务办公"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(162,50%25,80%25)/333?text=iPhone%2017%20Pro%20Max%2025",
+              "https://placehold.co/400x400/hsl(162,50%25,90%25)/333?text=iPhone%2017%20Pro%20Max%2025+2"
+            ]
+          },
+          "rerank_score": 0.5004,
+          "final_score": 0.4342
+        },
+        {
+          "id": 373742854902,
+          "score": 0.27488816,
+          "payload": {
+            "product_id": "JD2775959",
+            "title": "荣耀500 Pro 骁龙8至尊版 8000mAh大电池 2亿像素 5G手机",
+            "category": "Electronics/Phones",
+            "brand": "Honor",
+            "price": 3599.0,
+            "rating": 4.8,
+            "rating_count": 50000,
+            "attributes": {
+              "芯片": "骁龙8至尊版",
+              "屏幕": "6.78英寸 OLED",
+              "存储": "12GB+256GB",
+              "电池": "8000mAh",
+              "摄像头": "2亿像素主摄"
+            },
+            "highlights": [
+              "骁龙8至尊版",
+              "2亿像素主摄",
+              "8000mAh超大电池"
+            ],
+            "scenarios": [
+              "影像创作",
+              "长续航",
+              "日常使用"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(21,50%25,80%25)/333?text=%E8%8D%A3%E8%80%80500%20Pro%20%E9%AA%81%E9%BE%998%E8%87%B3%E5%B0%8A%E7%89%88%20800",
+              "https://placehold.co/400x400/hsl(21,50%25,90%25)/333?text=%E8%8D%A3%E8%80%80500%20Pro%20%E9%AA%81%E9%BE%998%E8%87%B3%E5%B0%8A%E7%89%88%20800+2"
+            ]
+          },
+          "rerank_score": 0.5008,
+          "final_score": 0.433
+        },
+        {
+          "id": 199994054061,
+          "score": 0.27249593,
+          "payload": {
+            "product_id": "JD101000010",
+            "title": "OPPO 磁吸能量卡 Air 移动电源 5000mAh 无线充电 NTC控温",
+            "category": "Electronics/Accessories",
+            "brand": "OPPO",
+            "price": 149.0,
+            "rating": 4.5,
+            "rating_count": 5000,
+            "attributes": {
+              "容量": "5000mAh",
+              "类型": "磁吸无线充电宝",
+              "特色": "NTC主动控温",
+              "认证": "可携带上飞机",
+              "兼容": "安卓/苹果"
+            },
+            "highlights": [
+              "磁吸无线充电",
+              "NTC主动控温",
+              "轻薄卡片设计"
+            ],
+            "scenarios": [
+              "日常出行",
+              "无线充电",
+              "应急补电"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(168,50%25,80%25)/333?text=OPPO%20%E7%A3%81%E5%90%B8%E8%83%BD%E9%87%8F%E5%8D%A1%20Air%20%E7%A7%BB%E5%8A%A8%E7%94%B5%E6%BA%90%20",
+              "https://placehold.co/400x400/hsl(168,50%25,90%25)/333?text=OPPO%20%E7%A3%81%E5%90%B8%E8%83%BD%E9%87%8F%E5%8D%A1%20Air%20%E7%A7%BB%E5%8A%A8%E7%94%B5%E6%BA%90%20+2"
+            ]
+          },
+          "rerank_score": 0.5004,
+          "final_score": 0.432
+        },
+        {
+          "id": 891352393223,
+          "score": 0.26976758,
+          "payload": {
+            "product_id": "JD10040004",
+            "title": "vivo WATCH 5 智能手表 心率血氧监测 蓝牙通话 长续航",
+            "category": "Electronics/Watches",
+            "brand": "vivo",
+            "price": 799.0,
+            "rating": 4.6,
+            "rating_count": 30000,
+            "attributes": {
+              "屏幕": "1.85英寸 AMOLED",
+              "续航": "12天",
+              "功能": "心率/血氧/睡眠/GPS",
+              "系统": "RTOS",
+              "重量": "约33g"
+            },
+            "highlights": [
+              "799元黑马价位",
+              "血氧MAE 0.71",
+              "心率准度媲美旗舰"
+            ],
+            "scenarios": [
+              "健康监测",
+              "运动",
+              "日常佩戴"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(274,50%25,80%25)/333?text=vivo%20WATCH%205%20%E6%99%BA%E8%83%BD%E6%89%8B%E8%A1%A8%20%E5%BF%83%E7%8E%87",
+              "https://placehold.co/400x400/hsl(274,50%25,90%25)/333?text=vivo%20WATCH%205%20%E6%99%BA%E8%83%BD%E6%89%8B%E8%A1%A8%20%E5%BF%83%E7%8E%87+2"
+            ]
+          },
+          "rerank_score": 0.5004,
+          "final_score": 0.4312
+        },
+        {
+          "id": 938714568472,
+          "score": 0.26523554,
+          "payload": {
+            "product_id": "JD100225615118",
+            "title": "iPhone 17 256GB 苹果手机 A19芯片 4800万像素",
+            "category": "Electronics/Phones",
+            "brand": "Apple",
+            "price": 5999.0,
+            "rating": 4.9,
+            "rating_count": 200000,
+            "attributes": {
+              "芯片": "苹果A19",
+              "屏幕": "6.1英寸OLED",
+              "存储": "256GB",
+              "运行内存": "8GB",
+              "主摄像头": "4800万像素"
+            },
+            "highlights": [
+              "A19芯片",
+              "iOS生态",
+              "4800万主摄"
+            ],
+            "scenarios": [
+              "日常使用",
+              "拍照",
+              "办公"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(32,50%25,80%25)/333?text=iPhone%2017%20256GB%20%E8%8B%B9%E6%9E%9C%E6%89%8B%E6%9C%BA",
+              "https://placehold.co/400x400/hsl(32,50%25,90%25)/333?text=iPhone%2017%20256GB%20%E8%8B%B9%E6%9E%9C%E6%89%8B%E6%9C%BA+2"
+            ]
+          },
+          "rerank_score": 0.5003,
+          "final_score": 0.4298
+        },
+        {
+          "id": 997656078652,
+          "score": 0.2613615,
+          "payload": {
+            "product_id": "JD10090009",
+            "title": "佳能 EOS R8 全画幅微单相机 2420万像素 40张/秒连拍 4K60p",
+            "category": "Electronics/Cameras",
+            "brand": "Canon",
+            "price": 8699.0,
+            "rating": 4.7,
+            "rating_count": 5000,
+            "attributes": {
+              "传感器": "2420万像素全画幅CMOS",
+              "连拍": "40张/秒电子快门",
+              "视频": "6K超采4K60p无裁切",
+              "对焦": "第二代全像素双核AF",
+              "重量": "414g"
+            },
+            "highlights": [
+              "万元内全画幅",
+              "40张/秒超高速连拍",
+              "414g超轻机身"
+            ],
+            "scenarios": [
+              "旅行摄影",
+              "Vlog",
+              "家庭记录"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(74,50%25,80%25)/333?text=%E4%BD%B3%E8%83%BD%20EOS%20R8%20%E5%85%A8%E7%94%BB%E5%B9%85%E5%BE%AE%E5%8D%95%E7%9B%B8%E6%9C%BA%2024",
+              "https://placehold.co/400x400/hsl(74,50%25,90%25)/333?text=%E4%BD%B3%E8%83%BD%20EOS%20R8%20%E5%85%A8%E7%94%BB%E5%B9%85%E5%BE%AE%E5%8D%95%E7%9B%B8%E6%9C%BA%2024+2"
+            ]
+          },
+          "rerank_score": 0.5005,
+          "final_score": 0.4288
+        }
+      ],
+      "latency_ms": 3535.3,
+      "status": "ok"
+    },
+    {
+      "case_id": "s2_005",
+      "scenario": "multi_turn",
+      "query": "再推荐一款类似的",
+      "expected_intent": "commodity_recommend",
+      "actual_intent": "commodity_recommend",
+      "intent_match": true,
+      "response": "抱歉，暂时没有找到符合您要求的商品。可以试试调整条件重新搜索吗？",
+      "product_ids": [],
+      "ground_truth_ids": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_chunks": [],
+      "latency_ms": 3498.1,
+      "status": "ok"
+    },
+    {
+      "case_id": "s2_006",
+      "scenario": "multi_turn",
+      "query": "这个和刚才那个比怎么样",
+      "expected_intent": "commodity_recommend",
+      "actual_intent": "commodity_compare",
+      "intent_match": false,
+      "response": "抱歉，暂时没有找到符合您要求的商品。可以试试调整条件重新搜索吗？",
+      "product_ids": [],
+      "ground_truth_ids": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_chunks": [],
+      "latency_ms": 3458.2,
+      "status": "intent_mismatch"
+    },
+    {
+      "case_id": "s3_001",
+      "scenario": "commodity_compare",
+      "query": "Sony和Bose哪个好",
+      "expected_intent": "commodity_compare",
+      "actual_intent": "commodity_compare",
+      "intent_match": true,
+      "response": "抱歉，暂时没有找到符合您要求的商品。可以试试调整条件重新搜索吗？",
+      "product_ids": [],
+      "ground_truth_ids": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_chunks": [],
+      "latency_ms": 3714.6,
+      "status": "ok"
+    },
+    {
+      "case_id": "s3_002",
+      "scenario": "commodity_compare",
+      "query": "iPhone和华为怎么选",
+      "expected_intent": "commodity_compare",
+      "actual_intent": "commodity_compare",
+      "intent_match": true,
+      "response": "根据您的需求，目前检索到以下iPhone商品可供参考，暂未找到华为机型：\n\n1️⃣ **iPhone 17 256GB** | 匹配度：85%  \n① 适合追求iOS生态与均衡体验的用户  \n② A19芯片、4800万像素、¥5999 | 在预算内  \n\n2️⃣ **iPhone 17 Pro 256GB** | 匹配度：80%  \n① 适合看重性能与材质的用户  \n② A19 Pro芯片、钛金属边框、¥8699 | 在预算内  \n⚠️ 不足：价格较高  \n\n3️⃣ **iPhone 17 Pro Max 256GB** | 匹配度：78%  \n① 适合喜欢大屏与旗舰配置的用户  \n② A19 Pro芯片、6.9英寸大屏、¥9699 | 在预算内  \n⚠️ 不足：价格最高  \n\n暂未找到华为商品，建议补充具体型号需求。",
+      "product_ids": [
+        "849995632524",
+        "938714568472",
+        "704499024253",
+        "553855498877",
+        "373742854902"
+      ],
+      "ground_truth_ids": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_chunks": [
+        {
+          "id": 849995632524,
+          "score": 0.63843584,
+          "payload": {
+            "product_id": "JD2718739",
+            "title": "iPhone 17 Pro 256GB 苹果旗舰手机 A19 Pro 钛金属",
+            "category": "Electronics/Phones",
+            "brand": "Apple",
+            "price": 8699.0,
+            "rating": 4.9,
+            "rating_count": 200000,
+            "attributes": {
+              "芯片": "苹果A19 Pro",
+              "屏幕": "6.3英寸OLED 3000nit",
+              "存储": "256GB",
+              "运行内存": "12GB",
+              "摄像头": "4800万三摄 8倍光变"
+            },
+            "highlights": [
+              "A19 Pro芯片",
+              "钛金属边框",
+              "8倍光学变焦"
+            ],
+            "scenarios": [
+              "专业摄影",
+              "高性能游戏",
+              "商务办公"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(127,50%25,80%25)/333?text=iPhone%2017%20Pro%20256GB%20",
+              "https://placehold.co/400x400/hsl(127,50%25,90%25)/333?text=iPhone%2017%20Pro%20256GB%20+2"
+            ]
+          },
+          "rerank_score": 0.501,
+          "final_score": 0.5422
+        },
+        {
+          "id": 938714568472,
+          "score": 0.6306514,
+          "payload": {
+            "product_id": "JD100225615118",
+            "title": "iPhone 17 256GB 苹果手机 A19芯片 4800万像素",
+            "category": "Electronics/Phones",
+            "brand": "Apple",
+            "price": 5999.0,
+            "rating": 4.9,
+            "rating_count": 200000,
+            "attributes": {
+              "芯片": "苹果A19",
+              "屏幕": "6.1英寸OLED",
+              "存储": "256GB",
+              "运行内存": "8GB",
+              "主摄像头": "4800万像素"
+            },
+            "highlights": [
+              "A19芯片",
+              "iOS生态",
+              "4800万主摄"
+            ],
+            "scenarios": [
+              "日常使用",
+              "拍照",
+              "办公"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(32,50%25,80%25)/333?text=iPhone%2017%20256GB%20%E8%8B%B9%E6%9E%9C%E6%89%8B%E6%9C%BA",
+              "https://placehold.co/400x400/hsl(32,50%25,90%25)/333?text=iPhone%2017%20256GB%20%E8%8B%B9%E6%9E%9C%E6%89%8B%E6%9C%BA+2"
+            ]
+          },
+          "rerank_score": 0.5016,
+          "final_score": 0.5403
+        },
+        {
+          "id": 704499024253,
+          "score": 0.62930286,
+          "payload": {
+            "product_id": "JD2718819",
+            "title": "iPhone 17 Pro Max 256GB 苹果旗舰手机",
+            "category": "Electronics/Phones",
+            "brand": "Apple",
+            "price": 9699.0,
+            "rating": 4.9,
+            "rating_count": 500000,
+            "attributes": {
+              "芯片": "苹果A19 Pro",
+              "屏幕": "6.9英寸OLED",
+              "存储": "256GB",
+              "运行内存": "12GB",
+              "摄像头": "4800万三摄 8倍长焦"
+            },
+            "highlights": [
+              "A19 Pro芯片",
+              "6.9英寸大屏",
+              "4800万8倍长焦"
+            ],
+            "scenarios": [
+              "旗舰体验",
+              "专业摄影",
+              "商务办公"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(162,50%25,80%25)/333?text=iPhone%2017%20Pro%20Max%2025",
+              "https://placehold.co/400x400/hsl(162,50%25,90%25)/333?text=iPhone%2017%20Pro%20Max%2025+2"
+            ]
+          },
+          "rerank_score": 0.5013,
+          "final_score": 0.5397
+        },
+        {
+          "id": 373742854902,
+          "score": 0.61388427,
+          "payload": {
+            "product_id": "JD2775959",
+            "title": "荣耀500 Pro 骁龙8至尊版 8000mAh大电池 2亿像素 5G手机",
+            "category": "Electronics/Phones",
+            "brand": "Honor",
+            "price": 3599.0,
+            "rating": 4.8,
+            "rating_count": 50000,
+            "attributes": {
+              "芯片": "骁龙8至尊版",
+              "屏幕": "6.78英寸 OLED",
+              "存储": "12GB+256GB",
+              "电池": "8000mAh",
+              "摄像头": "2亿像素主摄"
+            },
+            "highlights": [
+              "骁龙8至尊版",
+              "2亿像素主摄",
+              "8000mAh超大电池"
+            ],
+            "scenarios": [
+              "影像创作",
+              "长续航",
+              "日常使用"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(21,50%25,80%25)/333?text=%E8%8D%A3%E8%80%80500%20Pro%20%E9%AA%81%E9%BE%998%E8%87%B3%E5%B0%8A%E7%89%88%20800",
+              "https://placehold.co/400x400/hsl(21,50%25,90%25)/333?text=%E8%8D%A3%E8%80%80500%20Pro%20%E9%AA%81%E9%BE%998%E8%87%B3%E5%B0%8A%E7%89%88%20800+2"
+            ]
+          },
+          "rerank_score": 0.5026,
+          "final_score": 0.536
+        },
+        {
+          "id": 273861465477,
+          "score": 0.5999509,
+          "payload": {
+            "product_id": "TB10000002",
+            "title": "荣耀Magic7 Pro 骁龙8至尊版 2亿潜望长焦 5850mAh 5G旗舰手机",
+            "category": "Electronics/Phones",
+            "brand": "Honor",
+            "price": 3889.0,
+            "rating": 4.8,
+            "rating_count": 100000,
+            "attributes": {
+              "芯片": "骁龙8至尊版",
+              "屏幕": "6.8英寸 1.5K曲面屏",
+              "存储": "16GB+512GB",
+              "电池": "5850mAh",
+              "快充": "100W"
+            },
+            "highlights": [
+              "2亿潜望长焦",
+              "骁龙8至尊版",
+              "IP68防水"
+            ],
+            "scenarios": [
+              "影像创作",
+              "旗舰体验",
+              "商务办公"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(269,50%25,80%25)/333?text=%E8%8D%A3%E8%80%80Magic7%20Pro%20%E9%AA%81%E9%BE%998%E8%87%B3%E5%B0%8A%E7%89%88%20",
+              "https://placehold.co/400x400/hsl(269,50%25,90%25)/333?text=%E8%8D%A3%E8%80%80Magic7%20Pro%20%E9%AA%81%E9%BE%998%E8%87%B3%E5%B0%8A%E7%89%88%20+2"
+            ]
+          },
+          "rerank_score": 0.5017,
+          "final_score": 0.5312
+        },
+        {
+          "id": 569157927491,
+          "score": 0.580799,
+          "payload": {
+            "product_id": "JD174542270",
+            "title": "华为 MatePad Air 12英寸 2025款 2.8K高刷屏 鸿蒙AI 12+256G",
+            "category": "Electronics/Tablets",
+            "brand": "Huawei",
+            "price": 2649.0,
+            "rating": 4.8,
+            "rating_count": 15000,
+            "attributes": {
+              "芯片": "麒麟芯片",
+              "屏幕": "12英寸 2.8K 144Hz全面屏",
+              "存储": "12GB+256GB",
+              "系统": "HarmonyOS",
+              "分辨率": "2800×1840"
+            },
+            "highlights": [
+              "2.8K超清大屏",
+              "144Hz高刷",
+              "鸿蒙AI专业生产力"
+            ],
+            "scenarios": [
+              "轻办公",
+              "创意设计",
+              "影音娱乐"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(75,50%25,80%25)/333?text=%E5%8D%8E%E4%B8%BA%20MatePad%20Air%2012%E8%8B%B1%E5%AF%B8%20",
+              "https://placehold.co/400x400/hsl(75,50%25,90%25)/333?text=%E5%8D%8E%E4%B8%BA%20MatePad%20Air%2012%E8%8B%B1%E5%AF%B8%20+2"
+            ]
+          },
+          "rerank_score": 0.5004,
+          "final_score": 0.5245
+        },
+        {
+          "id": 955398633580,
+          "score": 0.5743544,
+          "payload": {
+            "product_id": "JD10020002",
+            "title": "华为 Watch GT 5 智能手表 心率血氧监测 蓝牙通话 长续航",
+            "category": "Electronics/Watches",
+            "brand": "Huawei",
+            "price": 1588.0,
+            "rating": 4.7,
+            "rating_count": 80000,
+            "attributes": {
+              "屏幕": "1.43英寸 AMOLED",
+              "续航": "14天",
+              "功能": "心率/血氧/睡眠/GPS",
+              "材质": "不锈钢表壳",
+              "系统": "RTOS"
+            },
+            "highlights": [
+              "心率MAE 1.56",
+              "14天超长续航",
+              "PPG算法领先"
+            ],
+            "scenarios": [
+              "运动",
+              "健康管理",
+              "商务出行"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(321,50%25,80%25)/333?text=%E5%8D%8E%E4%B8%BA%20Watch%20GT%205%20%E6%99%BA%E8%83%BD%E6%89%8B%E8%A1%A8%20%E5%BF%83",
+              "https://placehold.co/400x400/hsl(321,50%25,90%25)/333?text=%E5%8D%8E%E4%B8%BA%20Watch%20GT%205%20%E6%99%BA%E8%83%BD%E6%89%8B%E8%A1%A8%20%E5%BF%83+2"
+            ]
+          },
+          "rerank_score": 0.5005,
+          "final_score": 0.5226
+        },
+        {
+          "id": 205911337386,
+          "score": 0.5697587,
+          "payload": {
+            "product_id": "JD2725859",
+            "title": "iQOO Z11 Turbo 骁龙8 Gen5 7600mAh 100W 2亿大底主摄 5G手机",
+            "category": "Electronics/Phones",
+            "brand": "iQOO",
+            "price": 2399.0,
+            "rating": 4.6,
+            "rating_count": 30000,
+            "attributes": {
+              "芯片": "骁龙8 Gen5",
+              "屏幕": "6.78英寸 AMOLED",
+              "存储": "12GB+256GB",
+              "电池": "7600mAh",
+              "快充": "100W"
+            },
+            "highlights": [
+              "骁龙8 Gen5",
+              "2亿大底主摄",
+              "7600mAh超大电池"
+            ],
+            "scenarios": [
+              "游戏",
+              "拍照",
+              "长续航"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(315,50%25,80%25)/333?text=iQOO%20Z11%20Turbo%20%E9%AA%81%E9%BE%998%20G",
+              "https://placehold.co/400x400/hsl(315,50%25,90%25)/333?text=iQOO%20Z11%20Turbo%20%E9%AA%81%E9%BE%998%20G+2"
+            ]
+          },
+          "rerank_score": 0.5019,
+          "final_score": 0.5223
+        },
+        {
+          "id": 553855498877,
+          "score": 0.57368493,
+          "payload": {
+            "product_id": "JD100129381482",
+            "title": "iPad 11英寸 A16芯片 256GB WLAN版 平板电脑",
+            "category": "Electronics/Tablets",
+            "brand": "Apple",
+            "price": 3499.0,
+            "rating": 4.9,
+            "rating_count": 50000,
+            "attributes": {
+              "芯片": "A16仿生",
+              "屏幕": "11英寸 Liquid Retina",
+              "存储": "256GB",
+              "系统": "iPadOS",
+              "用途": "学习/办公/娱乐"
+            },
+            "highlights": [
+              "A16芯片",
+              "256GB大存储",
+              "Liquid Retina屏"
+            ],
+            "scenarios": [
+              "无纸化学习",
+              "轻办公",
+              "影音娱乐"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(31,50%25,80%25)/333?text=iPad%2011%E8%8B%B1%E5%AF%B8%20A16%E8%8A%AF%E7%89%87%20256G",
+              "https://placehold.co/400x400/hsl(31,50%25,90%25)/333?text=iPad%2011%E8%8B%B1%E5%AF%B8%20A16%E8%8A%AF%E7%89%87%20256G+2"
+            ]
+          },
+          "rerank_score": 0.5001,
+          "final_score": 0.5222
+        },
+        {
+          "id": 13354064004,
+          "score": 0.5639096,
+          "payload": {
+            "product_id": "JD2126492",
+            "title": "Redmi Turbo 4 Pro 第四代骁龙8s 7550mAh 90W快充 5G手机",
+            "category": "Electronics/Phones",
+            "brand": "Xiaomi",
+            "price": 1699.0,
+            "rating": 4.7,
+            "rating_count": 500000,
+            "attributes": {
+              "芯片": "第四代骁龙8s",
+              "屏幕": "6.83英寸护眼大屏",
+              "存储": "12GB+256GB",
+              "电池": "7550mAh",
+              "快充": "90W"
+            },
+            "highlights": [
+              "骁龙8s Gen4",
+              "7550mAh超大电池",
+              "IP68防水"
+            ],
+            "scenarios": [
+              "游戏",
+              "长续航",
+              "日常使用"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(97,50%25,80%25)/333?text=Redmi%20Turbo%204%20Pro%20%E7%AC%AC%E5%9B%9B",
+              "https://placehold.co/400x400/hsl(97,50%25,90%25)/333?text=Redmi%20Turbo%204%20Pro%20%E7%AC%AC%E5%9B%9B+2"
+            ]
+          },
+          "rerank_score": 0.5005,
+          "final_score": 0.5195
+        }
+      ],
+      "latency_ms": 4827.1,
+      "status": "ok"
+    },
+    {
+      "case_id": "s3_003",
+      "scenario": "commodity_compare",
+      "query": "XM5和QC45对比",
+      "expected_intent": "commodity_compare",
+      "actual_intent": "commodity_compare",
+      "intent_match": true,
+      "response": "抱歉，暂时没有找到符合您要求的商品。可以试试调整条件重新搜索吗？",
+      "product_ids": [],
+      "ground_truth_ids": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_chunks": [],
+      "latency_ms": 4035.3,
+      "status": "ok"
+    },
+    {
+      "case_id": "s3_004",
+      "scenario": "commodity_compare",
+      "query": "小米和苹果耳机区别",
+      "expected_intent": "commodity_compare",
+      "actual_intent": "commodity_compare",
+      "intent_match": true,
+      "response": "抱歉，检索结果中未找到小米或苹果品牌的耳机商品（仅有数据线、充电宝、充电器等配件，以及索尼、韶音耳机）。暂未找到合适商品，无法对比小米和苹果耳机的区别。",
+      "product_ids": [
+        "985865404123",
+        "147477710281",
+        "555805366181",
+        "656631611471",
+        "299185389202"
+      ],
+      "ground_truth_ids": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_chunks": [
+        {
+          "id": 7249187911,
+          "score": 0.58832824,
+          "payload": {
+            "product_id": "JD100132209703",
+            "title": "Viken 柏林之音蓝牙耳机半入耳式通话降噪游戏音乐超强音质长续航",
+            "category": "Electronics/Headphones",
+            "brand": "Viken",
+            "price": 129.0,
+            "rating": 4.3,
+            "rating_count": 20000,
+            "attributes": {
+              "连接方式": "蓝牙5.3",
+              "类型": "半入耳式",
+              "降噪": "通话降噪",
+              "续航": "36小时",
+              "适用": "小米/苹果/vivo/oppo"
+            },
+            "highlights": [
+              "柏林之音",
+              "36小时长续航",
+              "通话降噪"
+            ],
+            "scenarios": [
+              "音乐",
+              "游戏",
+              "日常通话"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(74,50%25,80%25)/333?text=Viken%20%E6%9F%8F%E6%9E%97%E4%B9%8B%E9%9F%B3%E8%93%9D%E7%89%99%E8%80%B3%E6%9C%BA%E5%8D%8A%E5%85%A5%E8%80%B3%E5%BC%8F%E9%80%9A%E8%AF%9D",
+              "https://placehold.co/400x400/hsl(74,50%25,90%25)/333?text=Viken%20%E6%9F%8F%E6%9E%97%E4%B9%8B%E9%9F%B3%E8%93%9D%E7%89%99%E8%80%B3%E6%9C%BA%E5%8D%8A%E5%85%A5%E8%80%B3%E5%BC%8F%E9%80%9A%E8%AF%9D+2"
+            ]
+          },
+          "rerank_score": 0.5034,
+          "final_score": 0.5289
+        },
+        {
+          "id": 985865404123,
+          "score": 0.5857849,
+          "payload": {
+            "product_id": "JD100017986276",
+            "title": "小米 原装USB-C数据线 100cm 6A充电线 白色 适配安卓手机",
+            "category": "Electronics/Accessories",
+            "brand": "Xiaomi",
+            "price": 19.9,
+            "rating": 4.9,
+            "rating_count": 3000000,
+            "attributes": {
+              "接口": "USB-C",
+              "电流": "6A",
+              "长度": "100cm",
+              "颜色": "白色",
+              "类型": "充电/数据线"
+            },
+            "highlights": [
+              "300万+评论",
+              "6A大电流",
+              "原装品质"
+            ],
+            "scenarios": [
+              "手机充电",
+              "数据传输",
+              "日常使用"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(252,50%25,80%25)/333?text=%E5%B0%8F%E7%B1%B3%20%E5%8E%9F%E8%A3%85USB-C%E6%95%B0%E6%8D%AE%E7%BA%BF%20100cm%20",
+              "https://placehold.co/400x400/hsl(252,50%25,90%25)/333?text=%E5%B0%8F%E7%B1%B3%20%E5%8E%9F%E8%A3%85USB-C%E6%95%B0%E6%8D%AE%E7%BA%BF%20100cm%20+2"
+            ]
+          },
+          "rerank_score": 0.5001,
+          "final_score": 0.5258
+        },
+        {
+          "id": 147477710281,
+          "score": 0.5831226,
+          "payload": {
+            "product_id": "JD100129381482-A",
+            "title": "小米 30W 立式无线充 30W快充 适配小米/华为/苹果全系列",
+            "category": "Electronics/Accessories",
+            "brand": "Xiaomi",
+            "price": 99.0,
+            "rating": 4.8,
+            "rating_count": 500000,
+            "attributes": {
+              "功率": "30W",
+              "类型": "立式无线充电器",
+              "兼容": "小米/华为/苹果",
+              "设计": "立式支架",
+              "充电方式": "无线充电"
+            },
+            "highlights": [
+              "30W快速无线充",
+              "50万+评论",
+              "多品牌兼容"
+            ],
+            "scenarios": [
+              "桌面充电",
+              "办公",
+              "床头"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(328,50%25,80%25)/333?text=%E5%B0%8F%E7%B1%B3%2030W%20%E7%AB%8B%E5%BC%8F%E6%97%A0%E7%BA%BF%E5%85%85%2030W%E5%BF%AB%E5%85%85%20%E9%80%82",
+              "https://placehold.co/400x400/hsl(328,50%25,90%25)/333?text=%E5%B0%8F%E7%B1%B3%2030W%20%E7%AB%8B%E5%BC%8F%E6%97%A0%E7%BA%BF%E5%85%85%2030W%E5%BF%AB%E5%85%85%20%E9%80%82+2"
+            ]
+          },
+          "rerank_score": 0.5005,
+          "final_score": 0.5253
+        },
+        {
+          "id": 36978883152,
+          "score": 0.5783719,
+          "payload": {
+            "product_id": "JD100222319152",
+            "title": "vivo iQOO TWS Air3 奔霆白 KPL推荐蓝牙耳机",
+            "category": "Electronics/Headphones",
+            "brand": "vivo",
+            "price": 199.0,
+            "rating": 4.4,
+            "rating_count": 100000,
+            "attributes": {
+              "连接方式": "蓝牙5.3",
+              "延迟": "44ms超低延迟",
+              "兼容": "安卓/iOS跨生态",
+              "类型": "真无线",
+              "颜色": "奔霆白"
+            },
+            "highlights": [
+              "44ms超低延迟",
+              "跨生态兼容",
+              "KPL推荐"
+            ],
+            "scenarios": [
+              "游戏",
+              "电竞",
+              "日常使用"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(13,50%25,80%25)/333?text=vivo%20iQOO%20TWS%20Air3%20%E5%A5%94",
+              "https://placehold.co/400x400/hsl(13,50%25,90%25)/333?text=vivo%20iQOO%20TWS%20Air3%20%E5%A5%94+2"
+            ]
+          },
+          "rerank_score": 0.5004,
+          "final_score": 0.5238
+        },
+        {
+          "id": 498160457321,
+          "score": 0.57783175,
+          "payload": {
+            "product_id": "JD100082659367",
+            "title": "科沃 蓝牙耳机单耳不入耳开放式挂耳式骨传导概念运动耳机",
+            "category": "Electronics/Headphones",
+            "brand": "科沃",
+            "price": 99.0,
+            "rating": 4.2,
+            "rating_count": 200000,
+            "attributes": {
+              "连接方式": "蓝牙5.3",
+              "类型": "挂耳式",
+              "续航": "15小时",
+              "用途": "运动/跑步/外卖/开车",
+              "设计": "开放式"
+            },
+            "highlights": [
+              "TOP榜第1名",
+              "柏林之声",
+              "开放式不入耳"
+            ],
+            "scenarios": [
+              "外卖配送",
+              "开车",
+              "跑步"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(326,50%25,80%25)/333?text=%E7%A7%91%E6%B2%83%20%E8%93%9D%E7%89%99%E8%80%B3%E6%9C%BA%E5%8D%95%E8%80%B3%E4%B8%8D%E5%85%A5%E8%80%B3%E5%BC%80%E6%94%BE%E5%BC%8F%E6%8C%82%E8%80%B3%E5%BC%8F%E9%AA%A8%E4%BC%A0",
+              "https://placehold.co/400x400/hsl(326,50%25,90%25)/333?text=%E7%A7%91%E6%B2%83%20%E8%93%9D%E7%89%99%E8%80%B3%E6%9C%BA%E5%8D%95%E8%80%B3%E4%B8%8D%E5%85%A5%E8%80%B3%E5%BC%80%E6%94%BE%E5%BC%8F%E6%8C%82%E8%80%B3%E5%BC%8F%E9%AA%A8%E4%BC%A0+2"
+            ]
+          },
+          "rerank_score": 0.5002,
+          "final_score": 0.5235
+        },
+        {
+          "id": 555805366181,
+          "score": 0.57591164,
+          "payload": {
+            "product_id": "JD100225615118-A",
+            "title": "小米 磁吸超薄充电宝5000 7.5W无线充电 可上飞机 移动电源",
+            "category": "Electronics/Accessories",
+            "brand": "Xiaomi",
+            "price": 149.0,
+            "rating": 4.7,
+            "rating_count": 200000,
+            "attributes": {
+              "容量": "5000mAh",
+              "功率": "7.5W无线/有线",
+              "类型": "磁吸充电宝",
+              "认证": "3C认证可上飞机",
+              "颜色": "金色"
+            },
+            "highlights": [
+              "磁吸无线充电",
+              "3C认证可上飞机",
+              "超薄便携"
+            ],
+            "scenarios": [
+              "户外出行",
+              "应急充电",
+              "iPhone磁吸"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(200,50%25,80%25)/333?text=%E5%B0%8F%E7%B1%B3%20%E7%A3%81%E5%90%B8%E8%B6%85%E8%96%84%E5%85%85%E7%94%B5%E5%AE%9D5000%207.5W%E6%97%A0",
+              "https://placehold.co/400x400/hsl(200,50%25,90%25)/333?text=%E5%B0%8F%E7%B1%B3%20%E7%A3%81%E5%90%B8%E8%B6%85%E8%96%84%E5%85%85%E7%94%B5%E5%AE%9D5000%207.5W%E6%97%A0+2"
+            ]
+          },
+          "rerank_score": 0.5009,
+          "final_score": 0.5234
+        },
+        {
+          "id": 656631611471,
+          "score": 0.56809664,
+          "payload": {
+            "product_id": "JD100038798465",
+            "title": "Sony WH-1000XM5 无线降噪头戴式耳机",
+            "category": "Electronics/Headphones",
+            "brand": "Sony",
+            "price": 2499.0,
+            "rating": 4.7,
+            "rating_count": 15234,
+            "attributes": {
+              "连接方式": "蓝牙5.2",
+              "降噪": "主动降噪",
+              "续航": "30小时",
+              "驱动单元": "30mm",
+              "重量": "250g"
+            },
+            "highlights": [
+              "降噪深度35dB",
+              "30小时续航",
+              "轻量250g"
+            ],
+            "scenarios": [
+              "通勤",
+              "办公",
+              "音乐欣赏"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(304,50%25,80%25)/333?text=Sony%20WH-1000XM5%20%E6%97%A0%E7%BA%BF%E9%99%8D%E5%99%AA",
+              "https://placehold.co/400x400/hsl(304,50%25,90%25)/333?text=Sony%20WH-1000XM5%20%E6%97%A0%E7%BA%BF%E9%99%8D%E5%99%AA+2"
+            ]
+          },
+          "rerank_score": 0.5004,
+          "final_score": 0.5207
+        },
+        {
+          "id": 645460542406,
+          "score": 0.56440187,
+          "payload": {
+            "product_id": "JD100294413340",
+            "title": "MICROKIA AI骨传导蓝牙耳机耳夹式开放式无线运动跑步防汗降噪挂耳",
+            "category": "Electronics/Headphones",
+            "brand": "MICROKIA",
+            "price": 239.0,
+            "rating": 4.4,
+            "rating_count": 50000,
+            "attributes": {
+              "连接方式": "蓝牙5.3",
+              "类型": "耳夹式骨传导",
+              "降噪": "AI降噪",
+              "续航": "30小时",
+              "防水": "IPX6防汗"
+            },
+            "highlights": [
+              "哈曼卡顿级音质",
+              "2026最新款",
+              "AI降噪"
+            ],
+            "scenarios": [
+              "运动",
+              "跑步",
+              "户外"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(324,50%25,80%25)/333?text=MICROKIA%20AI%E9%AA%A8%E4%BC%A0%E5%AF%BC%E8%93%9D%E7%89%99%E8%80%B3%E6%9C%BA%E8%80%B3%E5%A4%B9",
+              "https://placehold.co/400x400/hsl(324,50%25,90%25)/333?text=MICROKIA%20AI%E9%AA%A8%E4%BC%A0%E5%AF%BC%E8%93%9D%E7%89%99%E8%80%B3%E6%9C%BA%E8%80%B3%E5%A4%B9+2"
+            ]
+          },
+          "rerank_score": 0.5011,
+          "final_score": 0.5201
+        },
+        {
+          "id": 299185389202,
+          "score": 0.56220543,
+          "payload": {
+            "product_id": "TB10000001",
+            "title": "韶音 OpenFit Air 开放式蓝牙耳机不入耳运动跑步舒适佩戴",
+            "category": "Electronics/Headphones",
+            "brand": "Shokz",
+            "price": 798.0,
+            "rating": 4.7,
+            "rating_count": 8000,
+            "attributes": {
+              "连接方式": "蓝牙5.2",
+              "类型": "开放式",
+              "续航": "28小时(含充电盒)",
+              "防水": "IP54",
+              "重量": "8.7g单耳"
+            },
+            "highlights": [
+              "不入耳设计",
+              "防滑柔软硅胶",
+              "极速快充"
+            ],
+            "scenarios": [
+              "运动",
+              "通勤",
+              "户外"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(235,50%25,80%25)/333?text=%E9%9F%B6%E9%9F%B3%20OpenFit%20Air%20%E5%BC%80%E6%94%BE%E5%BC%8F%E8%93%9D%E7%89%99",
+              "https://placehold.co/400x400/hsl(235,50%25,90%25)/333?text=%E9%9F%B6%E9%9F%B3%20OpenFit%20Air%20%E5%BC%80%E6%94%BE%E5%BC%8F%E8%93%9D%E7%89%99+2"
+            ]
+          },
+          "rerank_score": 0.5006,
+          "final_score": 0.519
+        },
+        {
+          "id": 509141701774,
+          "score": 0.56083775,
+          "payload": {
+            "product_id": "JD100183638657",
+            "title": "纽曼 LY63 蓝牙耳机耳夹式骨传导概念开放式不入耳无线运动耳机",
+            "category": "Electronics/Headphones",
+            "brand": "Newmine",
+            "price": 179.0,
+            "rating": 4.5,
+            "rating_count": 50000,
+            "attributes": {
+              "连接方式": "蓝牙5.3",
+              "类型": "耳夹式",
+              "降噪": "通话降噪",
+              "续航": "20小时",
+              "防水": "IPX5"
+            },
+            "highlights": [
+              "耳夹式不入耳",
+              "骨传导概念",
+              "运动防掉"
+            ],
+            "scenarios": [
+              "运动",
+              "跑步",
+              "骑行"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(51,50%25,80%25)/333?text=%E7%BA%BD%E6%9B%BC%20LY63%20%E8%93%9D%E7%89%99%E8%80%B3%E6%9C%BA%E8%80%B3%E5%A4%B9%E5%BC%8F%E9%AA%A8%E4%BC%A0%E5%AF%BC%E6%A6%82%E5%BF%B5",
+              "https://placehold.co/400x400/hsl(51,50%25,90%25)/333?text=%E7%BA%BD%E6%9B%BC%20LY63%20%E8%93%9D%E7%89%99%E8%80%B3%E6%9C%BA%E8%80%B3%E5%A4%B9%E5%BC%8F%E9%AA%A8%E4%BC%A0%E5%AF%BC%E6%A6%82%E5%BF%B5+2"
+            ]
+          },
+          "rerank_score": 0.5003,
+          "final_score": 0.5185
+        }
+      ],
+      "latency_ms": 4991.8,
+      "status": "ok"
+    },
+    {
+      "case_id": "s3_005",
+      "scenario": "commodity_compare",
+      "query": "JBL和漫步者音箱哪个性价比高",
+      "expected_intent": "commodity_compare",
+      "actual_intent": "commodity_compare",
+      "intent_match": true,
+      "response": "根据检索结果，JBL和漫步者音箱中暂无漫步者商品，以下为JBL推荐：\n\n① **JBL GO4（¥228）** 匹配度：95%  \n适合预算有限用户，IP67防水+AURACAST串联，性价比极高。  \n② **JBL FLIP7（¥1194）** 匹配度：88%  \n25W大功率+蓝牙5.4，音质与便携平衡，适合户外。  \n③ **JBL BOOMBOX3（¥2969）** 匹配度：80%  \n24小时续航+IP67防水，适合重度户外使用，价格较高。  \n\n注：未检索到漫步者商品，暂无法对比。",
+      "product_ids": [
+        "369064695172",
+        "854929553823",
+        "517546455489",
+        "693253465114",
+        "543414245466"
+      ],
+      "ground_truth_ids": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_chunks": [
+        {
+          "id": 369064695172,
+          "score": 0.68948466,
+          "payload": {
+            "product_id": "JD10060006",
+            "title": "JBL BOOMBOX3 音乐战神三代 便携式蓝牙音箱 IP67防水 24H续航",
+            "category": "Electronics/Speakers",
+            "brand": "JBL",
+            "price": 2969.0,
+            "rating": 4.8,
+            "rating_count": 6000,
+            "attributes": {
+              "连接方式": "蓝牙5.3",
+              "续航": "24小时",
+              "防水": "IP67",
+              "功率": "大功率低音炮",
+              "类型": "户外便携"
+            },
+            "highlights": [
+              "24小时超长续航",
+              "IP67防尘防水",
+              "震撼低音"
+            ],
+            "scenarios": [
+              "户外派对",
+              "露营",
+              "海滩"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(209,50%25,80%25)/333?text=JBL%20BOOMBOX3%20%E9%9F%B3%E4%B9%90%E6%88%98%E7%A5%9E%E4%B8%89%E4%BB%A3%20",
+              "https://placehold.co/400x400/hsl(209,50%25,90%25)/333?text=JBL%20BOOMBOX3%20%E9%9F%B3%E4%B9%90%E6%88%98%E7%A5%9E%E4%B8%89%E4%BB%A3%20+2"
+            ]
+          },
+          "rerank_score": 0.6392,
+          "final_score": 0.6543
+        },
+        {
+          "id": 854929553823,
+          "score": 0.68489677,
+          "payload": {
+            "product_id": "JD100099038454",
+            "title": "JBL GO4 音乐金砖四代 蓝牙音箱 户外便携音箱",
+            "category": "Electronics/Headphones",
+            "brand": "JBL",
+            "price": 369.0,
+            "rating": 4.8,
+            "rating_count": 25000,
+            "attributes": {
+              "连接方式": "蓝牙5.3",
+              "防水": "IP67",
+              "续航": "7小时",
+              "技术": "AURACAST",
+              "重量": "约200g"
+            },
+            "highlights": [
+              "IP67防尘防水",
+              "AURACAST串联",
+              "哈曼声学调教"
+            ],
+            "scenarios": [
+              "户外",
+              "运动",
+              "日常听音"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(331,50%25,80%25)/333?text=JBL%20GO4%20%E9%9F%B3%E4%B9%90%E9%87%91%E7%A0%96%E5%9B%9B%E4%BB%A3%20%E8%93%9D%E7%89%99%E9%9F%B3%E7%AE%B1%20",
+              "https://placehold.co/400x400/hsl(331,50%25,90%25)/333?text=JBL%20GO4%20%E9%9F%B3%E4%B9%90%E9%87%91%E7%A0%96%E5%9B%9B%E4%BB%A3%20%E8%93%9D%E7%89%99%E9%9F%B3%E7%AE%B1%20+2"
+            ]
+          },
+          "rerank_score": 0.635,
+          "final_score": 0.65
+        },
+        {
+          "id": 517546455489,
+          "score": 0.65649664,
+          "payload": {
+            "product_id": "SN12442869770",
+            "title": "JBL FLIP7 音乐万花筒7代 便携蓝牙音响 25W立体声 IP67防水",
+            "category": "Electronics/Speakers",
+            "brand": "JBL",
+            "price": 1194.0,
+            "rating": 4.8,
+            "rating_count": 8000,
+            "attributes": {
+              "连接方式": "蓝牙5.4/WiFi",
+              "功率": "25W",
+              "声道": "立体声",
+              "防水": "IP67",
+              "重量": "0.56kg"
+            },
+            "highlights": [
+              "25W大功率",
+              "蓝牙5.4",
+              "IP67防尘防水"
+            ],
+            "scenarios": [
+              "户外聚会",
+              "家庭娱乐",
+              "旅行"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(13,50%25,80%25)/333?text=JBL%20FLIP7%20%E9%9F%B3%E4%B9%90%E4%B8%87%E8%8A%B1%E7%AD%927%E4%BB%A3%20%E4%BE%BF%E6%90%BA",
+              "https://placehold.co/400x400/hsl(13,50%25,90%25)/333?text=JBL%20FLIP7%20%E9%9F%B3%E4%B9%90%E4%B8%87%E8%8A%B1%E7%AD%927%E4%BB%A3%20%E4%BE%BF%E6%90%BA+2"
+            ]
+          },
+          "rerank_score": 0.6422,
+          "final_score": 0.6465
+        },
+        {
+          "id": 693253465114,
+          "score": 0.677508,
+          "payload": {
+            "product_id": "JD100099038454-S",
+            "title": "JBL GO4 音乐金砖四代 蓝牙音箱 IP67防尘防水 AURACAST串联",
+            "category": "Electronics/Speakers",
+            "brand": "JBL",
+            "price": 228.0,
+            "rating": 4.8,
+            "rating_count": 25000,
+            "attributes": {
+              "连接方式": "蓝牙5.3",
+              "续航": "7小时(+2小时模式)",
+              "防水": "IP67",
+              "技术": "AURACAST串联",
+              "APP": "JBL Portable"
+            },
+            "highlights": [
+              "IP67防尘防水",
+              "AURACAST立体声串联",
+              "哈曼声学调教"
+            ],
+            "scenarios": [
+              "户外",
+              "浴室",
+              "随身便携"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(237,50%25,80%25)/333?text=JBL%20GO4%20%E9%9F%B3%E4%B9%90%E9%87%91%E7%A0%96%E5%9B%9B%E4%BB%A3%20%E8%93%9D%E7%89%99%E9%9F%B3%E7%AE%B1%20",
+              "https://placehold.co/400x400/hsl(237,50%25,90%25)/333?text=JBL%20GO4%20%E9%9F%B3%E4%B9%90%E9%87%91%E7%A0%96%E5%9B%9B%E4%BB%A3%20%E8%93%9D%E7%89%99%E9%9F%B3%E7%AE%B1%20+2"
+            ]
+          },
+          "rerank_score": 0.5944,
+          "final_score": 0.6193
+        },
+        {
+          "id": 543414245466,
+          "score": 0.6721206,
+          "payload": {
+            "product_id": "JD10070007",
+            "title": "哈曼卡顿 水晶4 桌面蓝牙音箱 2.1声道 140W 家庭影院音响",
+            "category": "Electronics/Speakers",
+            "brand": "Harman/Kardon",
+            "price": 1889.0,
+            "rating": 4.9,
+            "rating_count": 10000,
+            "attributes": {
+              "连接方式": "蓝牙",
+              "声道": "2.1声道",
+              "功率": "140W",
+              "类型": "桌面音箱",
+              "设计": "透明水晶外观"
+            },
+            "highlights": [
+              "140W超强功率",
+              "2.1声道架构",
+              "透明水晶经典设计"
+            ],
+            "scenarios": [
+              "家庭影院",
+              "电脑桌面",
+              "高品质音乐"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(33,50%25,80%25)/333?text=%E5%93%88%E6%9B%BC%E5%8D%A1%E9%A1%BF%20%E6%B0%B4%E6%99%B64%20%E6%A1%8C%E9%9D%A2%E8%93%9D%E7%89%99%E9%9F%B3%E7%AE%B1%202.1%E5%A3%B0",
+              "https://placehold.co/400x400/hsl(33,50%25,90%25)/333?text=%E5%93%88%E6%9B%BC%E5%8D%A1%E9%A1%BF%20%E6%B0%B4%E6%99%B64%20%E6%A1%8C%E9%9D%A2%E8%93%9D%E7%89%99%E9%9F%B3%E7%AE%B1%202.1%E5%A3%B0+2"
+            ]
+          },
+          "rerank_score": 0.5016,
+          "final_score": 0.5528
+        },
+        {
+          "id": 412304738125,
+          "score": 0.65879184,
+          "payload": {
+            "product_id": "JD10050005",
+            "title": "哈曼卡顿 琉璃4代 家用蓝牙音响 桌面电脑音箱 5种氛围灯效",
+            "category": "Electronics/Speakers",
+            "brand": "Harman/Kardon",
+            "price": 1699.0,
+            "rating": 4.9,
+            "rating_count": 15000,
+            "attributes": {
+              "连接方式": "蓝牙",
+              "类型": "桌面音箱",
+              "灯效": "5种氛围灯",
+              "设计": "晶莹剔透外观",
+              "用途": "家庭影院/电脑音响"
+            },
+            "highlights": [
+              "晶莹剔透外观",
+              "5种氛围灯效",
+              "经典哈曼音质"
+            ],
+            "scenarios": [
+              "家庭影院",
+              "桌面音响",
+              "家居装饰"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(171,50%25,80%25)/333?text=%E5%93%88%E6%9B%BC%E5%8D%A1%E9%A1%BF%20%E7%90%89%E7%92%834%E4%BB%A3%20%E5%AE%B6%E7%94%A8%E8%93%9D%E7%89%99%E9%9F%B3%E5%93%8D%20%E6%A1%8C%E9%9D%A2%E7%94%B5",
+              "https://placehold.co/400x400/hsl(171,50%25,90%25)/333?text=%E5%93%88%E6%9B%BC%E5%8D%A1%E9%A1%BF%20%E7%90%89%E7%92%834%E4%BB%A3%20%E5%AE%B6%E7%94%A8%E8%93%9D%E7%89%99%E9%9F%B3%E5%93%8D%20%E6%A1%8C%E9%9D%A2%E7%94%B5+2"
+            ]
+          },
+          "rerank_score": 0.5016,
+          "final_score": 0.5487
+        },
+        {
+          "id": 7249187911,
+          "score": 0.5250269,
+          "payload": {
+            "product_id": "JD100132209703",
+            "title": "Viken 柏林之音蓝牙耳机半入耳式通话降噪游戏音乐超强音质长续航",
+            "category": "Electronics/Headphones",
+            "brand": "Viken",
+            "price": 129.0,
+            "rating": 4.3,
+            "rating_count": 20000,
+            "attributes": {
+              "连接方式": "蓝牙5.3",
+              "类型": "半入耳式",
+              "降噪": "通话降噪",
+              "续航": "36小时",
+              "适用": "小米/苹果/vivo/oppo"
+            },
+            "highlights": [
+              "柏林之音",
+              "36小时长续航",
+              "通话降噪"
+            ],
+            "scenarios": [
+              "音乐",
+              "游戏",
+              "日常通话"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(74,50%25,80%25)/333?text=Viken%20%E6%9F%8F%E6%9E%97%E4%B9%8B%E9%9F%B3%E8%93%9D%E7%89%99%E8%80%B3%E6%9C%BA%E5%8D%8A%E5%85%A5%E8%80%B3%E5%BC%8F%E9%80%9A%E8%AF%9D",
+              "https://placehold.co/400x400/hsl(74,50%25,90%25)/333?text=Viken%20%E6%9F%8F%E6%9E%97%E4%B9%8B%E9%9F%B3%E8%93%9D%E7%89%99%E8%80%B3%E6%9C%BA%E5%8D%8A%E5%85%A5%E8%80%B3%E5%BC%8F%E9%80%9A%E8%AF%9D+2"
+            ]
+          },
+          "rerank_score": 0.5007,
+          "final_score": 0.508
+        },
+        {
+          "id": 498160457321,
+          "score": 0.5232518,
+          "payload": {
+            "product_id": "JD100082659367",
+            "title": "科沃 蓝牙耳机单耳不入耳开放式挂耳式骨传导概念运动耳机",
+            "category": "Electronics/Headphones",
+            "brand": "科沃",
+            "price": 99.0,
+            "rating": 4.2,
+            "rating_count": 200000,
+            "attributes": {
+              "连接方式": "蓝牙5.3",
+              "类型": "挂耳式",
+              "续航": "15小时",
+              "用途": "运动/跑步/外卖/开车",
+              "设计": "开放式"
+            },
+            "highlights": [
+              "TOP榜第1名",
+              "柏林之声",
+              "开放式不入耳"
+            ],
+            "scenarios": [
+              "外卖配送",
+              "开车",
+              "跑步"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(326,50%25,80%25)/333?text=%E7%A7%91%E6%B2%83%20%E8%93%9D%E7%89%99%E8%80%B3%E6%9C%BA%E5%8D%95%E8%80%B3%E4%B8%8D%E5%85%A5%E8%80%B3%E5%BC%80%E6%94%BE%E5%BC%8F%E6%8C%82%E8%80%B3%E5%BC%8F%E9%AA%A8%E4%BC%A0",
+              "https://placehold.co/400x400/hsl(326,50%25,90%25)/333?text=%E7%A7%91%E6%B2%83%20%E8%93%9D%E7%89%99%E8%80%B3%E6%9C%BA%E5%8D%95%E8%80%B3%E4%B8%8D%E5%85%A5%E8%80%B3%E5%BC%80%E6%94%BE%E5%BC%8F%E6%8C%82%E8%80%B3%E5%BC%8F%E9%AA%A8%E4%BC%A0+2"
+            ]
+          },
+          "rerank_score": 0.5008,
+          "final_score": 0.5076
+        },
+        {
+          "id": 656631611471,
+          "score": 0.52127635,
+          "payload": {
+            "product_id": "JD100038798465",
+            "title": "Sony WH-1000XM5 无线降噪头戴式耳机",
+            "category": "Electronics/Headphones",
+            "brand": "Sony",
+            "price": 2499.0,
+            "rating": 4.7,
+            "rating_count": 15234,
+            "attributes": {
+              "连接方式": "蓝牙5.2",
+              "降噪": "主动降噪",
+              "续航": "30小时",
+              "驱动单元": "30mm",
+              "重量": "250g"
+            },
+            "highlights": [
+              "降噪深度35dB",
+              "30小时续航",
+              "轻量250g"
+            ],
+            "scenarios": [
+              "通勤",
+              "办公",
+              "音乐欣赏"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(304,50%25,80%25)/333?text=Sony%20WH-1000XM5%20%E6%97%A0%E7%BA%BF%E9%99%8D%E5%99%AA",
+              "https://placehold.co/400x400/hsl(304,50%25,90%25)/333?text=Sony%20WH-1000XM5%20%E6%97%A0%E7%BA%BF%E9%99%8D%E5%99%AA+2"
+            ]
+          },
+          "rerank_score": 0.5004,
+          "final_score": 0.5066
+        },
+        {
+          "id": 36978883152,
+          "score": 0.5190494,
+          "payload": {
+            "product_id": "JD100222319152",
+            "title": "vivo iQOO TWS Air3 奔霆白 KPL推荐蓝牙耳机",
+            "category": "Electronics/Headphones",
+            "brand": "vivo",
+            "price": 199.0,
+            "rating": 4.4,
+            "rating_count": 100000,
+            "attributes": {
+              "连接方式": "蓝牙5.3",
+              "延迟": "44ms超低延迟",
+              "兼容": "安卓/iOS跨生态",
+              "类型": "真无线",
+              "颜色": "奔霆白"
+            },
+            "highlights": [
+              "44ms超低延迟",
+              "跨生态兼容",
+              "KPL推荐"
+            ],
+            "scenarios": [
+              "游戏",
+              "电竞",
+              "日常使用"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(13,50%25,80%25)/333?text=vivo%20iQOO%20TWS%20Air3%20%E5%A5%94",
+              "https://placehold.co/400x400/hsl(13,50%25,90%25)/333?text=vivo%20iQOO%20TWS%20Air3%20%E5%A5%94+2"
+            ]
+          },
+          "rerank_score": 0.5002,
+          "final_score": 0.5058
+        }
+      ],
+      "latency_ms": 4930.0,
+      "status": "ok"
+    },
+    {
+      "case_id": "s3_006",
+      "scenario": "commodity_compare",
+      "query": "OPPO和vivo手机拍照对比",
+      "expected_intent": "commodity_compare",
+      "actual_intent": "commodity_compare",
+      "intent_match": true,
+      "response": "抱歉，根据检索到的商品信息，目前没有找到OPPO或vivo品牌的手机。检索结果中仅包含Redmi、荣耀、iQOO等品牌，无法为您进行OPPO与vivo的拍照对比。\n\n建议您提供更具体的机型或重新搜索，我将为您进一步推荐。",
+      "product_ids": [
+        "329922436305",
+        "373742854902",
+        "273861465477",
+        "13354064004",
+        "190810580383"
+      ],
+      "ground_truth_ids": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_chunks": [
+        {
+          "id": 88410017020,
+          "score": 0.572164,
+          "payload": {
+            "product_id": "JD100100010",
+            "title": "索尼 WX350 数码相机 1820万像素 20倍光学变焦 光学防抖",
+            "category": "Electronics/Cameras",
+            "brand": "Sony",
+            "price": 1459.0,
+            "rating": 4.4,
+            "rating_count": 8000,
+            "attributes": {
+              "传感器": "1820万像素",
+              "变焦": "20倍光学变焦(25-500mm)",
+              "防抖": "光学防抖",
+              "屏幕": "3英寸92万点LCD",
+              "续航": "约470张"
+            },
+            "highlights": [
+              "20倍光学变焦",
+              "光学防抖",
+              "470张续航"
+            ],
+            "scenarios": [
+              "旅行",
+              "家庭记录",
+              "入门摄影"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(35,50%25,80%25)/333?text=%E7%B4%A2%E5%B0%BC%20WX350%20%E6%95%B0%E7%A0%81%E7%9B%B8%E6%9C%BA%201820%E4%B8%87%E5%83%8F",
+              "https://placehold.co/400x400/hsl(35,50%25,90%25)/333?text=%E7%B4%A2%E5%B0%BC%20WX350%20%E6%95%B0%E7%A0%81%E7%9B%B8%E6%9C%BA%201820%E4%B8%87%E5%83%8F+2"
+            ]
+          },
+          "rerank_score": 0.5005,
+          "final_score": 0.522
+        },
+        {
+          "id": 13354064004,
+          "score": 0.54582983,
+          "payload": {
+            "product_id": "JD2126492",
+            "title": "Redmi Turbo 4 Pro 第四代骁龙8s 7550mAh 90W快充 5G手机",
+            "category": "Electronics/Phones",
+            "brand": "Xiaomi",
+            "price": 1699.0,
+            "rating": 4.7,
+            "rating_count": 500000,
+            "attributes": {
+              "芯片": "第四代骁龙8s",
+              "屏幕": "6.83英寸护眼大屏",
+              "存储": "12GB+256GB",
+              "电池": "7550mAh",
+              "快充": "90W"
+            },
+            "highlights": [
+              "骁龙8s Gen4",
+              "7550mAh超大电池",
+              "IP68防水"
+            ],
+            "scenarios": [
+              "游戏",
+              "长续航",
+              "日常使用"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(97,50%25,80%25)/333?text=Redmi%20Turbo%204%20Pro%20%E7%AC%AC%E5%9B%9B",
+              "https://placehold.co/400x400/hsl(97,50%25,90%25)/333?text=Redmi%20Turbo%204%20Pro%20%E7%AC%AC%E5%9B%9B+2"
+            ]
+          },
+          "rerank_score": 0.5003,
+          "final_score": 0.5139
+        },
+        {
+          "id": 205911337386,
+          "score": 0.5434058,
+          "payload": {
+            "product_id": "JD2725859",
+            "title": "iQOO Z11 Turbo 骁龙8 Gen5 7600mAh 100W 2亿大底主摄 5G手机",
+            "category": "Electronics/Phones",
+            "brand": "iQOO",
+            "price": 2399.0,
+            "rating": 4.6,
+            "rating_count": 30000,
+            "attributes": {
+              "芯片": "骁龙8 Gen5",
+              "屏幕": "6.78英寸 AMOLED",
+              "存储": "12GB+256GB",
+              "电池": "7600mAh",
+              "快充": "100W"
+            },
+            "highlights": [
+              "骁龙8 Gen5",
+              "2亿大底主摄",
+              "7600mAh超大电池"
+            ],
+            "scenarios": [
+              "游戏",
+              "拍照",
+              "长续航"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(315,50%25,80%25)/333?text=iQOO%20Z11%20Turbo%20%E9%AA%81%E9%BE%998%20G",
+              "https://placehold.co/400x400/hsl(315,50%25,90%25)/333?text=iQOO%20Z11%20Turbo%20%E9%AA%81%E9%BE%998%20G+2"
+            ]
+          },
+          "rerank_score": 0.5007,
+          "final_score": 0.5135
+        },
+        {
+          "id": 329922436305,
+          "score": 0.54317904,
+          "payload": {
+            "product_id": "JD2102664",
+            "title": "Redmi K80 第三代骁龙8 6550mAh大电池 2K旗舰直屏 5G手机",
+            "category": "Electronics/Phones",
+            "brand": "Xiaomi",
+            "price": 1849.0,
+            "rating": 4.8,
+            "rating_count": 300000,
+            "attributes": {
+              "芯片": "骁龙8 Gen3",
+              "屏幕": "6.67英寸 2K直屏",
+              "存储": "12GB+256GB",
+              "电池": "6550mAh",
+              "快充": "90W"
+            },
+            "highlights": [
+              "骁龙8 Gen3",
+              "2K旗舰直屏",
+              "6550mAh大电池"
+            ],
+            "scenarios": [
+              "游戏",
+              "日常使用",
+              "长续航"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(81,50%25,80%25)/333?text=Redmi%20K80%20%E7%AC%AC%E4%B8%89%E4%BB%A3%E9%AA%81%E9%BE%998%20655",
+              "https://placehold.co/400x400/hsl(81,50%25,90%25)/333?text=Redmi%20K80%20%E7%AC%AC%E4%B8%89%E4%BB%A3%E9%AA%81%E9%BE%998%20655+2"
+            ]
+          },
+          "rerank_score": 0.5003,
+          "final_score": 0.5132
+        },
+        {
+          "id": 190810580383,
+          "score": 0.54206145,
+          "payload": {
+            "product_id": "JD2113676",
+            "title": "iQOO Neo10 骁龙8 Gen3 120W快充 6100mAh 144Hz高刷 5G手机",
+            "category": "Electronics/Phones",
+            "brand": "iQOO",
+            "price": 1571.0,
+            "rating": 4.7,
+            "rating_count": 100000,
+            "attributes": {
+              "芯片": "骁龙8 Gen3",
+              "屏幕": "6.7英寸 1.5K 144Hz直屏",
+              "存储": "12GB+256GB",
+              "电池": "6100mAh",
+              "快充": "120W"
+            },
+            "highlights": [
+              "120W超级快充",
+              "6100mAh大电池",
+              "144Hz高刷"
+            ],
+            "scenarios": [
+              "游戏",
+              "电竞",
+              "日常使用"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(293,50%25,80%25)/333?text=iQOO%20Neo10%20%E9%AA%81%E9%BE%998%20Gen3%20",
+              "https://placehold.co/400x400/hsl(293,50%25,90%25)/333?text=iQOO%20Neo10%20%E9%AA%81%E9%BE%998%20Gen3%20+2"
+            ]
+          },
+          "rerank_score": 0.5002,
+          "final_score": 0.5128
+        },
+        {
+          "id": 373742854902,
+          "score": 0.53706264,
+          "payload": {
+            "product_id": "JD2775959",
+            "title": "荣耀500 Pro 骁龙8至尊版 8000mAh大电池 2亿像素 5G手机",
+            "category": "Electronics/Phones",
+            "brand": "Honor",
+            "price": 3599.0,
+            "rating": 4.8,
+            "rating_count": 50000,
+            "attributes": {
+              "芯片": "骁龙8至尊版",
+              "屏幕": "6.78英寸 OLED",
+              "存储": "12GB+256GB",
+              "电池": "8000mAh",
+              "摄像头": "2亿像素主摄"
+            },
+            "highlights": [
+              "骁龙8至尊版",
+              "2亿像素主摄",
+              "8000mAh超大电池"
+            ],
+            "scenarios": [
+              "影像创作",
+              "长续航",
+              "日常使用"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(21,50%25,80%25)/333?text=%E8%8D%A3%E8%80%80500%20Pro%20%E9%AA%81%E9%BE%998%E8%87%B3%E5%B0%8A%E7%89%88%20800",
+              "https://placehold.co/400x400/hsl(21,50%25,90%25)/333?text=%E8%8D%A3%E8%80%80500%20Pro%20%E9%AA%81%E9%BE%998%E8%87%B3%E5%B0%8A%E7%89%88%20800+2"
+            ]
+          },
+          "rerank_score": 0.5014,
+          "final_score": 0.5121
+        },
+        {
+          "id": 984448990619,
+          "score": 0.53158325,
+          "payload": {
+            "product_id": "JD100205228688",
+            "title": "尼康 Z5 II 全画幅微单相机 2450万像素 7.5档防抖 EXPEED7",
+            "category": "Electronics/Cameras",
+            "brand": "Nikon",
+            "price": 9000.0,
+            "rating": 4.7,
+            "rating_count": 5000,
+            "attributes": {
+              "传感器": "2450万像素背照式CMOS",
+              "处理器": "EXPEED 7",
+              "防抖": "7.5档机身防抖",
+              "对焦": "-10EV暗光对焦",
+              "续航": "800张"
+            },
+            "highlights": [
+              "EXPEED7旗舰处理器",
+              "7.5档防抖",
+              "800张超长续航"
+            ],
+            "scenarios": [
+              "专业摄影",
+              "婚礼跟拍",
+              "风光摄影"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(96,50%25,80%25)/333?text=%E5%B0%BC%E5%BA%B7%20Z5%20II%20%E5%85%A8%E7%94%BB%E5%B9%85%E5%BE%AE%E5%8D%95%E7%9B%B8%E6%9C%BA%20245",
+              "https://placehold.co/400x400/hsl(96,50%25,90%25)/333?text=%E5%B0%BC%E5%BA%B7%20Z5%20II%20%E5%85%A8%E7%94%BB%E5%B9%85%E5%BE%AE%E5%8D%95%E7%9B%B8%E6%9C%BA%20245+2"
+            ]
+          },
+          "rerank_score": 0.5005,
+          "final_score": 0.5098
+        },
+        {
+          "id": 402466895262,
+          "score": 0.52239835,
+          "payload": {
+            "product_id": "JD100009073095",
+            "title": "尼康 Z6II 全画幅微单相机 2450万像素 双EXPEED6 5轴防抖",
+            "category": "Electronics/Cameras",
+            "brand": "Nikon",
+            "price": 7332.0,
+            "rating": 4.7,
+            "rating_count": 20000,
+            "attributes": {
+              "传感器": "2450万像素全画幅",
+              "处理器": "双EXPEED 6",
+              "防抖": "5轴机身防抖",
+              "连拍": "14张/秒",
+              "视频": "4K无裁切"
+            },
+            "highlights": [
+              "双EXPEED6处理器",
+              "5轴防抖",
+              "双卡槽保障"
+            ],
+            "scenarios": [
+              "旅拍",
+              "专业摄影",
+              "视频创作"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(314,50%25,80%25)/333?text=%E5%B0%BC%E5%BA%B7%20Z6II%20%E5%85%A8%E7%94%BB%E5%B9%85%E5%BE%AE%E5%8D%95%E7%9B%B8%E6%9C%BA%202450",
+              "https://placehold.co/400x400/hsl(314,50%25,90%25)/333?text=%E5%B0%BC%E5%BA%B7%20Z6II%20%E5%85%A8%E7%94%BB%E5%B9%85%E5%BE%AE%E5%8D%95%E7%9B%B8%E6%9C%BA%202450+2"
+            ]
+          },
+          "rerank_score": 0.5003,
+          "final_score": 0.5069
+        },
+        {
+          "id": 273861465477,
+          "score": 0.51860064,
+          "payload": {
+            "product_id": "TB10000002",
+            "title": "荣耀Magic7 Pro 骁龙8至尊版 2亿潜望长焦 5850mAh 5G旗舰手机",
+            "category": "Electronics/Phones",
+            "brand": "Honor",
+            "price": 3889.0,
+            "rating": 4.8,
+            "rating_count": 100000,
+            "attributes": {
+              "芯片": "骁龙8至尊版",
+              "屏幕": "6.8英寸 1.5K曲面屏",
+              "存储": "16GB+512GB",
+              "电池": "5850mAh",
+              "快充": "100W"
+            },
+            "highlights": [
+              "2亿潜望长焦",
+              "骁龙8至尊版",
+              "IP68防水"
+            ],
+            "scenarios": [
+              "影像创作",
+              "旗舰体验",
+              "商务办公"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(269,50%25,80%25)/333?text=%E8%8D%A3%E8%80%80Magic7%20Pro%20%E9%AA%81%E9%BE%998%E8%87%B3%E5%B0%8A%E7%89%88%20",
+              "https://placehold.co/400x400/hsl(269,50%25,90%25)/333?text=%E8%8D%A3%E8%80%80Magic7%20Pro%20%E9%AA%81%E9%BE%998%E8%87%B3%E5%B0%8A%E7%89%88%20+2"
+            ]
+          },
+          "rerank_score": 0.5009,
+          "final_score": 0.5062
+        },
+        {
+          "id": 997656078652,
+          "score": 0.51425767,
+          "payload": {
+            "product_id": "JD10090009",
+            "title": "佳能 EOS R8 全画幅微单相机 2420万像素 40张/秒连拍 4K60p",
+            "category": "Electronics/Cameras",
+            "brand": "Canon",
+            "price": 8699.0,
+            "rating": 4.7,
+            "rating_count": 5000,
+            "attributes": {
+              "传感器": "2420万像素全画幅CMOS",
+              "连拍": "40张/秒电子快门",
+              "视频": "6K超采4K60p无裁切",
+              "对焦": "第二代全像素双核AF",
+              "重量": "414g"
+            },
+            "highlights": [
+              "万元内全画幅",
+              "40张/秒超高速连拍",
+              "414g超轻机身"
+            ],
+            "scenarios": [
+              "旅行摄影",
+              "Vlog",
+              "家庭记录"
+            ],
+            "image_urls": [
+              "https://placehold.co/400x400/hsl(74,50%25,80%25)/333?text=%E4%BD%B3%E8%83%BD%20EOS%20R8%20%E5%85%A8%E7%94%BB%E5%B9%85%E5%BE%AE%E5%8D%95%E7%9B%B8%E6%9C%BA%2024",
+              "https://placehold.co/400x400/hsl(74,50%25,90%25)/333?text=%E4%BD%B3%E8%83%BD%20EOS%20R8%20%E5%85%A8%E7%94%BB%E5%B9%85%E5%BE%AE%E5%8D%95%E7%9B%B8%E6%9C%BA%2024+2"
+            ]
+          },
+          "rerank_score": 0.5006,
+          "final_score": 0.5047
+        }
+      ],
+      "latency_ms": 4011.6,
+      "status": "ok"
+    }
+  ]
+}

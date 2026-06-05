@@ -1,0 +1,36 @@
+package com.shopping.agent.data.repository
+
+import com.shopping.agent.data.model.ChatMessage
+import com.shopping.agent.data.model.MessageRole
+import com.shopping.agent.data.model.SSEEvent
+import com.shopping.agent.data.remote.SseClient
+import kotlinx.coroutines.flow.Flow
+import java.util.UUID
+
+class ChatRepository {
+    private val sseClient = SseClient()
+    private val _messages = mutableListOf<ChatMessage>()
+    val messages: List<ChatMessage> get() = _messages.toList()
+
+    fun sendMessage(text: String, conversationId: String? = null): Flow<SSEEvent> {
+        _messages.add(ChatMessage(
+            id = UUID.randomUUID().toString(),
+            role = MessageRole.User,
+            content = text,
+        ))
+        return sseClient.connect(text, conversationId)
+    }
+
+    fun addAssistantMessage(content: String, products: List<com.shopping.agent.data.model.Product> = emptyList()) {
+        _messages.add(ChatMessage(
+            id = UUID.randomUUID().toString(),
+            role = MessageRole.Assistant,
+            content = content,
+            productCards = products,
+        ))
+    }
+
+    fun clearMessages() {
+        _messages.clear()
+    }
+}

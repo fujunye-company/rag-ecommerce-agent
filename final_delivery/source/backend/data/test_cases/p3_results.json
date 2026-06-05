@@ -1,0 +1,8315 @@
+{
+  "run_info": {
+    "timestamp": "2026-05-28 14:20:41",
+    "total_cases": 286,
+    "embedding_model": "BAAI/bge-large-zh-v1.5",
+    "qdrant_collection": "products"
+  },
+  "summary": {
+    "mean_p3": 0.1457,
+    "mean_recall": 0.1547,
+    "non_zero_p3_count": 97,
+    "cases_with_ground_truth": 200,
+    "avg_latency_ms": 90.4,
+    "by_scenario": {
+      "after_sales": {
+        "total": 20,
+        "p3": 0.0,
+        "recall": 0.0,
+        "avg_latency_ms": 89.8,
+        "with_ground_truth": 3
+      },
+      "anti_selection": {
+        "total": 28,
+        "p3": 0.2024,
+        "recall": 0.2024,
+        "avg_latency_ms": 92.1,
+        "with_ground_truth": 25
+      },
+      "cart_operation": {
+        "total": 26,
+        "p3": 0.0128,
+        "recall": 0.0128,
+        "avg_latency_ms": 89.4,
+        "with_ground_truth": 6
+      },
+      "chitchat": {
+        "total": 30,
+        "p3": 0.0,
+        "recall": 0.0,
+        "avg_latency_ms": 82.4,
+        "with_ground_truth": 0
+      },
+      "commodity_compare": {
+        "total": 30,
+        "p3": 0.2778,
+        "recall": 0.2972,
+        "avg_latency_ms": 92.3,
+        "with_ground_truth": 30
+      },
+      "commodity_detail": {
+        "total": 30,
+        "p3": 0.2333,
+        "recall": 0.2333,
+        "avg_latency_ms": 87.9,
+        "with_ground_truth": 30
+      },
+      "commodity_recommend": {
+        "total": 50,
+        "p3": 0.2133,
+        "recall": 0.2267,
+        "avg_latency_ms": 89.8,
+        "with_ground_truth": 50
+      },
+      "image_search": {
+        "total": 26,
+        "p3": 0.0641,
+        "recall": 0.0641,
+        "avg_latency_ms": 100.0,
+        "with_ground_truth": 10
+      },
+      "multi_turn": {
+        "total": 6,
+        "p3": 0.0,
+        "recall": 0.0,
+        "avg_latency_ms": 82.8,
+        "with_ground_truth": 6
+      },
+      "scenario_shopping": {
+        "total": 40,
+        "p3": 0.2,
+        "recall": 0.2333,
+        "avg_latency_ms": 92.0,
+        "with_ground_truth": 40
+      }
+    }
+  },
+  "results": [
+    {
+      "case_id": "s1_001",
+      "scenario": "commodity_recommend",
+      "query": "推荐一款降噪耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100132209703",
+        "JD100209512295"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100132209703",
+        "JD100209512295",
+        "p_digital_007",
+        "JD100294413340",
+        "p_digital_018",
+        "TB10000001",
+        "JD100082659367",
+        "JD100222319152",
+        "JD100183638657"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 189.4
+    },
+    {
+      "case_id": "s1_002",
+      "scenario": "commodity_recommend",
+      "query": "3000以内的手机推荐",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD2113676",
+        "p_digital_017",
+        "JD2102664"
+      ],
+      "retrieved_top10": [
+        "JD2113676",
+        "p_digital_017",
+        "JD2102664",
+        "JD2725859",
+        "JD2775959",
+        "JD2126492",
+        "p_digital_002",
+        "p_digital_015",
+        "p_digital_009",
+        "p_digital_016"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 85.0
+    },
+    {
+      "case_id": "s1_003",
+      "scenario": "commodity_recommend",
+      "query": "想买个蓝牙音箱",
+      "ground_truth": [
+        "JD10050005",
+        "JD10070007",
+        "JD100099038454-S"
+      ],
+      "retrieved_top3": [
+        "JD10070007",
+        "JD10050005",
+        "JD10060006"
+      ],
+      "retrieved_top10": [
+        "JD10070007",
+        "JD10050005",
+        "JD10060006",
+        "JD100099038454-S",
+        "JD100099038454",
+        "SN12442869770",
+        "JD100082659367",
+        "JD100294413340",
+        "JD100222319152",
+        "TB16a6002f"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 105.6
+    },
+    {
+      "case_id": "s1_004",
+      "scenario": "commodity_recommend",
+      "query": "推荐适合学生的平板",
+      "ground_truth": [
+        "JD100129381482",
+        "JD100209512296",
+        "JD174542270"
+      ],
+      "retrieved_top3": [
+        "p_digital_019",
+        "p_digital_011",
+        "JD100129381482"
+      ],
+      "retrieved_top10": [
+        "p_digital_019",
+        "p_digital_011",
+        "JD100129381482",
+        "p_digital_021",
+        "JD174542270",
+        "JD100209512296",
+        "p_digital_024",
+        "p_digital_025",
+        "p_digital_005",
+        "JD100156315"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 95.4
+    },
+    {
+      "case_id": "s1_005",
+      "scenario": "commodity_recommend",
+      "query": "推荐一款运动手表",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10040004",
+        "JD10010001",
+        "JD10020002"
+      ],
+      "retrieved_top10": [
+        "JD10040004",
+        "JD10010001",
+        "JD10020002",
+        "JD10030003",
+        "TB10000003",
+        "JDa445d5f0",
+        "p_clothes_021",
+        "p_clothes_023",
+        "p_clothes_008",
+        "p_clothes_003"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 92.2
+    },
+    {
+      "case_id": "s1_006",
+      "scenario": "commodity_recommend",
+      "query": "性价比高的无线鼠标",
+      "ground_truth": [
+        "JD100017986276",
+        "JD100197769762",
+        "JD100129381482-A"
+      ],
+      "retrieved_top3": [
+        "TBc0973fda",
+        "TB16a6002f",
+        "JD100222319152"
+      ],
+      "retrieved_top10": [
+        "TBc0973fda",
+        "TB16a6002f",
+        "JD100222319152",
+        "JD100038798465",
+        "TBe8bd70a7",
+        "p_digital_004",
+        "p_digital_021",
+        "p_digital_007",
+        "JD10070007",
+        "TB70393168"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.9
+    },
+    {
+      "case_id": "s1_007",
+      "scenario": "commodity_recommend",
+      "query": "推荐一个充电宝",
+      "ground_truth": [
+        "JD100017986276",
+        "JD100197769762",
+        "JD100129381482-A"
+      ],
+      "retrieved_top3": [
+        "JD10080008-A",
+        "JD101100011",
+        "JD100225615118-A"
+      ],
+      "retrieved_top10": [
+        "JD10080008-A",
+        "JD101100011",
+        "JD100225615118-A",
+        "JD101000010",
+        "JD100197769762",
+        "JD100129381482-A",
+        "JD10090009-A",
+        "JD100213696321",
+        "TB7b0d192b",
+        "JD100017986276"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.3
+    },
+    {
+      "case_id": "s1_008",
+      "scenario": "commodity_recommend",
+      "query": "帮我推荐一款入耳式耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100082659367",
+        "p_digital_007"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100082659367",
+        "p_digital_007",
+        "JD100294413340",
+        "JD100132209703",
+        "JD100079260610",
+        "JD100038798465",
+        "JD100183638657",
+        "JD100209512295",
+        "JD100222319152"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 78.2
+    },
+    {
+      "case_id": "s2_001",
+      "scenario": "multi_turn",
+      "query": "推荐跑鞋",
+      "ground_truth": [
+        "JD42ea6836",
+        "JDc01c8260",
+        "JD8e53becb"
+      ],
+      "retrieved_top3": [
+        "p_clothes_008",
+        "p_clothes_007",
+        "JDe52f5797"
+      ],
+      "retrieved_top10": [
+        "p_clothes_008",
+        "p_clothes_007",
+        "JDe52f5797",
+        "p_clothes_009",
+        "JD42ea6836",
+        "JD8e53becb",
+        "JDe287c03a",
+        "JDfc117d3d",
+        "p_clothes_010",
+        "JDc01c8260"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 64.7
+    },
+    {
+      "case_id": "s2_002",
+      "scenario": "multi_turn",
+      "query": "要轻量的",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "p_clothes_020",
+        "p_clothes_001",
+        "p_clothes_023"
+      ],
+      "retrieved_top10": [
+        "p_clothes_020",
+        "p_clothes_001",
+        "p_clothes_023",
+        "p_clothes_017",
+        "p_clothes_002",
+        "p_clothes_021",
+        "p_food_010",
+        "p_clothes_003",
+        "p_clothes_025",
+        "p_clothes_014"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 87.5
+    },
+    {
+      "case_id": "s2_003",
+      "scenario": "multi_turn",
+      "query": "便宜一点的",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "p_food_010",
+        "p_beauty_005",
+        "p_food_019"
+      ],
+      "retrieved_top10": [
+        "p_food_010",
+        "p_beauty_005",
+        "p_food_019",
+        "p_beauty_015",
+        "p_food_012",
+        "p_clothes_002",
+        "p_beauty_013",
+        "p_clothes_023",
+        "p_clothes_020",
+        "p_clothes_003"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 78.7
+    },
+    {
+      "case_id": "s2_004",
+      "scenario": "multi_turn",
+      "query": "有没有红色的",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "p_beauty_015",
+        "p_beauty_004",
+        "p_food_006"
+      ],
+      "retrieved_top10": [
+        "p_beauty_015",
+        "p_beauty_004",
+        "p_food_006",
+        "TBa3a0add9",
+        "TBe38703fa",
+        "p_beauty_005",
+        "p_digital_002",
+        "p_beauty_002",
+        "p_food_018",
+        "TB2051016f"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 77.6
+    },
+    {
+      "case_id": "s2_005",
+      "scenario": "multi_turn",
+      "query": "再推荐一款类似的",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "p_digital_010",
+        "p_digital_014",
+        "p_beauty_015"
+      ],
+      "retrieved_top10": [
+        "p_digital_010",
+        "p_digital_014",
+        "p_beauty_015",
+        "p_digital_016",
+        "p_digital_002",
+        "p_beauty_013",
+        "JD100205228688",
+        "p_digital_009",
+        "JD10080008",
+        "JD100100010"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.9
+    },
+    {
+      "case_id": "s2_006",
+      "scenario": "multi_turn",
+      "query": "这个和刚才那个比怎么样",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "p_beauty_005",
+        "p_digital_014",
+        "p_digital_002"
+      ],
+      "retrieved_top10": [
+        "p_beauty_005",
+        "p_digital_014",
+        "p_digital_002",
+        "TB097cfe05",
+        "JD2126492",
+        "p_beauty_004",
+        "p_digital_012",
+        "JD10020002",
+        "JD2725859",
+        "JD10040004"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.3
+    },
+    {
+      "case_id": "s3_001",
+      "scenario": "commodity_compare",
+      "query": "Sony和Bose哪个好",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100100010",
+        "JD10080008"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100100010",
+        "JD10080008",
+        "JD10060006",
+        "JD100205228688",
+        "JD100082659367",
+        "JD100209512295",
+        "p_digital_007",
+        "JD100099038454",
+        "TBe67b8ae5"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 72.6
+    },
+    {
+      "case_id": "s3_002",
+      "scenario": "commodity_compare",
+      "query": "iPhone和华为怎么选",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_003",
+        "p_digital_001",
+        "p_digital_002"
+      ],
+      "retrieved_top10": [
+        "p_digital_003",
+        "p_digital_001",
+        "p_digital_002",
+        "JD2718819",
+        "JD100225615118",
+        "JD2718739",
+        "p_digital_005",
+        "JD2775959",
+        "TB10000002",
+        "p_digital_021"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 83.0
+    },
+    {
+      "case_id": "s3_003",
+      "scenario": "commodity_compare",
+      "query": "XM5和QC45对比",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100100010",
+        "p_digital_006"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100100010",
+        "p_digital_006",
+        "JD100225615118-A",
+        "p_digital_013",
+        "p_digital_020",
+        "JD10030003",
+        "p_digital_012",
+        "p_digital_015",
+        "JDfc117d3d"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 95.3
+    },
+    {
+      "case_id": "s3_004",
+      "scenario": "commodity_compare",
+      "query": "小米和苹果耳机区别",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "p_digital_018",
+        "JD100132209703",
+        "JD100017986276"
+      ],
+      "retrieved_top10": [
+        "p_digital_018",
+        "JD100132209703",
+        "JD100017986276",
+        "JD100222319152",
+        "p_digital_007",
+        "JD100129381482-A",
+        "JD100082659367",
+        "JD100038798465",
+        "JD100225615118-A",
+        "JD100183638657"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.2
+    },
+    {
+      "case_id": "s3_005",
+      "scenario": "commodity_compare",
+      "query": "JBL和漫步者音箱哪个性价比高",
+      "ground_truth": [
+        "JD10050005",
+        "JD10070007",
+        "JD100099038454-S"
+      ],
+      "retrieved_top3": [
+        "JD10060006",
+        "JD100099038454",
+        "JD100099038454-S"
+      ],
+      "retrieved_top10": [
+        "JD10060006",
+        "JD100099038454",
+        "JD100099038454-S",
+        "JD10070007",
+        "SN12442869770",
+        "JD10050005",
+        "JD100082659367",
+        "p_digital_007",
+        "JD100222319152",
+        "p_digital_018"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 123.6
+    },
+    {
+      "case_id": "s3_006",
+      "scenario": "commodity_compare",
+      "query": "OPPO和vivo手机拍照对比",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_015",
+        "p_digital_017",
+        "p_digital_016"
+      ],
+      "retrieved_top10": [
+        "p_digital_015",
+        "p_digital_017",
+        "p_digital_016",
+        "p_digital_014",
+        "JD100100010",
+        "JD2126492",
+        "JD2113676",
+        "JD2102664",
+        "JD2725859",
+        "p_digital_002"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.8
+    },
+    {
+      "case_id": "s4_001",
+      "scenario": "anti_selection",
+      "query": "推荐防晒霜，但不要含酒精的",
+      "ground_truth": [
+        "TBcbbc0b11",
+        "p_beauty_006",
+        "p_beauty_010"
+      ],
+      "retrieved_top3": [
+        "p_beauty_006",
+        "p_beauty_010",
+        "p_beauty_023"
+      ],
+      "retrieved_top10": [
+        "p_beauty_006",
+        "p_beauty_010",
+        "p_beauty_023",
+        "p_beauty_005",
+        "TBcbbc0b11",
+        "p_beauty_020",
+        "p_beauty_009",
+        "p_beauty_024",
+        "p_beauty_021",
+        "p_beauty_022"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 108.0
+    },
+    {
+      "case_id": "s4_002",
+      "scenario": "anti_selection",
+      "query": "推荐耳机，不要小米的",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "p_digital_007",
+        "JD100082659367",
+        "JD100038798465"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "JD100082659367",
+        "JD100038798465",
+        "JD100222319152",
+        "JD100132209703",
+        "TB10000001",
+        "JD100294413340",
+        "JD100209512295",
+        "JD100129381482-A",
+        "JD100079260610"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.7
+    },
+    {
+      "case_id": "s4_003",
+      "scenario": "anti_selection",
+      "query": "除了苹果还有什么平板推荐",
+      "ground_truth": [
+        "JD100129381482",
+        "JD100209512296",
+        "JD174542270"
+      ],
+      "retrieved_top3": [
+        "JD100129381482",
+        "p_digital_024",
+        "p_digital_021"
+      ],
+      "retrieved_top10": [
+        "JD100129381482",
+        "p_digital_024",
+        "p_digital_021",
+        "p_digital_005",
+        "p_digital_019",
+        "JD174542270",
+        "JD100209512296",
+        "p_digital_011",
+        "p_digital_013",
+        "p_digital_025"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 77.9
+    },
+    {
+      "case_id": "s4_004",
+      "scenario": "anti_selection",
+      "query": "推荐手机，不要日系品牌",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD2775959",
+        "JD2725859",
+        "p_digital_016"
+      ],
+      "retrieved_top10": [
+        "JD2775959",
+        "JD2725859",
+        "p_digital_016",
+        "JD2113676",
+        "JD2102664",
+        "TB10000002",
+        "p_digital_002",
+        "JD100225615118",
+        "p_digital_009",
+        "JD2718819"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.0
+    },
+    {
+      "case_id": "s4_005",
+      "scenario": "anti_selection",
+      "query": "非白色的蓝牙音箱",
+      "ground_truth": [
+        "JD10050005",
+        "JD10070007",
+        "JD100099038454-S"
+      ],
+      "retrieved_top3": [
+        "JD10070007",
+        "JD10050005",
+        "JD10060006"
+      ],
+      "retrieved_top10": [
+        "JD10070007",
+        "JD10050005",
+        "JD10060006",
+        "JD100099038454-S",
+        "SN12442869770",
+        "JD100099038454",
+        "JD100222319152",
+        "JD100082659367",
+        "TB16a6002f",
+        "p_digital_007"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 68.5
+    },
+    {
+      "case_id": "s4_006",
+      "scenario": "anti_selection",
+      "query": "推荐手表但不要运动款的",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10010001",
+        "JD10040004",
+        "JD10030003"
+      ],
+      "retrieved_top10": [
+        "JD10010001",
+        "JD10040004",
+        "JD10030003",
+        "JD10020002",
+        "TB10000003",
+        "p_clothes_023",
+        "p_clothes_003",
+        "p_clothes_021",
+        "p_clothes_001",
+        "p_clothes_005"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 74.4
+    },
+    {
+      "case_id": "s4_007",
+      "scenario": "anti_selection",
+      "query": "不要入耳式的耳机推荐",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100082659367",
+        "p_digital_007"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100082659367",
+        "p_digital_007",
+        "JD100294413340",
+        "JD100038798465",
+        "JD100132209703",
+        "JD100079260610",
+        "JD100183638657",
+        "JD100222319152",
+        "JD100209512295"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 75.7
+    },
+    {
+      "case_id": "s4_008",
+      "scenario": "anti_selection",
+      "query": "推荐充电宝，不要超过200块的",
+      "ground_truth": [
+        "JD100017986276",
+        "JD100197769762",
+        "JD100129381482-A"
+      ],
+      "retrieved_top3": [
+        "JD101100011",
+        "JD10080008-A",
+        "JD100225615118-A"
+      ],
+      "retrieved_top10": [
+        "JD101100011",
+        "JD10080008-A",
+        "JD100225615118-A",
+        "JD100129381482-A",
+        "JD101000010",
+        "JD100197769762",
+        "JD10090009-A",
+        "JD100017986276",
+        "TB7b0d192b",
+        "TB10000004"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 82.7
+    },
+    {
+      "case_id": "s5_001",
+      "scenario": "scenario_shopping",
+      "query": "送女朋友生日礼物",
+      "ground_truth": [
+        "TBa3a0add9",
+        "p_beauty_015",
+        "p_beauty_025"
+      ],
+      "retrieved_top3": [
+        "TB229540a1",
+        "TBe38703fa",
+        "p_beauty_015"
+      ],
+      "retrieved_top10": [
+        "TB229540a1",
+        "TBe38703fa",
+        "p_beauty_015",
+        "TB550f8056",
+        "TBb1c8a55c",
+        "TBc0973fda",
+        "TBa9bb1f4b",
+        "TB09cf2e8c",
+        "TB64e10767",
+        "TB09bcf244"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 74.0
+    },
+    {
+      "case_id": "s5_002",
+      "scenario": "scenario_shopping",
+      "query": "北方冬天通勤装备推荐",
+      "ground_truth": [
+        "TBb0adde4c",
+        "TB16892645",
+        "TB550f8056"
+      ],
+      "retrieved_top3": [
+        "p_clothes_018",
+        "p_clothes_024",
+        "p_clothes_025"
+      ],
+      "retrieved_top10": [
+        "p_clothes_018",
+        "p_clothes_024",
+        "p_clothes_025",
+        "p_clothes_005",
+        "TBbd7e7cf5",
+        "p_clothes_022",
+        "p_clothes_002",
+        "TB18bfc1da",
+        "p_clothes_001",
+        "TBb0adde4c"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.2
+    },
+    {
+      "case_id": "s5_003",
+      "scenario": "scenario_shopping",
+      "query": "学生党性价比数码套装",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "p_digital_019",
+        "JD100100010",
+        "p_digital_002"
+      ],
+      "retrieved_top10": [
+        "p_digital_019",
+        "JD100100010",
+        "p_digital_002",
+        "p_digital_020",
+        "p_digital_023",
+        "p_digital_004",
+        "JD100129381482",
+        "p_digital_006",
+        "JD100225615118",
+        "p_digital_015"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.1
+    },
+    {
+      "case_id": "s5_004",
+      "scenario": "scenario_shopping",
+      "query": "下周三亚度假带什么电子产品",
+      "ground_truth": [
+        "TBcbbc0b11",
+        "p_beauty_006",
+        "p_beauty_010"
+      ],
+      "retrieved_top3": [
+        "p_digital_019",
+        "JD100225615120",
+        "p_digital_004"
+      ],
+      "retrieved_top10": [
+        "p_digital_019",
+        "JD100225615120",
+        "p_digital_004",
+        "JD100100010",
+        "p_digital_001",
+        "p_digital_005",
+        "p_digital_002",
+        "p_digital_017",
+        "JD100156315",
+        "JD2718739"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 108.8
+    },
+    {
+      "case_id": "s5_005",
+      "scenario": "scenario_shopping",
+      "query": "给老爸买父亲节礼物",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "p_food_009",
+        "TBfcfe4717",
+        "p_food_018"
+      ],
+      "retrieved_top10": [
+        "p_food_009",
+        "TBfcfe4717",
+        "p_food_018",
+        "p_beauty_021",
+        "p_food_019",
+        "p_food_016",
+        "TB16892645",
+        "TB550f8056",
+        "TBe4c39e30",
+        "p_food_010"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.9
+    },
+    {
+      "case_id": "s5_006",
+      "scenario": "scenario_shopping",
+      "query": "办公室桌面好物推荐",
+      "ground_truth": [
+        "TBa990239e",
+        "TBcdf3e424",
+        "TBc0973fda"
+      ],
+      "retrieved_top3": [
+        "TBcdf3e424",
+        "p_digital_021",
+        "TBb333cdb3"
+      ],
+      "retrieved_top10": [
+        "TBcdf3e424",
+        "p_digital_021",
+        "TBb333cdb3",
+        "TBa990239e",
+        "p_digital_019",
+        "p_digital_005",
+        "p_digital_011",
+        "p_digital_022",
+        "p_digital_004",
+        "TB16a6002f"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.2
+    },
+    {
+      "case_id": "s6_001",
+      "scenario": "cart_operation",
+      "query": "把Sony XM5加到购物车",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100100010",
+        "JD100205228688"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100100010",
+        "JD100205228688",
+        "TBe67b8ae5",
+        "p_digital_010",
+        "JD10080008",
+        "p_digital_017",
+        "JD100009073095",
+        "p_digital_015",
+        "JD100225615118-A"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.5
+    },
+    {
+      "case_id": "s6_002",
+      "scenario": "cart_operation",
+      "query": "查看购物车",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "TB61a7a4a7",
+        "TB65d91ea7",
+        "TBa438ca6f"
+      ],
+      "retrieved_top10": [
+        "TB61a7a4a7",
+        "TB65d91ea7",
+        "TBa438ca6f",
+        "TB4be05dc0",
+        "p_food_010",
+        "p_digital_014",
+        "TB0d53c2e6",
+        "p_beauty_021",
+        "p_food_009",
+        "TB6800cfde"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 78.5
+    },
+    {
+      "case_id": "s6_003",
+      "scenario": "cart_operation",
+      "query": "清空购物车",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "p_beauty_017",
+        "p_food_020",
+        "p_food_009"
+      ],
+      "retrieved_top10": [
+        "p_beauty_017",
+        "p_food_020",
+        "p_food_009",
+        "TB61a7a4a7",
+        "TBa6145a7e",
+        "p_food_010",
+        "p_digital_014",
+        "p_food_019",
+        "p_clothes_001",
+        "p_clothes_002"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.4
+    },
+    {
+      "case_id": "s6_004",
+      "scenario": "cart_operation",
+      "query": "帮我加购那个降噪耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100209512295"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100209512295",
+        "p_digital_018",
+        "JD100294413340",
+        "JD100132209703",
+        "TB10000001",
+        "JD100222319152",
+        "JD100183638657",
+        "JD100082659367"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 92.8
+    },
+    {
+      "case_id": "s6_005",
+      "scenario": "cart_operation",
+      "query": "删掉购物车里的第二个",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "p_beauty_017",
+        "p_beauty_003",
+        "p_digital_014"
+      ],
+      "retrieved_top10": [
+        "p_beauty_017",
+        "p_beauty_003",
+        "p_digital_014",
+        "TBcdf3e424",
+        "p_food_009",
+        "p_digital_010",
+        "TB47bd93a2",
+        "TB4be05dc0",
+        "p_beauty_013",
+        "p_beauty_021"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.3
+    },
+    {
+      "case_id": "s6_006",
+      "scenario": "cart_operation",
+      "query": "把购物车里的耳机数量改成2",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "p_digital_018",
+        "p_digital_007",
+        "JD100209512295"
+      ],
+      "retrieved_top10": [
+        "p_digital_018",
+        "p_digital_007",
+        "JD100209512295",
+        "JD100222319152",
+        "JD100132209703",
+        "TB10000001",
+        "JD100079260610",
+        "JD100294413340",
+        "JD100038798465",
+        "JD100082659367"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 109.2
+    },
+    {
+      "case_id": "s7_001",
+      "scenario": "image_search",
+      "query": "[图片]白色运动鞋耐克标志",
+      "ground_truth": [
+        "p_clothes_015",
+        "p_clothes_013",
+        "p_clothes_012"
+      ],
+      "retrieved_top3": [
+        "JD66d3036a",
+        "p_clothes_003",
+        "p_clothes_021"
+      ],
+      "retrieved_top10": [
+        "JD66d3036a",
+        "p_clothes_003",
+        "p_clothes_021",
+        "JD43873f09",
+        "JD171e020b",
+        "JD42ea6836",
+        "JDe287c03a",
+        "JD8e53becb",
+        "JDfc117d3d",
+        "JDe52f5797"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 98.1
+    },
+    {
+      "case_id": "s7_002",
+      "scenario": "image_search",
+      "query": "[图片]黑色皮夹克立领",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "p_clothes_002",
+        "TB0d53c2e6",
+        "TB48bb3b96"
+      ],
+      "retrieved_top10": [
+        "p_clothes_002",
+        "TB0d53c2e6",
+        "TB48bb3b96",
+        "p_clothes_001",
+        "TB6cefca18",
+        "p_clothes_003",
+        "TBc83674cd",
+        "p_clothes_020",
+        "p_clothes_022",
+        "TBe4c39e30"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 75.0
+    },
+    {
+      "case_id": "s7_003",
+      "scenario": "image_search",
+      "query": "[图片]银色超薄笔记本",
+      "ground_truth": [
+        "TBa9bb1f4b"
+      ],
+      "retrieved_top3": [
+        "p_digital_023",
+        "p_digital_020",
+        "p_digital_006"
+      ],
+      "retrieved_top10": [
+        "p_digital_023",
+        "p_digital_020",
+        "p_digital_006",
+        "p_digital_022",
+        "p_digital_012",
+        "p_digital_004",
+        "JD100156315",
+        "TB16892645",
+        "p_digital_021",
+        "JD100129381482"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 89.9
+    },
+    {
+      "case_id": "s7_004",
+      "scenario": "image_search",
+      "query": "[图片]棕色手提包荔枝纹",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2102664",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "TBc83674cd",
+        "TB550f8056",
+        "TBa438ca6f"
+      ],
+      "retrieved_top10": [
+        "TBc83674cd",
+        "TB550f8056",
+        "TBa438ca6f",
+        "TB0d53c2e6",
+        "TB6800cfde",
+        "TBb0adde4c",
+        "TBe38703fa",
+        "p_clothes_025",
+        "TB16892645",
+        "p_clothes_018"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 77.7
+    },
+    {
+      "case_id": "s7_005",
+      "scenario": "image_search",
+      "query": "[图片]红色口红金色管身",
+      "ground_truth": [
+        "TBa3a0add9",
+        "p_beauty_015",
+        "p_beauty_025"
+      ],
+      "retrieved_top3": [
+        "TBa3a0add9",
+        "p_beauty_015",
+        "p_beauty_008"
+      ],
+      "retrieved_top10": [
+        "TBa3a0add9",
+        "p_beauty_015",
+        "p_beauty_008",
+        "TBcbbc0b11",
+        "p_beauty_010",
+        "p_beauty_018",
+        "TBa9bb1f4b",
+        "p_beauty_002",
+        "p_beauty_005",
+        "TB74ab36a4"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 94.0
+    },
+    {
+      "case_id": "s7_006",
+      "scenario": "image_search",
+      "query": "[图片]蓝色运动鞋网面",
+      "ground_truth": [
+        "p_clothes_015",
+        "p_clothes_013",
+        "p_clothes_012"
+      ],
+      "retrieved_top3": [
+        "JDf972553d",
+        "JD43873f09",
+        "JD66d3036a"
+      ],
+      "retrieved_top10": [
+        "JDf972553d",
+        "JD43873f09",
+        "JD66d3036a",
+        "p_clothes_008",
+        "JD171e020b",
+        "JDe287c03a",
+        "JD42ea6836",
+        "JDe52f5797",
+        "JDc01c8260",
+        "JD8e53becb"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 74.5
+    },
+    {
+      "case_id": "ch_001",
+      "scenario": "chitchat",
+      "query": "你好",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_food_010",
+        "TB8e151a46",
+        "TB097cfe05"
+      ],
+      "retrieved_top10": [
+        "p_food_010",
+        "TB8e151a46",
+        "TB097cfe05",
+        "p_clothes_003",
+        "TB065492bc",
+        "p_food_005",
+        "TBa2e8e229",
+        "p_food_012",
+        "p_food_011",
+        "JD100129381482-A"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 80.6
+    },
+    {
+      "case_id": "ch_002",
+      "scenario": "chitchat",
+      "query": "今天天气怎么样",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_food_024",
+        "p_food_004",
+        "p_food_025"
+      ],
+      "retrieved_top10": [
+        "p_food_024",
+        "p_food_004",
+        "p_food_025",
+        "TB18bfc1da",
+        "p_clothes_024",
+        "p_food_014",
+        "p_clothes_023",
+        "p_clothes_001",
+        "TBe4c39e30",
+        "p_food_013"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 73.8
+    },
+    {
+      "case_id": "ch_003",
+      "scenario": "chitchat",
+      "query": "谢谢你的帮助",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_beauty_021",
+        "TB065492bc",
+        "TB097cfe05"
+      ],
+      "retrieved_top10": [
+        "p_beauty_021",
+        "TB065492bc",
+        "TB097cfe05",
+        "p_beauty_005",
+        "p_beauty_007",
+        "p_beauty_017",
+        "p_beauty_022",
+        "p_beauty_012",
+        "p_beauty_003",
+        "p_food_005"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 99.5
+    },
+    {
+      "case_id": "ch_004",
+      "scenario": "chitchat",
+      "query": "你会骗我吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB92dc0f05",
+        "TB097cfe05",
+        "TB065492bc"
+      ],
+      "retrieved_top10": [
+        "TB92dc0f05",
+        "TB097cfe05",
+        "TB065492bc",
+        "TBc9393da9",
+        "TB8e151a46",
+        "TBa2e8e229",
+        "p_beauty_021",
+        "p_beauty_022",
+        "p_digital_002",
+        "p_beauty_005"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 77.0
+    },
+    {
+      "case_id": "ch_005",
+      "scenario": "chitchat",
+      "query": "讲个笑话",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TBed1bb403",
+        "TB065492bc",
+        "TB097cfe05"
+      ],
+      "retrieved_top10": [
+        "TBed1bb403",
+        "TB065492bc",
+        "TB097cfe05",
+        "TB1ef123b3",
+        "p_clothes_024",
+        "TBa2e8e229",
+        "p_digital_002",
+        "TB6077a84b",
+        "p_food_011",
+        "p_food_021"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 66.0
+    },
+    {
+      "case_id": "eval_new_rec_001",
+      "scenario": "commodity_recommend",
+      "query": "推荐一款3000以内的降噪耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100209512295",
+        "p_digital_007"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100209512295",
+        "p_digital_007",
+        "JD100132209703",
+        "JD100294413340",
+        "p_digital_018",
+        "TB10000001",
+        "JD100222319152",
+        "JD100082659367",
+        "JD10060006"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 91.1
+    },
+    {
+      "case_id": "eval_new_rec_002",
+      "scenario": "commodity_recommend",
+      "query": "想买个1000左右的蓝牙耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100294413340",
+        "JD100222319152"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100294413340",
+        "JD100222319152",
+        "p_digital_007",
+        "JD100082659367",
+        "JD100079260610",
+        "JD100132209703",
+        "p_digital_018",
+        "JD100183638657",
+        "JD100209512295"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.9
+    },
+    {
+      "case_id": "eval_new_rec_003",
+      "scenario": "commodity_recommend",
+      "query": "推荐性价比高的安卓手机",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD2113676",
+        "p_digital_009",
+        "p_digital_014"
+      ],
+      "retrieved_top10": [
+        "JD2113676",
+        "p_digital_009",
+        "p_digital_014",
+        "p_digital_016",
+        "JD2102664",
+        "p_digital_008",
+        "JD2855251",
+        "p_digital_015",
+        "JD2725859",
+        "p_digital_010"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.5
+    },
+    {
+      "case_id": "eval_new_rec_004",
+      "scenario": "commodity_recommend",
+      "query": "续航长的智能手表有什么推荐",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10020002",
+        "JD10040004",
+        "JD10030003"
+      ],
+      "retrieved_top10": [
+        "JD10020002",
+        "JD10040004",
+        "JD10030003",
+        "JD10010001",
+        "TB10000003",
+        "JDa445d5f0",
+        "p_digital_009",
+        "JD2102664",
+        "JD101000010",
+        "p_digital_017"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 89.6
+    },
+    {
+      "case_id": "eval_new_rec_005",
+      "scenario": "commodity_recommend",
+      "query": "学生用的平板推荐",
+      "ground_truth": [
+        "JD100129381482",
+        "JD100209512296",
+        "JD174542270"
+      ],
+      "retrieved_top3": [
+        "p_digital_019",
+        "p_digital_011",
+        "JD100129381482"
+      ],
+      "retrieved_top10": [
+        "p_digital_019",
+        "p_digital_011",
+        "JD100129381482",
+        "p_digital_021",
+        "JD100209512296",
+        "JD174542270",
+        "p_digital_024",
+        "p_digital_025",
+        "p_digital_005",
+        "JD100225615120"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 79.3
+    },
+    {
+      "case_id": "eval_new_rec_006",
+      "scenario": "commodity_recommend",
+      "query": "便携蓝牙音箱推荐",
+      "ground_truth": [
+        "JD10050005",
+        "JD10070007",
+        "JD100099038454-S"
+      ],
+      "retrieved_top3": [
+        "JD10070007",
+        "JD10060006",
+        "JD10050005"
+      ],
+      "retrieved_top10": [
+        "JD10070007",
+        "JD10060006",
+        "JD10050005",
+        "JD100099038454",
+        "JD100099038454-S",
+        "SN12442869770",
+        "TB16a6002f",
+        "JD100082659367",
+        "JD100294413340",
+        "JD100222319152"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 71.7
+    },
+    {
+      "case_id": "eval_new_rec_007",
+      "scenario": "commodity_recommend",
+      "query": "500以内的运动耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100082659367",
+        "JD100183638657"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100082659367",
+        "JD100183638657",
+        "JD100294413340",
+        "p_digital_007",
+        "JD100079260610",
+        "JD100038798465",
+        "p_digital_018",
+        "JD100222319152",
+        "JD100132209703"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 85.3
+    },
+    {
+      "case_id": "eval_new_rec_008",
+      "scenario": "commodity_recommend",
+      "query": "拍照功能强大的手机推荐",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_015",
+        "p_digital_016",
+        "p_digital_017"
+      ],
+      "retrieved_top10": [
+        "p_digital_015",
+        "p_digital_016",
+        "p_digital_017",
+        "p_digital_002",
+        "JD2725859",
+        "p_digital_008",
+        "JD2775959",
+        "p_digital_010",
+        "p_digital_014",
+        "p_digital_009"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.0
+    },
+    {
+      "case_id": "eval_new_rec_009",
+      "scenario": "commodity_recommend",
+      "query": "适合办公的降噪耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100209512295"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100209512295",
+        "JD100132209703",
+        "JD100294413340",
+        "p_digital_018",
+        "TB10000001",
+        "JD100082659367",
+        "JD100222319152",
+        "JD100183638657"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 93.0
+    },
+    {
+      "case_id": "eval_new_rec_010",
+      "scenario": "commodity_recommend",
+      "query": "给老爸买个大屏手机",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_010",
+        "p_digital_014",
+        "p_digital_017"
+      ],
+      "retrieved_top10": [
+        "p_digital_010",
+        "p_digital_014",
+        "p_digital_017",
+        "JD2775959",
+        "JD2102664",
+        "p_digital_002",
+        "p_digital_003",
+        "JD2718739",
+        "p_digital_016",
+        "JD2855251"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.1
+    },
+    {
+      "case_id": "eval_new_rec_011",
+      "scenario": "commodity_recommend",
+      "query": "入门级微单相机推荐",
+      "ground_truth": [
+        "JD10080008",
+        "JD100009073095",
+        "JD10090009"
+      ],
+      "retrieved_top3": [
+        "JD100205228688",
+        "JD10080008",
+        "JD100009073095"
+      ],
+      "retrieved_top10": [
+        "JD100205228688",
+        "JD10080008",
+        "JD100009073095",
+        "JD10090009",
+        "JD100100010",
+        "p_digital_016",
+        "p_digital_017",
+        "p_digital_015",
+        "p_digital_002",
+        "p_digital_008"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 94.6
+    },
+    {
+      "case_id": "eval_new_rec_012",
+      "scenario": "commodity_recommend",
+      "query": "type-c接口的充电宝推荐",
+      "ground_truth": [
+        "JD100017986276",
+        "JD100197769762",
+        "JD100129381482-A"
+      ],
+      "retrieved_top3": [
+        "JD100197769762",
+        "JD100213696321",
+        "JD101100011"
+      ],
+      "retrieved_top10": [
+        "JD100197769762",
+        "JD100213696321",
+        "JD101100011",
+        "JD10080008-A",
+        "JD100017986276",
+        "JD100225615118-A",
+        "JD101000010",
+        "TB7b0d192b",
+        "JD10090009-A",
+        "JD100129381482-A"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.4
+    },
+    {
+      "case_id": "eval_new_rec_013",
+      "scenario": "commodity_recommend",
+      "query": "100元以内的无线鼠标",
+      "ground_truth": [
+        "JD100017986276",
+        "JD100197769762",
+        "JD100129381482-A"
+      ],
+      "retrieved_top3": [
+        "TBc0973fda",
+        "TB16a6002f",
+        "JD100222319152"
+      ],
+      "retrieved_top10": [
+        "TBc0973fda",
+        "TB16a6002f",
+        "JD100222319152",
+        "TBe8bd70a7",
+        "JD100129381482-A",
+        "JD10090009-A",
+        "p_digital_011",
+        "JD100225615118-A",
+        "JD100038798465",
+        "TB73201cbb"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.7
+    },
+    {
+      "case_id": "eval_new_rec_014",
+      "scenario": "commodity_recommend",
+      "query": "降噪好又不太贵的耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100132209703"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100132209703",
+        "JD100209512295",
+        "JD100294413340",
+        "p_digital_018",
+        "JD100082659367",
+        "TB10000001",
+        "JD100222319152",
+        "JD100183638657"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 93.2
+    },
+    {
+      "case_id": "eval_new_rec_015",
+      "scenario": "commodity_recommend",
+      "query": "女生用的智能手表",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10040004",
+        "JD10010001",
+        "JD10030003"
+      ],
+      "retrieved_top10": [
+        "JD10040004",
+        "JD10010001",
+        "JD10030003",
+        "JD10020002",
+        "TB10000003",
+        "JDa445d5f0",
+        "p_digital_010",
+        "JD08cb17d2",
+        "p_digital_001",
+        "p_digital_014"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 75.1
+    },
+    {
+      "case_id": "eval_new_rec_016",
+      "scenario": "commodity_recommend",
+      "query": "华为手机推荐哪款",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_002",
+        "JD2775959",
+        "TB10000002"
+      ],
+      "retrieved_top10": [
+        "p_digital_002",
+        "JD2775959",
+        "TB10000002",
+        "p_digital_004",
+        "JD10020002",
+        "JD100209512296",
+        "p_digital_021",
+        "JD174542270",
+        "p_digital_010",
+        "p_digital_008"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 81.7
+    },
+    {
+      "case_id": "eval_new_rec_017",
+      "scenario": "commodity_recommend",
+      "query": "预算2000以内的头戴式耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100082659367",
+        "TB10000001"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100082659367",
+        "TB10000001",
+        "p_digital_007",
+        "JD100294413340",
+        "JD100209512295",
+        "JD100079260610",
+        "JD100132209703",
+        "JD100183638657",
+        "p_digital_018"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 93.0
+    },
+    {
+      "case_id": "eval_new_rec_018",
+      "scenario": "commodity_recommend",
+      "query": "适合打游戏的手机",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD2113676",
+        "p_digital_009",
+        "JD2725859"
+      ],
+      "retrieved_top10": [
+        "JD2113676",
+        "p_digital_009",
+        "JD2725859",
+        "JD2102664",
+        "p_digital_008",
+        "p_digital_016",
+        "p_digital_015",
+        "JD2775959",
+        "JD2126492",
+        "p_digital_014"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.1
+    },
+    {
+      "case_id": "eval_new_rec_019",
+      "scenario": "commodity_recommend",
+      "query": "防水运动耳机推荐",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100294413340",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100294413340",
+        "JD100082659367",
+        "JD100183638657",
+        "p_digital_007",
+        "JD100079260610",
+        "p_digital_018",
+        "JD100132209703",
+        "JD100222319152",
+        "JD100209512295"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 74.0
+    },
+    {
+      "case_id": "eval_new_rec_020",
+      "scenario": "commodity_recommend",
+      "query": "小巧便携的蓝牙音箱",
+      "ground_truth": [
+        "JD10050005",
+        "JD10070007",
+        "JD100099038454-S"
+      ],
+      "retrieved_top3": [
+        "JD10060006",
+        "JD10070007",
+        "JD100099038454"
+      ],
+      "retrieved_top10": [
+        "JD10060006",
+        "JD10070007",
+        "JD100099038454",
+        "SN12442869770",
+        "JD100099038454-S",
+        "JD10050005",
+        "TB16a6002f",
+        "JD100294413340",
+        "JD100082659367",
+        "TBeeb408b6"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 81.4
+    },
+    {
+      "case_id": "eval_new_rec_021",
+      "scenario": "commodity_recommend",
+      "query": "二合一平板电脑推荐",
+      "ground_truth": [
+        "JD100129381482",
+        "JD100209512296",
+        "JD174542270"
+      ],
+      "retrieved_top3": [
+        "p_digital_021",
+        "p_digital_019",
+        "p_digital_011"
+      ],
+      "retrieved_top10": [
+        "p_digital_021",
+        "p_digital_019",
+        "p_digital_011",
+        "p_digital_005",
+        "JD174542270",
+        "JD100129381482",
+        "JD100209512296",
+        "p_digital_024",
+        "JD100156315",
+        "JD100225615120"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.6
+    },
+    {
+      "case_id": "eval_new_rec_022",
+      "scenario": "commodity_recommend",
+      "query": "送男朋友的耳机推荐",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100132209703",
+        "p_digital_007",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "JD100132209703",
+        "p_digital_007",
+        "JD100082659367",
+        "JD100222319152",
+        "JD100038798465",
+        "JD100183638657",
+        "JD100079260610",
+        "p_digital_018",
+        "TB10000001",
+        "JD100209512295"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.2
+    },
+    {
+      "case_id": "eval_new_rec_023",
+      "scenario": "commodity_recommend",
+      "query": "轻薄的笔记本电脑推荐",
+      "ground_truth": [
+        "TBa9bb1f4b"
+      ],
+      "retrieved_top3": [
+        "p_digital_004",
+        "p_digital_023",
+        "p_digital_022"
+      ],
+      "retrieved_top10": [
+        "p_digital_004",
+        "p_digital_023",
+        "p_digital_022",
+        "p_digital_020",
+        "p_digital_006",
+        "p_digital_021",
+        "p_digital_012",
+        "JD100156315",
+        "TB16892645",
+        "p_digital_019"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.9
+    },
+    {
+      "case_id": "eval_new_rec_024",
+      "scenario": "commodity_recommend",
+      "query": "快充充电头推荐",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD101100011",
+        "JD100197769762",
+        "JD10080008-A"
+      ],
+      "retrieved_top10": [
+        "JD101100011",
+        "JD100197769762",
+        "JD10080008-A",
+        "JD100213696321",
+        "JD10090009-A",
+        "JD100129381482-A",
+        "TB7b0d192b",
+        "TBc0ea32f4",
+        "JD100225615118-A",
+        "JD100017986276"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.7
+    },
+    {
+      "case_id": "eval_new_rec_025",
+      "scenario": "commodity_recommend",
+      "query": "音质好的有线耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "p_digital_007",
+        "JD100082659367",
+        "JD100079260610"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "JD100082659367",
+        "JD100079260610",
+        "JD100183638657",
+        "TB10000001",
+        "JD100038798465",
+        "JD100132209703",
+        "JD100209512295",
+        "JD100294413340",
+        "p_digital_018"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.7
+    },
+    {
+      "case_id": "eval_new_rec_026",
+      "scenario": "commodity_recommend",
+      "query": "适合老人的大屏幕手机",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_014",
+        "p_digital_010",
+        "p_digital_017"
+      ],
+      "retrieved_top10": [
+        "p_digital_014",
+        "p_digital_010",
+        "p_digital_017",
+        "JD2102664",
+        "p_digital_009",
+        "p_digital_002",
+        "JD2775959",
+        "p_digital_003",
+        "p_digital_016",
+        "p_digital_015"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.9
+    },
+    {
+      "case_id": "eval_new_rec_027",
+      "scenario": "commodity_recommend",
+      "query": "跑步用的运动耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100294413340",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100294413340",
+        "JD100082659367",
+        "JD100183638657",
+        "JD100079260610",
+        "p_digital_018",
+        "JD100222319152",
+        "p_digital_007",
+        "JD100209512295",
+        "JD100132209703"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 93.8
+    },
+    {
+      "case_id": "eval_new_rec_028",
+      "scenario": "commodity_recommend",
+      "query": "1000块左右的智能手表",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10030003",
+        "JD10010001",
+        "JD10040004"
+      ],
+      "retrieved_top10": [
+        "JD10030003",
+        "JD10010001",
+        "JD10040004",
+        "TB10000003",
+        "JD10020002",
+        "JDa445d5f0",
+        "JD2113676",
+        "JD2102664",
+        "JD2725859",
+        "JD2775959"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 93.9
+    },
+    {
+      "case_id": "eval_new_rec_029",
+      "scenario": "commodity_recommend",
+      "query": "性价比最高的降噪耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100132209703"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100132209703",
+        "JD100209512295",
+        "JD100294413340",
+        "p_digital_018",
+        "JD100082659367",
+        "TB10000001",
+        "JD100222319152",
+        "JD100183638657"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 92.7
+    },
+    {
+      "case_id": "eval_new_rec_030",
+      "scenario": "commodity_recommend",
+      "query": "小米生态的智能设备",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD10030003",
+        "p_digital_010",
+        "JD100129381482-A"
+      ],
+      "retrieved_top10": [
+        "JD10030003",
+        "p_digital_010",
+        "JD100129381482-A",
+        "JD100225615118-A",
+        "JDa445d5f0",
+        "TB70393168",
+        "TB7b0d192b",
+        "TB91d420a9",
+        "p_digital_008",
+        "TB4efa773e"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.6
+    },
+    {
+      "case_id": "eval_new_rec_031",
+      "scenario": "commodity_recommend",
+      "query": "200块以内的蓝牙耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "p_digital_007",
+        "JD100082659367",
+        "JD100222319152"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "JD100082659367",
+        "JD100222319152",
+        "JD100132209703",
+        "JD100294413340",
+        "TB10000001",
+        "JD100079260610",
+        "JD100209512295",
+        "JD100183638657",
+        "p_digital_018"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 74.6
+    },
+    {
+      "case_id": "eval_new_rec_032",
+      "scenario": "commodity_recommend",
+      "query": "办公用的机械键盘",
+      "ground_truth": [
+        "TB16a6002f"
+      ],
+      "retrieved_top3": [
+        "TB16a6002f",
+        "p_digital_022",
+        "TBb333cdb3"
+      ],
+      "retrieved_top10": [
+        "TB16a6002f",
+        "p_digital_022",
+        "TBb333cdb3",
+        "TBc0973fda",
+        "p_digital_021",
+        "TB2ed8c887",
+        "p_digital_004",
+        "p_digital_023",
+        "TBa990239e",
+        "p_digital_019"
+      ],
+      "p3": 0.3333,
+      "recall": 1.0,
+      "latency_ms": 73.7
+    },
+    {
+      "case_id": "eval_new_rec_033",
+      "scenario": "commodity_recommend",
+      "query": "电池容量大的手机推荐",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_009",
+        "JD2725859",
+        "JD2102664"
+      ],
+      "retrieved_top10": [
+        "p_digital_009",
+        "JD2725859",
+        "JD2102664",
+        "JD2113676",
+        "JD2855251",
+        "p_digital_010",
+        "JD2775959",
+        "p_digital_014",
+        "p_digital_003",
+        "p_digital_016"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 75.5
+    },
+    {
+      "case_id": "eval_new_rec_034",
+      "scenario": "commodity_recommend",
+      "query": "儿童手表推荐",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10010001",
+        "JD10040004",
+        "JD10030003"
+      ],
+      "retrieved_top10": [
+        "JD10010001",
+        "JD10040004",
+        "JD10030003",
+        "JD10020002",
+        "TB1ef3edc4",
+        "TB73201cbb",
+        "TB1a3efa37",
+        "TBf8ee8de2",
+        "TB10000003",
+        "TB6800cfde"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 73.2
+    },
+    {
+      "case_id": "eval_new_rec_035",
+      "scenario": "commodity_recommend",
+      "query": "电脑音箱推荐",
+      "ground_truth": [
+        "JD10050005",
+        "JD10070007",
+        "JD100099038454-S"
+      ],
+      "retrieved_top3": [
+        "JD10070007",
+        "JD10050005",
+        "JD10060006"
+      ],
+      "retrieved_top10": [
+        "JD10070007",
+        "JD10050005",
+        "JD10060006",
+        "SN12442869770",
+        "JD100099038454-S",
+        "JD100099038454",
+        "TBeeb408b6",
+        "TB16a6002f",
+        "JD100038798465",
+        "TBb333cdb3"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 89.2
+    },
+    {
+      "case_id": "eval_new_rec_036",
+      "scenario": "commodity_recommend",
+      "query": "自拍好看的手机",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_016",
+        "p_digital_015",
+        "p_digital_002"
+      ],
+      "retrieved_top10": [
+        "p_digital_016",
+        "p_digital_015",
+        "p_digital_002",
+        "p_digital_017",
+        "JD2775959",
+        "JD2725859",
+        "p_digital_008",
+        "p_digital_014",
+        "TB10000002",
+        "JD2126492"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.4
+    },
+    {
+      "case_id": "eval_new_rec_037",
+      "scenario": "commodity_recommend",
+      "query": "骨传导耳机推荐",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100183638657",
+        "JD100294413340",
+        "JD100079260610"
+      ],
+      "retrieved_top10": [
+        "JD100183638657",
+        "JD100294413340",
+        "JD100079260610",
+        "JD100082659367",
+        "TB10000001",
+        "p_digital_007",
+        "p_digital_018",
+        "JD100038798465",
+        "JD100132209703",
+        "JD100099038454"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 74.3
+    },
+    {
+      "case_id": "eval_new_rec_038",
+      "scenario": "commodity_recommend",
+      "query": "长续航的蓝牙耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100082659367",
+        "p_digital_007",
+        "JD100132209703"
+      ],
+      "retrieved_top10": [
+        "JD100082659367",
+        "p_digital_007",
+        "JD100132209703",
+        "JD100079260610",
+        "JD100222319152",
+        "p_digital_018",
+        "TB10000001",
+        "JD100183638657",
+        "JD100294413340",
+        "JD100209512295"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 70.5
+    },
+    {
+      "case_id": "eval_new_rec_039",
+      "scenario": "commodity_recommend",
+      "query": "适合听古典音乐的耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100183638657",
+        "JD100079260610",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "JD100183638657",
+        "JD100079260610",
+        "JD100082659367",
+        "JD100099038454",
+        "JD100132209703",
+        "JD100038798465",
+        "TB10000001",
+        "p_digital_007",
+        "JD100209512295",
+        "JD100099038454-S"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 75.2
+    },
+    {
+      "case_id": "eval_new_rec_040",
+      "scenario": "commodity_recommend",
+      "query": "5G手机推荐",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD2775959",
+        "JD2725859",
+        "JD2113676"
+      ],
+      "retrieved_top10": [
+        "JD2775959",
+        "JD2725859",
+        "JD2113676",
+        "JD2102664",
+        "JD2126492",
+        "p_digital_017",
+        "TB10000002",
+        "p_digital_015",
+        "JD2855251",
+        "p_digital_010"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 91.4
+    },
+    {
+      "case_id": "eval_new_rec_041",
+      "scenario": "commodity_recommend",
+      "query": "真无线降噪耳机推荐",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "p_digital_007",
+        "JD100038798465",
+        "JD100209512295"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "JD100038798465",
+        "JD100209512295",
+        "JD100132209703",
+        "JD100294413340",
+        "p_digital_018",
+        "JD100222319152",
+        "TB10000001",
+        "JD100082659367",
+        "JD100183638657"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.7
+    },
+    {
+      "case_id": "eval_new_rec_042",
+      "scenario": "commodity_recommend",
+      "query": "折叠屏手机推荐",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_010",
+        "p_digital_014",
+        "p_digital_002"
+      ],
+      "retrieved_top10": [
+        "p_digital_010",
+        "p_digital_014",
+        "p_digital_002",
+        "p_digital_015",
+        "JD2855251",
+        "p_digital_016",
+        "p_digital_009",
+        "JD2102664",
+        "JD2775959",
+        "p_digital_008"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 74.4
+    },
+    {
+      "case_id": "eval_new_cmp_001",
+      "scenario": "commodity_compare",
+      "query": "Sony XM5和Bose QC45哪个好",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819",
+        "JD2102664"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100100010",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100100010",
+        "JD100082659367",
+        "JD100132209703",
+        "p_digital_007",
+        "JD100209512295",
+        "JD10080008",
+        "JD100205228688",
+        "JD100222319152",
+        "JD100099038454"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 84.8
+    },
+    {
+      "case_id": "eval_new_cmp_002",
+      "scenario": "commodity_compare",
+      "query": "iPhone和华为手机怎么选",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_003",
+        "p_digital_001",
+        "JD2718819"
+      ],
+      "retrieved_top10": [
+        "p_digital_003",
+        "p_digital_001",
+        "JD2718819",
+        "p_digital_002",
+        "JD2718739",
+        "JD100225615118",
+        "JD2775959",
+        "p_digital_005",
+        "TB10000002",
+        "p_digital_010"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 92.0
+    },
+    {
+      "case_id": "eval_new_cmp_003",
+      "scenario": "commodity_compare",
+      "query": "小米和OPPO哪个性价比高",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819",
+        "JD2102664"
+      ],
+      "retrieved_top3": [
+        "p_digital_015",
+        "p_digital_016",
+        "p_digital_008"
+      ],
+      "retrieved_top10": [
+        "p_digital_015",
+        "p_digital_016",
+        "p_digital_008",
+        "JD10030003",
+        "JD2102664",
+        "p_digital_009",
+        "JD2126492",
+        "p_digital_014",
+        "TB10000003",
+        "JDa445d5f0"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.9
+    },
+    {
+      "case_id": "eval_new_cmp_004",
+      "scenario": "commodity_compare",
+      "query": "AirPods和FreeBuds对比",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819",
+        "JD2102664"
+      ],
+      "retrieved_top3": [
+        "p_digital_007",
+        "JD100209512295",
+        "p_digital_018"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "JD100209512295",
+        "p_digital_018",
+        "TB10000001",
+        "JD100222319152",
+        "JD100294413340",
+        "JD100082659367",
+        "JD100132209703",
+        "JD100038798465",
+        "JD100079260610"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.3
+    },
+    {
+      "case_id": "eval_new_cmp_005",
+      "scenario": "commodity_compare",
+      "query": "JBL和Bose音箱哪个好",
+      "ground_truth": [
+        "JD10050005",
+        "JD10070007",
+        "JD100099038454-S"
+      ],
+      "retrieved_top3": [
+        "JD10060006",
+        "JD100099038454",
+        "JD100099038454-S"
+      ],
+      "retrieved_top10": [
+        "JD10060006",
+        "JD100099038454",
+        "JD100099038454-S",
+        "SN12442869770",
+        "JD10050005",
+        "JD10070007",
+        "p_digital_007",
+        "TB09385cff",
+        "JD100209512295",
+        "JD100038798465"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 92.9
+    },
+    {
+      "case_id": "eval_new_cmp_006",
+      "scenario": "commodity_compare",
+      "query": "iPad和华为平板对比",
+      "ground_truth": [
+        "JD100129381482",
+        "JD100209512296",
+        "JD174542270"
+      ],
+      "retrieved_top3": [
+        "JD100209512296",
+        "JD100129381482",
+        "p_digital_021"
+      ],
+      "retrieved_top10": [
+        "JD100209512296",
+        "JD100129381482",
+        "p_digital_021",
+        "JD174542270",
+        "p_digital_024",
+        "p_digital_005",
+        "p_digital_025",
+        "p_digital_019",
+        "p_digital_013",
+        "TB10000004"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 93.7
+    },
+    {
+      "case_id": "eval_new_cmp_007",
+      "scenario": "commodity_compare",
+      "query": "韶音和JBL运动耳机哪个好",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100099038454",
+        "JD100099038454-S"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100099038454",
+        "JD100099038454-S",
+        "JD100082659367",
+        "SN12442869770",
+        "JD10060006",
+        "p_digital_007",
+        "p_digital_018",
+        "JD100183638657",
+        "JD100222319152"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 79.3
+    },
+    {
+      "case_id": "eval_new_cmp_008",
+      "scenario": "commodity_compare",
+      "query": "Sony和JBL耳机对比",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100099038454",
+        "JD100099038454-S"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100099038454",
+        "JD100099038454-S",
+        "SN12442869770",
+        "JD10060006",
+        "JD100132209703",
+        "JD100082659367",
+        "p_digital_007",
+        "p_digital_018",
+        "TB10000001"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 78.1
+    },
+    {
+      "case_id": "eval_new_cmp_009",
+      "scenario": "commodity_compare",
+      "query": "千元机和旗舰机差别大吗",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819",
+        "JD2102664"
+      ],
+      "retrieved_top3": [
+        "JD2102664",
+        "JD2775959",
+        "JD2113676"
+      ],
+      "retrieved_top10": [
+        "JD2102664",
+        "JD2775959",
+        "JD2113676",
+        "TB10000002",
+        "p_digital_017",
+        "JD2725859",
+        "JD2855251",
+        "JD2126492",
+        "p_digital_010",
+        "p_digital_008"
+      ],
+      "p3": 0.3333,
+      "recall": 0.25,
+      "latency_ms": 93.1
+    },
+    {
+      "case_id": "eval_new_cmp_010",
+      "scenario": "commodity_compare",
+      "query": "头戴式和入耳式降噪哪个好",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100209512295"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100209512295",
+        "JD100132209703",
+        "p_digital_018",
+        "JD100082659367",
+        "JD100294413340",
+        "TB10000001",
+        "JD100183638657",
+        "JD100222319152"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 77.5
+    },
+    {
+      "case_id": "eval_new_cmp_011",
+      "scenario": "commodity_compare",
+      "query": "开放式和封闭式耳机怎么选",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100082659367",
+        "JD100099038454"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100082659367",
+        "JD100099038454",
+        "p_digital_007",
+        "JD100079260610",
+        "JD100183638657",
+        "JD100294413340",
+        "JD100099038454-S",
+        "JD100209512295",
+        "p_digital_018"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 96.2
+    },
+    {
+      "case_id": "eval_new_cmp_012",
+      "scenario": "commodity_compare",
+      "query": "有线耳机和无线耳机哪个音质好",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "p_digital_007",
+        "JD100038798465",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "JD100038798465",
+        "JD100082659367",
+        "JD100209512295",
+        "JD100183638657",
+        "JD100294413340",
+        "JD100222319152",
+        "TB10000001",
+        "JD100079260610",
+        "JD100132209703"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 109.5
+    },
+    {
+      "case_id": "eval_new_cmp_013",
+      "scenario": "commodity_compare",
+      "query": "华为手表和苹果手表对比",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10020002",
+        "JD10010001",
+        "JD10040004"
+      ],
+      "retrieved_top10": [
+        "JD10020002",
+        "JD10010001",
+        "JD10040004",
+        "JD10030003",
+        "TB10000003",
+        "p_digital_003",
+        "p_digital_001",
+        "p_digital_002",
+        "JD2718739",
+        "JD100225615118"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 92.6
+    },
+    {
+      "case_id": "eval_new_cmp_014",
+      "scenario": "commodity_compare",
+      "query": "骨传导和入耳式运动耳机选哪个",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100183638657",
+        "JD100082659367",
+        "JD100079260610"
+      ],
+      "retrieved_top10": [
+        "JD100183638657",
+        "JD100082659367",
+        "JD100079260610",
+        "JD100294413340",
+        "TB10000001",
+        "p_digital_018",
+        "p_digital_007",
+        "JD100038798465",
+        "JD100099038454",
+        "JD100222319152"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 83.1
+    },
+    {
+      "case_id": "eval_new_cmp_015",
+      "scenario": "commodity_compare",
+      "query": "小米平板和华为平板哪个更值",
+      "ground_truth": [
+        "JD100129381482",
+        "JD100209512296",
+        "JD174542270"
+      ],
+      "retrieved_top3": [
+        "JD100209512296",
+        "p_digital_011",
+        "JD174542270"
+      ],
+      "retrieved_top10": [
+        "JD100209512296",
+        "p_digital_011",
+        "JD174542270",
+        "p_digital_021",
+        "p_digital_005",
+        "JD100225615120",
+        "p_digital_019",
+        "p_digital_010",
+        "JD100129381482",
+        "p_digital_004"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 103.8
+    },
+    {
+      "case_id": "eval_new_cmp_016",
+      "scenario": "commodity_compare",
+      "query": "1000的耳机和3000的差距在哪",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "p_digital_007",
+        "p_digital_018"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "p_digital_007",
+        "p_digital_018",
+        "JD100294413340",
+        "JD100222319152",
+        "JD100082659367",
+        "TB10000001",
+        "JD100132209703",
+        "JD100209512295",
+        "JD100099038454"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 92.6
+    },
+    {
+      "case_id": "eval_new_cmp_017",
+      "scenario": "commodity_compare",
+      "query": "同样是降噪耳机，500和2000的差在哪",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100209512295"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100209512295",
+        "JD100132209703",
+        "JD100294413340",
+        "p_digital_018",
+        "JD100082659367",
+        "TB10000001",
+        "JD2775959",
+        "JD100222319152"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 93.6
+    },
+    {
+      "case_id": "eval_new_cmp_018",
+      "scenario": "commodity_compare",
+      "query": "微单和卡片机哪个适合新手",
+      "ground_truth": [
+        "JD10080008",
+        "JD100009073095",
+        "JD10090009"
+      ],
+      "retrieved_top3": [
+        "JD100205228688",
+        "JD100100010",
+        "JD100009073095"
+      ],
+      "retrieved_top10": [
+        "JD100205228688",
+        "JD100100010",
+        "JD100009073095",
+        "JD10080008",
+        "JD10090009",
+        "p_digital_017",
+        "p_digital_016",
+        "p_digital_015",
+        "p_digital_002",
+        "p_digital_012"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 95.0
+    },
+    {
+      "case_id": "eval_new_cmp_019",
+      "scenario": "commodity_compare",
+      "query": "机械键盘和薄膜键盘打字哪个舒服",
+      "ground_truth": [
+        "TB16a6002f"
+      ],
+      "retrieved_top3": [
+        "TB16a6002f",
+        "p_digital_021",
+        "p_digital_004"
+      ],
+      "retrieved_top10": [
+        "TB16a6002f",
+        "p_digital_021",
+        "p_digital_004",
+        "p_digital_020",
+        "p_digital_022",
+        "p_digital_012",
+        "p_digital_010",
+        "TB10000004",
+        "p_digital_006",
+        "p_digital_019"
+      ],
+      "p3": 0.3333,
+      "recall": 1.0,
+      "latency_ms": 92.9
+    },
+    {
+      "case_id": "eval_new_cmp_020",
+      "scenario": "commodity_compare",
+      "query": "智能手表和手环有什么区别",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10040004",
+        "JD10010001",
+        "JD10020002"
+      ],
+      "retrieved_top10": [
+        "JD10040004",
+        "JD10010001",
+        "JD10020002",
+        "JD10030003",
+        "TB10000003",
+        "JDa445d5f0",
+        "JD08cb17d2",
+        "p_digital_018",
+        "TB10000004",
+        "TBe8bd70a7"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 94.5
+    },
+    {
+      "case_id": "eval_new_cmp_021",
+      "scenario": "commodity_compare",
+      "query": "蓝牙5.0和5.3体验差别大吗",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819",
+        "JD2102664"
+      ],
+      "retrieved_top3": [
+        "JD100222319152",
+        "p_digital_007",
+        "JD100132209703"
+      ],
+      "retrieved_top10": [
+        "JD100222319152",
+        "p_digital_007",
+        "JD100132209703",
+        "JD100082659367",
+        "p_digital_018",
+        "JD100038798465",
+        "JD100099038454-S",
+        "JD10060006",
+        "JD10020002",
+        "JD10040004"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 83.9
+    },
+    {
+      "case_id": "eval_new_cmp_022",
+      "scenario": "commodity_compare",
+      "query": "Type-C和Lightning充电速度对比",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819",
+        "JD2102664"
+      ],
+      "retrieved_top3": [
+        "JD100197769762",
+        "JD100213696321",
+        "JD100017986276"
+      ],
+      "retrieved_top10": [
+        "JD100197769762",
+        "JD100213696321",
+        "JD100017986276",
+        "JD10090009-A",
+        "TB7b0d192b",
+        "JD100129381482-A",
+        "JD10080008-A",
+        "JD101000010",
+        "JD101100011",
+        "JD100225615118-A"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 88.4
+    },
+    {
+      "case_id": "eval_new_cmp_023",
+      "scenario": "commodity_compare",
+      "query": "主动降噪和被动降噪哪个实用",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "p_digital_007",
+        "JD100038798465",
+        "JD100209512295"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "JD100038798465",
+        "JD100209512295",
+        "JD100132209703",
+        "p_digital_018",
+        "JD100294413340",
+        "JD10050005",
+        "JD100082659367",
+        "SN12442869770",
+        "JD10070007"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 107.8
+    },
+    {
+      "case_id": "eval_new_cmp_024",
+      "scenario": "commodity_compare",
+      "query": "OLED屏幕和LCD屏幕手机怎么选",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_010",
+        "p_digital_014",
+        "p_digital_017"
+      ],
+      "retrieved_top10": [
+        "p_digital_010",
+        "p_digital_014",
+        "p_digital_017",
+        "p_digital_013",
+        "JD100225615118",
+        "p_digital_003",
+        "p_digital_001",
+        "JD2718739",
+        "p_digital_002",
+        "JD2102664"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.8
+    },
+    {
+      "case_id": "eval_new_dtl_001",
+      "scenario": "commodity_detail",
+      "query": "这款耳机降噪多少分贝",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100209512295",
+        "JD100294413340"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100209512295",
+        "JD100294413340",
+        "p_digital_018",
+        "p_digital_007",
+        "JD100132209703",
+        "TB10000001",
+        "JD100082659367",
+        "JD100222319152",
+        "JD100183638657"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 93.9
+    },
+    {
+      "case_id": "eval_new_dtl_002",
+      "scenario": "commodity_detail",
+      "query": "Sony XM5续航多久",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100100010",
+        "JD100225615118-A"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100100010",
+        "JD100225615118-A",
+        "JD100205228688",
+        "JD101000010",
+        "p_digital_017",
+        "p_digital_015",
+        "TBe67b8ae5",
+        "JD101100011",
+        "JD10040004"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.2
+    },
+    {
+      "case_id": "eval_new_dtl_003",
+      "scenario": "commodity_detail",
+      "query": "这个手机的屏幕刷新率是多少",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD2113676",
+        "p_digital_010",
+        "p_digital_014"
+      ],
+      "retrieved_top10": [
+        "JD2113676",
+        "p_digital_010",
+        "p_digital_014",
+        "p_digital_017",
+        "JD2102664",
+        "p_digital_008",
+        "JD2855251",
+        "p_digital_009",
+        "JD2126492",
+        "p_digital_003"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 86.0
+    },
+    {
+      "case_id": "eval_new_dtl_004",
+      "scenario": "commodity_detail",
+      "query": "这款手表支持NFC吗",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10020002",
+        "JD10010001",
+        "JD10030003"
+      ],
+      "retrieved_top10": [
+        "JD10020002",
+        "JD10010001",
+        "JD10030003",
+        "TB10000003",
+        "JD10040004",
+        "JDa445d5f0",
+        "JD101000010",
+        "p_digital_001",
+        "TB10000004",
+        "JD100225615118-A"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 86.8
+    },
+    {
+      "case_id": "eval_new_dtl_005",
+      "scenario": "commodity_detail",
+      "query": "这款音箱防水等级是多少",
+      "ground_truth": [
+        "JD10050005",
+        "JD10070007",
+        "JD100099038454-S"
+      ],
+      "retrieved_top3": [
+        "JD10060006",
+        "SN12442869770",
+        "JD10070007"
+      ],
+      "retrieved_top10": [
+        "JD10060006",
+        "SN12442869770",
+        "JD10070007",
+        "JD100099038454-S",
+        "JD100099038454",
+        "JD10050005",
+        "TB09385cff",
+        "TBe952816a",
+        "TBf1005782",
+        "TBeeb408b6"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.9
+    },
+    {
+      "case_id": "eval_new_dtl_006",
+      "scenario": "commodity_detail",
+      "query": "这个平板支持手写笔吗",
+      "ground_truth": [
+        "JD100129381482",
+        "JD100209512296",
+        "JD174542270"
+      ],
+      "retrieved_top3": [
+        "p_digital_019",
+        "p_digital_021",
+        "p_digital_024"
+      ],
+      "retrieved_top10": [
+        "p_digital_019",
+        "p_digital_021",
+        "p_digital_024",
+        "JD100129381482",
+        "p_digital_011",
+        "p_digital_005",
+        "JD100156315",
+        "JD100209512296",
+        "p_digital_025",
+        "JD100225615120"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.1
+    },
+    {
+      "case_id": "eval_new_dtl_007",
+      "scenario": "commodity_detail",
+      "query": "AirPods Pro有空间音频吗",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "p_digital_018",
+        "p_digital_007",
+        "TB10000001"
+      ],
+      "retrieved_top10": [
+        "p_digital_018",
+        "p_digital_007",
+        "TB10000001",
+        "JD100209512295",
+        "JD100222319152",
+        "SN12442869770",
+        "JD100132209703",
+        "JD100099038454",
+        "p_digital_025",
+        "JD100099038454-S"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 75.0
+    },
+    {
+      "case_id": "eval_new_dtl_008",
+      "scenario": "commodity_detail",
+      "query": "这款耳机蓝牙版本是多少",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100294413340",
+        "p_digital_018",
+        "JD100222319152"
+      ],
+      "retrieved_top10": [
+        "JD100294413340",
+        "p_digital_018",
+        "JD100222319152",
+        "JD100082659367",
+        "TB10000001",
+        "p_digital_007",
+        "JD100079260610",
+        "JD100183638657",
+        "JD100099038454",
+        "JD100132209703"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 96.9
+    },
+    {
+      "case_id": "eval_new_dtl_009",
+      "scenario": "commodity_detail",
+      "query": "这个手机支持无线充电吗",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD100129381482-A",
+        "JD100225615118-A",
+        "JD101000010"
+      ],
+      "retrieved_top10": [
+        "JD100129381482-A",
+        "JD100225615118-A",
+        "JD101000010",
+        "JD2102664",
+        "JD100017986276",
+        "JD10080008-A",
+        "JD101100011",
+        "JD2126492",
+        "TB10000002",
+        "JD10090009-A"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.6
+    },
+    {
+      "case_id": "eval_new_dtl_010",
+      "scenario": "commodity_detail",
+      "query": "Sony XM5重量多少",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100100010",
+        "TBe67b8ae5"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100100010",
+        "TBe67b8ae5",
+        "JD100205228688",
+        "JD10080008",
+        "JD100009073095",
+        "JD100225615118-A",
+        "p_digital_010",
+        "JD6e5976ba",
+        "TB91d420a9"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.8
+    },
+    {
+      "case_id": "eval_new_dtl_011",
+      "scenario": "commodity_detail",
+      "query": "这款充电宝容量多大",
+      "ground_truth": [
+        "JD100017986276",
+        "JD100197769762",
+        "JD100129381482-A"
+      ],
+      "retrieved_top3": [
+        "JD101100011",
+        "JD10080008-A",
+        "JD100225615118-A"
+      ],
+      "retrieved_top10": [
+        "JD101100011",
+        "JD10080008-A",
+        "JD100225615118-A",
+        "JD101000010",
+        "JD100129381482-A",
+        "JD100197769762",
+        "JD100017986276",
+        "JD10090009-A",
+        "TB7b0d192b",
+        "JD100213696321"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.2
+    },
+    {
+      "case_id": "eval_new_dtl_012",
+      "scenario": "commodity_detail",
+      "query": "这耳机用什么解码芯片",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "p_digital_007",
+        "JD100294413340",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "JD100294413340",
+        "JD100082659367",
+        "JD100132209703",
+        "TB10000001",
+        "JD100209512295",
+        "p_digital_018",
+        "JD100038798465",
+        "JD100222319152",
+        "JD100183638657"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 77.6
+    },
+    {
+      "case_id": "eval_new_dtl_013",
+      "scenario": "commodity_detail",
+      "query": "这款手机处理器是什么型号",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD2102664",
+        "JD2126492",
+        "JD2725859"
+      ],
+      "retrieved_top10": [
+        "JD2102664",
+        "JD2126492",
+        "JD2725859",
+        "JD2113676",
+        "JD2775959",
+        "TB10000002",
+        "JD2855251",
+        "p_digital_016",
+        "p_digital_008",
+        "p_digital_015"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.0
+    },
+    {
+      "case_id": "eval_new_dtl_014",
+      "scenario": "commodity_detail",
+      "query": "华为FreeBuds能连几个设备",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "p_digital_007",
+        "JD100209512295",
+        "p_digital_005"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "JD100209512295",
+        "p_digital_005",
+        "p_digital_010",
+        "JD100209512296",
+        "p_digital_021",
+        "JD174542270",
+        "p_digital_004",
+        "JD100129381482-A",
+        "JD10020002"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.3
+    },
+    {
+      "case_id": "eval_new_dtl_015",
+      "scenario": "commodity_detail",
+      "query": "JBL音箱支持TWS串联吗",
+      "ground_truth": [
+        "JD10050005",
+        "JD10070007",
+        "JD100099038454-S"
+      ],
+      "retrieved_top3": [
+        "JD100099038454-S",
+        "JD100099038454",
+        "JD10060006"
+      ],
+      "retrieved_top10": [
+        "JD100099038454-S",
+        "JD100099038454",
+        "JD10060006",
+        "JD10050005",
+        "SN12442869770",
+        "JD10070007",
+        "JD100222319152",
+        "JD100082659367",
+        "p_digital_007",
+        "JD100038798465"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.3
+    },
+    {
+      "case_id": "eval_new_dtl_016",
+      "scenario": "commodity_detail",
+      "query": "这款手表能测血氧吗",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10040004",
+        "JD10010001",
+        "TB10000003"
+      ],
+      "retrieved_top10": [
+        "JD10040004",
+        "JD10010001",
+        "TB10000003",
+        "JD10020002",
+        "JD10030003",
+        "JDa445d5f0",
+        "TB09efd21b",
+        "p_digital_018",
+        "JD101000010",
+        "JD08cb17d2"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 94.2
+    },
+    {
+      "case_id": "eval_new_dtl_017",
+      "scenario": "commodity_detail",
+      "query": "这个平板屏幕分辨率多少",
+      "ground_truth": [
+        "JD100129381482",
+        "JD100209512296",
+        "JD174542270"
+      ],
+      "retrieved_top3": [
+        "p_digital_013",
+        "JD100129381482",
+        "p_digital_024"
+      ],
+      "retrieved_top10": [
+        "p_digital_013",
+        "JD100129381482",
+        "p_digital_024",
+        "JD100225615120",
+        "p_digital_019",
+        "JD100156315",
+        "p_digital_011",
+        "p_digital_021",
+        "p_digital_005",
+        "p_digital_025"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 93.4
+    },
+    {
+      "case_id": "eval_new_dtl_018",
+      "scenario": "commodity_detail",
+      "query": "这款耳机支持LDAC吗",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100082659367",
+        "JD100079260610",
+        "JD100183638657"
+      ],
+      "retrieved_top10": [
+        "JD100082659367",
+        "JD100079260610",
+        "JD100183638657",
+        "JD100294413340",
+        "JD100209512295",
+        "p_digital_018",
+        "JD100222319152",
+        "p_digital_007",
+        "TB10000001",
+        "JD100132209703"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.2
+    },
+    {
+      "case_id": "eval_new_dtl_019",
+      "scenario": "commodity_detail",
+      "query": "这个手机有红外遥控吗",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD101000010",
+        "JD2102664",
+        "JD2126492"
+      ],
+      "retrieved_top10": [
+        "JD101000010",
+        "JD2102664",
+        "JD2126492",
+        "TB10000003",
+        "JD10040004",
+        "p_digital_017",
+        "TB10000002",
+        "JDa445d5f0",
+        "JD100225615118-A",
+        "JD10030003"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 74.9
+    },
+    {
+      "case_id": "eval_new_dtl_020",
+      "scenario": "commodity_detail",
+      "query": "韶音耳机防水吗",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "p_digital_007",
+        "JD100132209703"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "p_digital_007",
+        "JD100132209703",
+        "JD100294413340",
+        "JD100082659367",
+        "p_digital_018",
+        "JD100038798465",
+        "JD100183638657",
+        "JD100209512295",
+        "JD100222319152"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 75.4
+    },
+    {
+      "case_id": "eval_new_dtl_021",
+      "scenario": "commodity_detail",
+      "query": "这款相机像素多少",
+      "ground_truth": [
+        "JD10080008",
+        "JD100009073095",
+        "JD10090009"
+      ],
+      "retrieved_top3": [
+        "JD100205228688",
+        "JD10080008",
+        "JD10090009"
+      ],
+      "retrieved_top10": [
+        "JD100205228688",
+        "JD10080008",
+        "JD10090009",
+        "JD100009073095",
+        "JD100100010",
+        "p_digital_017",
+        "p_digital_015",
+        "JD100225615118",
+        "JD2775959",
+        "p_digital_008"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 100.4
+    },
+    {
+      "case_id": "eval_new_dtl_022",
+      "scenario": "commodity_detail",
+      "query": "这耳机用什么材质",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "p_digital_007",
+        "JD100082659367",
+        "TB10000001"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "JD100082659367",
+        "TB10000001",
+        "JD100079260610",
+        "JD100183638657",
+        "JD100209512295",
+        "JD100294413340",
+        "JD100038798465",
+        "p_digital_018",
+        "JD100132209703"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 92.6
+    },
+    {
+      "case_id": "eval_new_dtl_023",
+      "scenario": "commodity_detail",
+      "query": "支持快充吗",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739"
+      ],
+      "retrieved_top3": [
+        "JD100129381482-A",
+        "JD100197769762",
+        "JD10080008-A"
+      ],
+      "retrieved_top10": [
+        "JD100129381482-A",
+        "JD100197769762",
+        "JD10080008-A",
+        "JD10090009-A",
+        "JD101100011",
+        "JD100213696321",
+        "TB7b0d192b",
+        "JD100225615118-A",
+        "JD100225615118",
+        "JD101000010"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 68.1
+    },
+    {
+      "case_id": "eval_new_dtl_024",
+      "scenario": "commodity_detail",
+      "query": "这个平板能插SIM卡吗",
+      "ground_truth": [
+        "JD100129381482",
+        "JD100209512296",
+        "JD174542270"
+      ],
+      "retrieved_top3": [
+        "p_digital_025",
+        "JD100129381482",
+        "p_digital_024"
+      ],
+      "retrieved_top10": [
+        "p_digital_025",
+        "JD100129381482",
+        "p_digital_024",
+        "p_digital_019",
+        "JD100156315",
+        "p_digital_005",
+        "p_digital_013",
+        "p_digital_011",
+        "JD100225615120",
+        "JD100209512296"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 76.2
+    },
+    {
+      "case_id": "eval_new_dtl_025",
+      "scenario": "commodity_detail",
+      "query": "这款手表支持微信吗",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10040004",
+        "JD10010001",
+        "JD10030003"
+      ],
+      "retrieved_top10": [
+        "JD10040004",
+        "JD10010001",
+        "JD10030003",
+        "JD10020002",
+        "TB10000003",
+        "p_digital_001",
+        "JDa445d5f0",
+        "JD2718739",
+        "TB47bd93a2",
+        "JD2718819"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 76.9
+    },
+    {
+      "case_id": "eval_new_dtl_026",
+      "scenario": "commodity_detail",
+      "query": "这音箱有AUX接口吗",
+      "ground_truth": [
+        "JD10050005",
+        "JD10070007",
+        "JD100099038454-S"
+      ],
+      "retrieved_top3": [
+        "JD100099038454-S",
+        "JD100099038454",
+        "JD10070007"
+      ],
+      "retrieved_top10": [
+        "JD100099038454-S",
+        "JD100099038454",
+        "JD10070007",
+        "JD10060006",
+        "SN12442869770",
+        "JD10050005",
+        "TB10000001",
+        "JD100038798465",
+        "JD100082659367",
+        "TB1ef3edc4"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 92.7
+    },
+    {
+      "case_id": "eval_new_dtl_027",
+      "scenario": "commodity_detail",
+      "query": "这个手机支持存储卡扩展吗",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_001",
+        "p_digital_008",
+        "JD100225615118"
+      ],
+      "retrieved_top10": [
+        "p_digital_001",
+        "p_digital_008",
+        "JD100225615118",
+        "JD2718819",
+        "p_digital_010",
+        "p_digital_014",
+        "p_digital_017",
+        "p_digital_015",
+        "JD2725859",
+        "JD101000010"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.0
+    },
+    {
+      "case_id": "eval_new_dtl_028",
+      "scenario": "commodity_detail",
+      "query": "耳机支持一拖二吗",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100222319152",
+        "JD100082659367",
+        "TB10000001"
+      ],
+      "retrieved_top10": [
+        "JD100222319152",
+        "JD100082659367",
+        "TB10000001",
+        "p_digital_007",
+        "JD100079260610",
+        "JD100294413340",
+        "JD100132209703",
+        "JD100038798465",
+        "p_digital_018",
+        "JD100183638657"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 93.4
+    },
+    {
+      "case_id": "eval_new_dtl_029",
+      "scenario": "commodity_detail",
+      "query": "这个平板电池多大",
+      "ground_truth": [
+        "JD100129381482",
+        "JD100209512296",
+        "JD174542270"
+      ],
+      "retrieved_top3": [
+        "JD100129381482",
+        "p_digital_024",
+        "p_digital_019"
+      ],
+      "retrieved_top10": [
+        "JD100129381482",
+        "p_digital_024",
+        "p_digital_019",
+        "p_digital_025",
+        "JD100156315",
+        "p_digital_013",
+        "JD100225615120",
+        "p_digital_005",
+        "JD100209512296",
+        "p_digital_011"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 77.1
+    },
+    {
+      "case_id": "eval_new_dtl_030",
+      "scenario": "commodity_detail",
+      "query": "这款手表GPS准吗",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10010001",
+        "JD10040004",
+        "JD10020002"
+      ],
+      "retrieved_top10": [
+        "JD10010001",
+        "JD10040004",
+        "JD10020002",
+        "JD10030003",
+        "TB10000003",
+        "TBe8bd70a7",
+        "JDa445d5f0",
+        "TB47bd93a2",
+        "TB91d420a9",
+        "p_digital_018"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 75.0
+    },
+    {
+      "case_id": "eval_new_scn_001",
+      "scenario": "scenario_shopping",
+      "query": "送女朋友生日礼物500以内",
+      "ground_truth": [
+        "TBa3a0add9",
+        "p_beauty_015",
+        "p_beauty_025"
+      ],
+      "retrieved_top3": [
+        "p_beauty_015",
+        "TB229540a1",
+        "JD2775959"
+      ],
+      "retrieved_top10": [
+        "p_beauty_015",
+        "TB229540a1",
+        "JD2775959",
+        "TBe38703fa",
+        "TB550f8056",
+        "TB61a7a4a7",
+        "p_digital_010",
+        "p_food_009",
+        "p_beauty_025",
+        "TBfcfe4717"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 97.8
+    },
+    {
+      "case_id": "eval_new_scn_002",
+      "scenario": "scenario_shopping",
+      "query": "北方冬天通勤鞋推荐",
+      "ground_truth": [
+        "TBb0adde4c",
+        "TB16892645",
+        "TB550f8056"
+      ],
+      "retrieved_top3": [
+        "p_clothes_018",
+        "JD43873f09",
+        "p_clothes_009"
+      ],
+      "retrieved_top10": [
+        "p_clothes_018",
+        "JD43873f09",
+        "p_clothes_009",
+        "JDf972553d",
+        "p_clothes_007",
+        "p_clothes_008",
+        "p_clothes_013",
+        "p_clothes_011",
+        "p_clothes_024",
+        "p_clothes_015"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 82.4
+    },
+    {
+      "case_id": "eval_new_scn_003",
+      "scenario": "scenario_shopping",
+      "query": "送给爸爸的父亲节礼物",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "TBfcfe4717",
+        "p_food_009",
+        "p_food_019"
+      ],
+      "retrieved_top10": [
+        "TBfcfe4717",
+        "p_food_009",
+        "p_food_019",
+        "p_beauty_021",
+        "p_food_010",
+        "p_clothes_005",
+        "TB16892645",
+        "TB550f8056",
+        "p_clothes_017",
+        "p_clothes_020"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 104.5
+    },
+    {
+      "case_id": "eval_new_scn_004",
+      "scenario": "scenario_shopping",
+      "query": "大学新生入学需要什么数码产品",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_019",
+        "p_digital_011",
+        "p_digital_006"
+      ],
+      "retrieved_top10": [
+        "p_digital_019",
+        "p_digital_011",
+        "p_digital_006",
+        "p_digital_004",
+        "p_digital_021",
+        "p_digital_020",
+        "p_digital_012",
+        "p_digital_005",
+        "p_digital_017",
+        "p_digital_003"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 102.7
+    },
+    {
+      "case_id": "eval_new_scn_005",
+      "scenario": "scenario_shopping",
+      "query": "健身房用的耳机推荐",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100082659367",
+        "JD100294413340"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100082659367",
+        "JD100294413340",
+        "JD100183638657",
+        "JD100079260610",
+        "p_digital_007",
+        "p_digital_018",
+        "JD100132209703",
+        "JD100209512295",
+        "JD100222319152"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 78.5
+    },
+    {
+      "case_id": "eval_new_scn_006",
+      "scenario": "scenario_shopping",
+      "query": "地铁通勤用的降噪耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100209512295",
+        "JD100294413340"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100209512295",
+        "JD100294413340",
+        "p_digital_007",
+        "JD100132209703",
+        "p_digital_018",
+        "TB10000001",
+        "JD100082659367",
+        "JD100183638657",
+        "JD100079260610"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 99.2
+    },
+    {
+      "case_id": "eval_new_scn_007",
+      "scenario": "scenario_shopping",
+      "query": "送男朋友的毕业礼物",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_clothes_005",
+        "p_clothes_001",
+        "p_clothes_002"
+      ],
+      "retrieved_top10": [
+        "p_clothes_005",
+        "p_clothes_001",
+        "p_clothes_002",
+        "JD10090009-A",
+        "p_clothes_022",
+        "TBfcfe4717",
+        "TB229540a1",
+        "p_beauty_015",
+        "TBe38703fa",
+        "p_clothes_023"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.6
+    },
+    {
+      "case_id": "eval_new_scn_008",
+      "scenario": "scenario_shopping",
+      "query": "小朋友上网课用的平板",
+      "ground_truth": [
+        "JD100129381482",
+        "JD100209512296",
+        "JD174542270"
+      ],
+      "retrieved_top3": [
+        "p_digital_019",
+        "p_digital_011",
+        "JD100129381482"
+      ],
+      "retrieved_top10": [
+        "p_digital_019",
+        "p_digital_011",
+        "JD100129381482",
+        "p_digital_025",
+        "JD100225615120",
+        "JD100209512296",
+        "p_digital_024",
+        "JD100156315",
+        "JD174542270",
+        "p_digital_005"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 93.0
+    },
+    {
+      "case_id": "eval_new_scn_009",
+      "scenario": "scenario_shopping",
+      "query": "送妈妈母亲节礼物300以内",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "TB09bcf244",
+        "TB4be05dc0",
+        "TBfcfe4717"
+      ],
+      "retrieved_top10": [
+        "TB09bcf244",
+        "TB4be05dc0",
+        "TBfcfe4717",
+        "TB61a7a4a7",
+        "TBe38703fa",
+        "p_food_009",
+        "p_food_010",
+        "TB33e005e9",
+        "TB09cf2e8c",
+        "TBca4182a4"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 75.6
+    },
+    {
+      "case_id": "eval_new_scn_010",
+      "scenario": "scenario_shopping",
+      "query": "出差用的轻薄笔记本",
+      "ground_truth": [
+        "TBa9bb1f4b"
+      ],
+      "retrieved_top3": [
+        "p_digital_023",
+        "p_digital_022",
+        "p_digital_004"
+      ],
+      "retrieved_top10": [
+        "p_digital_023",
+        "p_digital_022",
+        "p_digital_004",
+        "p_digital_020",
+        "p_digital_012",
+        "p_digital_006",
+        "p_digital_021",
+        "TB16892645",
+        "JD100156315",
+        "p_digital_019"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 96.5
+    },
+    {
+      "case_id": "eval_new_scn_011",
+      "scenario": "scenario_shopping",
+      "query": "户外露营用的蓝牙音箱",
+      "ground_truth": [
+        "JD10050005",
+        "JD10070007",
+        "JD100099038454-S"
+      ],
+      "retrieved_top3": [
+        "JD10060006",
+        "JD100099038454",
+        "JD100099038454-S"
+      ],
+      "retrieved_top10": [
+        "JD10060006",
+        "JD100099038454",
+        "JD100099038454-S",
+        "JD10070007",
+        "JD10050005",
+        "SN12442869770",
+        "TB10000001",
+        "JD100082659367",
+        "JD100294413340",
+        "JD100132209703"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.7
+    },
+    {
+      "case_id": "eval_new_scn_012",
+      "scenario": "scenario_shopping",
+      "query": "游泳时能戴的耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100294413340",
+        "p_digital_007"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100294413340",
+        "p_digital_007",
+        "JD100038798465",
+        "JD100082659367",
+        "JD100079260610",
+        "JD100183638657",
+        "p_digital_018",
+        "JD100132209703",
+        "JD100222319152"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 92.0
+    },
+    {
+      "case_id": "eval_new_scn_013",
+      "scenario": "scenario_shopping",
+      "query": "考研备考用的降噪耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "JD100209512295",
+        "p_digital_007"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "JD100209512295",
+        "p_digital_007",
+        "JD100132209703",
+        "p_digital_018",
+        "JD100294413340",
+        "TB10000001",
+        "JD100222319152",
+        "JD100082659367",
+        "JD100079260610"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 73.8
+    },
+    {
+      "case_id": "eval_new_scn_014",
+      "scenario": "scenario_shopping",
+      "query": "送闺蜜的结婚礼物",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "TB64e10767",
+        "p_beauty_017",
+        "p_beauty_015"
+      ],
+      "retrieved_top10": [
+        "TB64e10767",
+        "p_beauty_017",
+        "p_beauty_015",
+        "p_beauty_011",
+        "TBe38703fa",
+        "p_beauty_013",
+        "TB61a7a4a7",
+        "TBb1c8a55c",
+        "p_beauty_009",
+        "p_beauty_024"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 81.2
+    },
+    {
+      "case_id": "eval_new_scn_015",
+      "scenario": "scenario_shopping",
+      "query": "公司年会抽奖礼品推荐",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "TB61a7a4a7",
+        "TB4be05dc0",
+        "TBfcfe4717"
+      ],
+      "retrieved_top10": [
+        "TB61a7a4a7",
+        "TB4be05dc0",
+        "TBfcfe4717",
+        "TBe38703fa",
+        "p_food_013",
+        "TB7d8e2c99",
+        "p_food_018",
+        "p_food_019",
+        "p_food_009",
+        "p_food_014"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.5
+    },
+    {
+      "case_id": "eval_new_scn_016",
+      "scenario": "scenario_shopping",
+      "query": "长途飞机上用的耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "p_digital_007",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "p_digital_007",
+        "JD100082659367",
+        "JD100209512295",
+        "p_digital_018",
+        "JD100038798465",
+        "JD100079260610",
+        "JD100183638657",
+        "JD100294413340",
+        "JD100132209703"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 92.6
+    },
+    {
+      "case_id": "eval_new_scn_017",
+      "scenario": "scenario_shopping",
+      "query": "跑步时不容易掉的耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100294413340",
+        "JD100079260610"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100294413340",
+        "JD100079260610",
+        "JD100183638657",
+        "p_digital_018",
+        "JD100082659367",
+        "p_digital_007",
+        "JD100222319152",
+        "JD100209512295",
+        "JD100132209703"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.4
+    },
+    {
+      "case_id": "eval_new_scn_018",
+      "scenario": "scenario_shopping",
+      "query": "旅行拍照用的相机",
+      "ground_truth": [
+        "JD10080008",
+        "JD100009073095",
+        "JD10090009"
+      ],
+      "retrieved_top3": [
+        "JD100100010",
+        "JD100205228688",
+        "JD100009073095"
+      ],
+      "retrieved_top10": [
+        "JD100100010",
+        "JD100205228688",
+        "JD100009073095",
+        "JD10090009",
+        "JD10080008",
+        "p_digital_015",
+        "p_digital_016",
+        "p_digital_017",
+        "p_digital_002",
+        "p_digital_008"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 79.6
+    },
+    {
+      "case_id": "eval_new_scn_019",
+      "scenario": "scenario_shopping",
+      "query": "适合送给老师的礼物",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "TB229540a1",
+        "p_food_009",
+        "p_clothes_019"
+      ],
+      "retrieved_top10": [
+        "TB229540a1",
+        "p_food_009",
+        "p_clothes_019",
+        "TBc0973fda",
+        "TBfcfe4717",
+        "p_digital_021",
+        "p_digital_011",
+        "p_digital_004",
+        "p_clothes_025",
+        "TB550f8056"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.0
+    },
+    {
+      "case_id": "eval_new_scn_020",
+      "scenario": "scenario_shopping",
+      "query": "过年回家送长辈的手机",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD2775959",
+        "JD2102664",
+        "p_digital_008"
+      ],
+      "retrieved_top10": [
+        "JD2775959",
+        "JD2102664",
+        "p_digital_008",
+        "p_digital_009",
+        "p_digital_016",
+        "p_digital_017",
+        "TB10000002",
+        "p_digital_015",
+        "p_digital_002",
+        "JD2725859"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 95.3
+    },
+    {
+      "case_id": "eval_new_scn_021",
+      "scenario": "scenario_shopping",
+      "query": "宿舍用的静音鼠标键盘",
+      "ground_truth": [
+        "TB16a6002f"
+      ],
+      "retrieved_top3": [
+        "TBc0973fda",
+        "TB16a6002f",
+        "JD10060006"
+      ],
+      "retrieved_top10": [
+        "TBc0973fda",
+        "TB16a6002f",
+        "JD10060006",
+        "TBb333cdb3",
+        "p_digital_021",
+        "p_digital_011",
+        "p_digital_019",
+        "p_digital_012",
+        "JD10050005",
+        "JD10070007"
+      ],
+      "p3": 0.3333,
+      "recall": 1.0,
+      "latency_ms": 92.4
+    },
+    {
+      "case_id": "eval_new_scn_022",
+      "scenario": "scenario_shopping",
+      "query": "夏天用不闷的耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100082659367",
+        "p_digital_007"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100082659367",
+        "p_digital_007",
+        "JD100132209703",
+        "JD100294413340",
+        "JD100038798465",
+        "JD100209512295",
+        "JD100222319152",
+        "JD100183638657",
+        "JD100079260610"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 75.2
+    },
+    {
+      "case_id": "eval_new_scn_023",
+      "scenario": "scenario_shopping",
+      "query": "给学生党的高性价比平板",
+      "ground_truth": [
+        "JD100129381482",
+        "JD100209512296",
+        "JD174542270"
+      ],
+      "retrieved_top3": [
+        "p_digital_019",
+        "JD100129381482",
+        "p_digital_024"
+      ],
+      "retrieved_top10": [
+        "p_digital_019",
+        "JD100129381482",
+        "p_digital_024",
+        "p_digital_021",
+        "p_digital_025",
+        "JD174542270",
+        "p_digital_011",
+        "JD100209512296",
+        "p_digital_005",
+        "JD100156315"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.8
+    },
+    {
+      "case_id": "eval_new_scn_024",
+      "scenario": "scenario_shopping",
+      "query": "程序员上班用的机械键盘",
+      "ground_truth": [
+        "TB16a6002f"
+      ],
+      "retrieved_top3": [
+        "TB16a6002f",
+        "TBc0973fda",
+        "p_digital_022"
+      ],
+      "retrieved_top10": [
+        "TB16a6002f",
+        "TBc0973fda",
+        "p_digital_022",
+        "p_digital_004",
+        "TBb333cdb3",
+        "p_digital_021",
+        "p_digital_012",
+        "p_digital_023",
+        "p_digital_019",
+        "p_digital_020"
+      ],
+      "p3": 0.3333,
+      "recall": 1.0,
+      "latency_ms": 93.2
+    },
+    {
+      "case_id": "eval_new_scn_025",
+      "scenario": "scenario_shopping",
+      "query": "夜跑用的发光运动装备",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_clothes_020",
+        "p_clothes_021",
+        "JD8e53becb"
+      ],
+      "retrieved_top10": [
+        "p_clothes_020",
+        "p_clothes_021",
+        "JD8e53becb",
+        "p_clothes_007",
+        "JD42ea6836",
+        "p_clothes_008",
+        "p_clothes_009",
+        "JDa445d5f0",
+        "JDe52f5797",
+        "p_clothes_014"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.0
+    },
+    {
+      "case_id": "eval_new_scn_026",
+      "scenario": "scenario_shopping",
+      "query": "图书馆自习用降噪耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100209512295",
+        "p_digital_007",
+        "JD100038798465"
+      ],
+      "retrieved_top10": [
+        "JD100209512295",
+        "p_digital_007",
+        "JD100038798465",
+        "TB10000001",
+        "JD100294413340",
+        "JD100132209703",
+        "p_digital_018",
+        "JD100082659367",
+        "JD100079260610",
+        "JD100183638657"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.2
+    },
+    {
+      "case_id": "eval_new_scn_027",
+      "scenario": "scenario_shopping",
+      "query": "儿童节礼物推荐",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "TB73201cbb",
+        "TBfcfe4717",
+        "TB550f8056"
+      ],
+      "retrieved_top10": [
+        "TB73201cbb",
+        "TBfcfe4717",
+        "TB550f8056",
+        "TBe38703fa",
+        "TB1ef3edc4",
+        "TBf8ee8de2",
+        "TBa2e8e229",
+        "p_food_009",
+        "TB61a7a4a7",
+        "TBd92cd743"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.4
+    },
+    {
+      "case_id": "eval_new_scn_028",
+      "scenario": "scenario_shopping",
+      "query": "冬天跑步用的保暖运动耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100294413340",
+        "JD100079260610"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100294413340",
+        "JD100079260610",
+        "JD100082659367",
+        "JD100183638657",
+        "p_digital_018",
+        "p_digital_007",
+        "JD100222319152",
+        "JD100132209703",
+        "JD100209512295"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.1
+    },
+    {
+      "case_id": "eval_new_scn_029",
+      "scenario": "scenario_shopping",
+      "query": "中秋节送父母的健康手表",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10040004",
+        "TB10000003",
+        "JD10010001"
+      ],
+      "retrieved_top10": [
+        "JD10040004",
+        "TB10000003",
+        "JD10010001",
+        "JD10020002",
+        "JD10030003",
+        "JDa445d5f0",
+        "TB09efd21b",
+        "TB91d420a9",
+        "TB346511d4",
+        "TB47bd93a2"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 93.5
+    },
+    {
+      "case_id": "eval_new_scn_030",
+      "scenario": "scenario_shopping",
+      "query": "适合办公久坐的护腰靠垫",
+      "ground_truth": [
+        "TBa990239e",
+        "TBcdf3e424",
+        "TBc0973fda"
+      ],
+      "retrieved_top3": [
+        "JDe1105bf6",
+        "JDfec08e20",
+        "TBb333cdb3"
+      ],
+      "retrieved_top10": [
+        "JDe1105bf6",
+        "JDfec08e20",
+        "TBb333cdb3",
+        "TBc0973fda",
+        "p_clothes_016",
+        "p_clothes_025",
+        "TB09cf2e8c",
+        "p_beauty_004",
+        "p_clothes_024",
+        "p_clothes_017"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.8
+    },
+    {
+      "case_id": "eval_new_scn_031",
+      "scenario": "scenario_shopping",
+      "query": "面试用的商务手表",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "TB10000003"
+      ],
+      "retrieved_top3": [
+        "JD10040004",
+        "JD10020002",
+        "JD10010001"
+      ],
+      "retrieved_top10": [
+        "JD10040004",
+        "JD10020002",
+        "JD10010001",
+        "JD10030003",
+        "TB10000003",
+        "p_clothes_018",
+        "p_digital_022",
+        "TBc83674cd",
+        "p_clothes_025",
+        "p_digital_014"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 93.0
+    },
+    {
+      "case_id": "eval_new_scn_032",
+      "scenario": "scenario_shopping",
+      "query": "入门摄影用的相机推荐",
+      "ground_truth": [
+        "JD10080008",
+        "JD100009073095",
+        "JD10090009"
+      ],
+      "retrieved_top3": [
+        "JD100205228688",
+        "JD100009073095",
+        "JD10090009"
+      ],
+      "retrieved_top10": [
+        "JD100205228688",
+        "JD100009073095",
+        "JD10090009",
+        "JD100100010",
+        "JD10080008",
+        "p_digital_017",
+        "p_digital_016",
+        "p_digital_015",
+        "p_digital_002",
+        "p_digital_008"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 92.6
+    },
+    {
+      "case_id": "eval_new_scn_033",
+      "scenario": "scenario_shopping",
+      "query": "大学宿舍用的迷你冰箱",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_012",
+        "TB5251b5b2",
+        "p_food_016"
+      ],
+      "retrieved_top10": [
+        "p_digital_012",
+        "TB5251b5b2",
+        "p_food_016",
+        "p_food_008",
+        "p_digital_020",
+        "TB09385cff",
+        "JD100129381482",
+        "p_digital_006",
+        "p_food_009",
+        "TB0e967608"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.1
+    },
+    {
+      "case_id": "eval_new_scn_034",
+      "scenario": "scenario_shopping",
+      "query": "电动车上班用的蓝牙头盔耳机",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100082659367",
+        "JD100294413340",
+        "p_digital_018"
+      ],
+      "retrieved_top10": [
+        "JD100082659367",
+        "JD100294413340",
+        "p_digital_018",
+        "TB10000001",
+        "p_digital_007",
+        "JD100038798465",
+        "JD100209512295",
+        "JD100079260610",
+        "JD100222319152",
+        "JD100183638657"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 108.2
+    },
+    {
+      "case_id": "eval_new_as_001",
+      "scenario": "after_sales",
+      "query": "这耳机保修多久",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "p_digital_018",
+        "JD100132209703",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "p_digital_018",
+        "JD100132209703",
+        "JD100082659367",
+        "p_digital_007",
+        "TB10000001",
+        "JD100038798465",
+        "JD100209512295",
+        "JD100222319152",
+        "JD100079260610",
+        "JD100294413340"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.2
+    },
+    {
+      "case_id": "eval_new_as_002",
+      "scenario": "after_sales",
+      "query": "支持7天无理由退货吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_digital_001",
+        "p_digital_002",
+        "JD100225615118"
+      ],
+      "retrieved_top10": [
+        "p_digital_001",
+        "p_digital_002",
+        "JD100225615118",
+        "p_beauty_017",
+        "JD2718739",
+        "p_beauty_007",
+        "JD2718819",
+        "p_beauty_012",
+        "p_digital_003",
+        "p_beauty_022"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 73.7
+    },
+    {
+      "case_id": "eval_new_as_003",
+      "scenario": "after_sales",
+      "query": "如果坏了怎么维修",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "JD100017986276",
+        "p_digital_002",
+        "p_digital_010"
+      ],
+      "retrieved_top10": [
+        "JD100017986276",
+        "p_digital_002",
+        "p_digital_010",
+        "JD100129381482-A",
+        "p_digital_013",
+        "TBc0ea32f4",
+        "JD10010001",
+        "JD10040004",
+        "p_digital_009",
+        "JD101100011"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 82.3
+    },
+    {
+      "case_id": "eval_new_as_004",
+      "scenario": "after_sales",
+      "query": "这个商品有发票吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_beauty_020",
+        "p_food_010",
+        "p_food_018"
+      ],
+      "retrieved_top10": [
+        "p_beauty_020",
+        "p_food_010",
+        "p_food_018",
+        "p_beauty_005",
+        "p_beauty_009",
+        "p_beauty_023",
+        "p_beauty_017",
+        "p_beauty_013",
+        "p_digital_002",
+        "p_food_008"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 95.6
+    },
+    {
+      "case_id": "eval_new_as_005",
+      "scenario": "after_sales",
+      "query": "换货流程是怎样的",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_beauty_017",
+        "JD100017986276",
+        "p_clothes_002"
+      ],
+      "retrieved_top10": [
+        "p_beauty_017",
+        "JD100017986276",
+        "p_clothes_002",
+        "p_clothes_001",
+        "TBfc6767c2",
+        "TB4be05dc0",
+        "p_digital_013",
+        "p_beauty_005",
+        "TB097cfe05",
+        "p_clothes_020"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.4
+    },
+    {
+      "case_id": "eval_new_as_006",
+      "scenario": "after_sales",
+      "query": "快递大概几天到",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_clothes_002",
+        "p_clothes_003",
+        "p_clothes_001"
+      ],
+      "retrieved_top10": [
+        "p_clothes_002",
+        "p_clothes_003",
+        "p_clothes_001",
+        "p_clothes_020",
+        "p_food_011",
+        "p_clothes_023",
+        "p_food_009",
+        "p_food_010",
+        "p_food_001",
+        "p_clothes_005"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.9
+    },
+    {
+      "case_id": "eval_new_as_007",
+      "scenario": "after_sales",
+      "query": "可以货到付款吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_clothes_002",
+        "p_clothes_003",
+        "p_food_019"
+      ],
+      "retrieved_top10": [
+        "p_clothes_002",
+        "p_clothes_003",
+        "p_food_019",
+        "p_clothes_001",
+        "TB61a7a4a7",
+        "p_food_010",
+        "p_clothes_020",
+        "p_food_005",
+        "JD100017986276",
+        "JD101100011"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 74.8
+    },
+    {
+      "case_id": "eval_new_as_008",
+      "scenario": "after_sales",
+      "query": "这个有运费险吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TBa9213648",
+        "p_food_005",
+        "p_clothes_003"
+      ],
+      "retrieved_top10": [
+        "TBa9213648",
+        "p_food_005",
+        "p_clothes_003",
+        "p_clothes_014",
+        "TBeeb408b6",
+        "JD100225615118-A",
+        "p_food_007",
+        "TB16892645",
+        "p_clothes_025",
+        "TB8e151a46"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 82.0
+    },
+    {
+      "case_id": "eval_new_as_009",
+      "scenario": "after_sales",
+      "query": "保修期内免费维修吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_digital_010",
+        "p_digital_002",
+        "TB2175c6b8"
+      ],
+      "retrieved_top10": [
+        "p_digital_010",
+        "p_digital_002",
+        "TB2175c6b8",
+        "JD101100011",
+        "JD2775959",
+        "p_digital_017",
+        "TBfc6767c2",
+        "TBc0ea32f4",
+        "TB47bd93a2",
+        "TB10000004"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.4
+    },
+    {
+      "case_id": "eval_new_as_010",
+      "scenario": "after_sales",
+      "query": "可以加急发货吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_clothes_002",
+        "p_beauty_022",
+        "p_clothes_003"
+      ],
+      "retrieved_top10": [
+        "p_clothes_002",
+        "p_beauty_022",
+        "p_clothes_003",
+        "p_clothes_020",
+        "p_beauty_007",
+        "p_food_023",
+        "p_food_019",
+        "p_digital_023",
+        "p_clothes_021",
+        "JD101100011"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.0
+    },
+    {
+      "case_id": "eval_new_as_011",
+      "scenario": "after_sales",
+      "query": "赠品有哪些",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB61a7a4a7",
+        "TB4be05dc0",
+        "p_food_010"
+      ],
+      "retrieved_top10": [
+        "TB61a7a4a7",
+        "TB4be05dc0",
+        "p_food_010",
+        "TBfcfe4717",
+        "TB64e10767",
+        "p_food_009",
+        "p_food_019",
+        "TB7d8e2c99",
+        "p_food_005",
+        "p_food_016"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.6
+    },
+    {
+      "case_id": "eval_new_as_012",
+      "scenario": "after_sales",
+      "query": "送到广州要多久",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_clothes_003",
+        "p_clothes_020",
+        "p_clothes_002"
+      ],
+      "retrieved_top10": [
+        "p_clothes_003",
+        "p_clothes_020",
+        "p_clothes_002",
+        "JD10010001",
+        "JD101100011",
+        "p_food_011",
+        "p_food_005",
+        "JD100197769762",
+        "p_food_012",
+        "TBa9213648"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.3
+    },
+    {
+      "case_id": "eval_new_as_013",
+      "scenario": "after_sales",
+      "query": "这款耳机有国行保修吗",
+      "ground_truth": [
+        "JD100099038454",
+        "TB10000001",
+        "JD100038798465"
+      ],
+      "retrieved_top3": [
+        "JD100132209703",
+        "p_digital_018",
+        "p_digital_007"
+      ],
+      "retrieved_top10": [
+        "JD100132209703",
+        "p_digital_018",
+        "p_digital_007",
+        "JD100082659367",
+        "JD100294413340",
+        "JD100209512295",
+        "TB10000001",
+        "JD100222319152",
+        "JD100038798465",
+        "JD100183638657"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 77.2
+    },
+    {
+      "case_id": "eval_new_as_014",
+      "scenario": "after_sales",
+      "query": "海外版和国行版保修区别",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_digital_002",
+        "TB10000004",
+        "p_digital_010"
+      ],
+      "retrieved_top10": [
+        "p_digital_002",
+        "TB10000004",
+        "p_digital_010",
+        "JD2775959",
+        "p_digital_001",
+        "JD100129381482",
+        "TB10000002",
+        "p_digital_003",
+        "TB1a3efa37",
+        "JD2855251"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.7
+    },
+    {
+      "case_id": "eval_new_as_015",
+      "scenario": "after_sales",
+      "query": "以旧换新怎么操作",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_digital_006",
+        "p_digital_012",
+        "p_digital_020"
+      ],
+      "retrieved_top10": [
+        "p_digital_006",
+        "p_digital_012",
+        "p_digital_020",
+        "p_digital_013",
+        "p_beauty_005",
+        "p_digital_010",
+        "TB957167f6",
+        "p_digital_014",
+        "TBcdf3e424",
+        "TBfc6767c2"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.3
+    },
+    {
+      "case_id": "eval_new_as_016",
+      "scenario": "after_sales",
+      "query": "能分期付款吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TBa9bb1f4b",
+        "p_beauty_022",
+        "p_digital_010"
+      ],
+      "retrieved_top10": [
+        "TBa9bb1f4b",
+        "p_beauty_022",
+        "p_digital_010",
+        "p_clothes_002",
+        "p_beauty_019",
+        "p_beauty_007",
+        "TB097cfe05",
+        "p_digital_001",
+        "p_beauty_012",
+        "p_beauty_020"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.9
+    },
+    {
+      "case_id": "eval_new_as_017",
+      "scenario": "after_sales",
+      "query": "有没有延长保修服务",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_digital_002",
+        "p_digital_017",
+        "p_digital_010"
+      ],
+      "retrieved_top10": [
+        "p_digital_002",
+        "p_digital_017",
+        "p_digital_010",
+        "p_digital_008",
+        "JD101100011",
+        "p_digital_009",
+        "p_digital_022",
+        "p_digital_023",
+        "p_digital_014",
+        "p_digital_015"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.4
+    },
+    {
+      "case_id": "eval_new_as_018",
+      "scenario": "after_sales",
+      "query": "包装里包含充电器吗",
+      "ground_truth": [
+        "JD100017986276",
+        "JD100197769762",
+        "JD100129381482-A"
+      ],
+      "retrieved_top3": [
+        "JD10090009-A",
+        "JD10080008-A",
+        "JD101100011"
+      ],
+      "retrieved_top10": [
+        "JD10090009-A",
+        "JD10080008-A",
+        "JD101100011",
+        "JD100017986276",
+        "JD100213696321",
+        "JD100225615118-A",
+        "JD100197769762",
+        "TB7b0d192b",
+        "JD100129381482-A",
+        "JD101000010"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.1
+    },
+    {
+      "case_id": "eval_new_as_019",
+      "scenario": "after_sales",
+      "query": "退货需要原包装吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB4be05dc0",
+        "p_food_007",
+        "TB097cfe05"
+      ],
+      "retrieved_top10": [
+        "TB4be05dc0",
+        "p_food_007",
+        "TB097cfe05",
+        "p_food_009",
+        "p_food_008",
+        "p_food_016",
+        "p_food_017",
+        "p_food_020",
+        "TB09bcf244",
+        "p_food_011"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.6
+    },
+    {
+      "case_id": "eval_new_as_020",
+      "scenario": "after_sales",
+      "query": "保修需要提供什么凭证",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "JD100017986276",
+        "p_digital_002",
+        "p_digital_010"
+      ],
+      "retrieved_top10": [
+        "JD100017986276",
+        "p_digital_002",
+        "p_digital_010",
+        "JD100225615118-A",
+        "TB47bd93a2",
+        "TB10000004",
+        "p_digital_013",
+        "JD101100011",
+        "TBfc6767c2",
+        "TB2175c6b8"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.1
+    },
+    {
+      "case_id": "eval_new_cc_001",
+      "scenario": "chitchat",
+      "query": "你好",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_food_010",
+        "TB8e151a46",
+        "TB097cfe05"
+      ],
+      "retrieved_top10": [
+        "p_food_010",
+        "TB8e151a46",
+        "TB097cfe05",
+        "p_clothes_003",
+        "TB065492bc",
+        "p_food_005",
+        "TBa2e8e229",
+        "p_food_012",
+        "p_food_011",
+        "JD100129381482-A"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 78.2
+    },
+    {
+      "case_id": "eval_new_cc_002",
+      "scenario": "chitchat",
+      "query": "你能做什么",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB097cfe05",
+        "p_food_005",
+        "TB065492bc"
+      ],
+      "retrieved_top10": [
+        "TB097cfe05",
+        "p_food_005",
+        "TB065492bc",
+        "TB8e151a46",
+        "TB6077a84b",
+        "p_clothes_020",
+        "TBed1bb403",
+        "p_clothes_023",
+        "p_digital_004",
+        "TBc9393da9"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 79.3
+    },
+    {
+      "case_id": "eval_new_cc_003",
+      "scenario": "chitchat",
+      "query": "今天天气怎么样",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_food_024",
+        "p_food_004",
+        "p_food_025"
+      ],
+      "retrieved_top10": [
+        "p_food_024",
+        "p_food_004",
+        "p_food_025",
+        "TB18bfc1da",
+        "p_clothes_024",
+        "p_food_014",
+        "p_clothes_023",
+        "p_clothes_001",
+        "TBe4c39e30",
+        "p_food_013"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 78.1
+    },
+    {
+      "case_id": "eval_new_cc_004",
+      "scenario": "chitchat",
+      "query": "你是谁",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB065492bc",
+        "TB6077a84b",
+        "TB8e151a46"
+      ],
+      "retrieved_top10": [
+        "TB065492bc",
+        "TB6077a84b",
+        "TB8e151a46",
+        "TB097cfe05",
+        "TBa2e8e229",
+        "TBc9393da9",
+        "TB92dc0f05",
+        "TBed1bb403",
+        "p_clothes_005",
+        "TB5e696609"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 79.3
+    },
+    {
+      "case_id": "eval_new_cc_005",
+      "scenario": "chitchat",
+      "query": "谢谢你的推荐",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_beauty_021",
+        "p_beauty_005",
+        "p_beauty_022"
+      ],
+      "retrieved_top10": [
+        "p_beauty_021",
+        "p_beauty_005",
+        "p_beauty_022",
+        "p_beauty_017",
+        "p_beauty_013",
+        "p_beauty_003",
+        "p_beauty_007",
+        "p_beauty_006",
+        "p_beauty_011",
+        "p_beauty_009"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.0
+    },
+    {
+      "case_id": "eval_new_cc_006",
+      "scenario": "chitchat",
+      "query": "你叫什么名字",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB8e151a46",
+        "TB065492bc",
+        "p_clothes_005"
+      ],
+      "retrieved_top10": [
+        "TB8e151a46",
+        "TB065492bc",
+        "p_clothes_005",
+        "TBc9393da9",
+        "p_beauty_021",
+        "TBed1bb403",
+        "p_clothes_003",
+        "TBa2e8e229",
+        "TB097cfe05",
+        "p_clothes_022"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.3
+    },
+    {
+      "case_id": "eval_new_cc_007",
+      "scenario": "chitchat",
+      "query": "你会骗我吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB92dc0f05",
+        "TB097cfe05",
+        "TB065492bc"
+      ],
+      "retrieved_top10": [
+        "TB92dc0f05",
+        "TB097cfe05",
+        "TB065492bc",
+        "TBc9393da9",
+        "TB8e151a46",
+        "TBa2e8e229",
+        "p_beauty_021",
+        "p_beauty_022",
+        "p_digital_002",
+        "p_beauty_005"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 78.5
+    },
+    {
+      "case_id": "eval_new_cc_008",
+      "scenario": "chitchat",
+      "query": "讲个笑话吧",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TBed1bb403",
+        "TB065492bc",
+        "TB097cfe05"
+      ],
+      "retrieved_top10": [
+        "TBed1bb403",
+        "TB065492bc",
+        "TB097cfe05",
+        "p_food_004",
+        "TBa2e8e229",
+        "p_digital_002",
+        "TB8e151a46",
+        "TB1ef123b3",
+        "TB6077a84b",
+        "p_food_011"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 77.3
+    },
+    {
+      "case_id": "eval_new_cc_009",
+      "scenario": "chitchat",
+      "query": "吃了吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_food_010",
+        "p_food_021",
+        "p_food_011"
+      ],
+      "retrieved_top10": [
+        "p_food_010",
+        "p_food_021",
+        "p_food_011",
+        "TB61a7a4a7",
+        "TBb97aa1f9",
+        "p_food_019",
+        "TB4a50dfbe",
+        "p_food_012",
+        "p_food_020",
+        "p_food_016"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 76.5
+    },
+    {
+      "case_id": "eval_new_cc_010",
+      "scenario": "chitchat",
+      "query": "帮我查一下快递",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_clothes_003",
+        "p_clothes_002",
+        "TB4be05dc0"
+      ],
+      "retrieved_top10": [
+        "p_clothes_003",
+        "p_clothes_002",
+        "TB4be05dc0",
+        "p_clothes_020",
+        "p_food_023",
+        "p_food_001",
+        "p_food_012",
+        "p_food_011",
+        "p_food_010",
+        "p_clothes_001"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.5
+    },
+    {
+      "case_id": "eval_new_cc_011",
+      "scenario": "chitchat",
+      "query": "你有什么功能",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_food_005",
+        "TB097cfe05",
+        "TB065492bc"
+      ],
+      "retrieved_top10": [
+        "p_food_005",
+        "TB097cfe05",
+        "TB065492bc",
+        "p_digital_022",
+        "p_digital_010",
+        "JD10010001",
+        "JD10040004",
+        "p_food_006",
+        "p_digital_014",
+        "p_digital_006"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.7
+    },
+    {
+      "case_id": "eval_new_cc_012",
+      "scenario": "chitchat",
+      "query": "你智能吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "JD10010001",
+        "JD10040004",
+        "JD10020002"
+      ],
+      "retrieved_top10": [
+        "JD10010001",
+        "JD10040004",
+        "JD10020002",
+        "JD10030003",
+        "TB10000003",
+        "JD2725859",
+        "p_digital_017",
+        "p_digital_022",
+        "p_digital_010",
+        "p_digital_014"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 65.1
+    },
+    {
+      "case_id": "eval_new_cc_013",
+      "scenario": "chitchat",
+      "query": "BGM响起来",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "SN12442869770",
+        "JD10050005",
+        "JD10070007"
+      ],
+      "retrieved_top10": [
+        "SN12442869770",
+        "JD10050005",
+        "JD10070007",
+        "JD10060006",
+        "p_digital_018",
+        "JD100099038454-S",
+        "JD100099038454",
+        "TB065492bc",
+        "TB10000001",
+        "JD100209512295"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 70.9
+    },
+    {
+      "case_id": "eval_new_cc_014",
+      "scenario": "chitchat",
+      "query": "这个多少钱",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB8e151a46",
+        "p_food_025",
+        "JD10040004"
+      ],
+      "retrieved_top10": [
+        "TB8e151a46",
+        "p_food_025",
+        "JD10040004",
+        "JD10010001",
+        "p_food_024",
+        "p_clothes_003",
+        "p_food_005",
+        "p_food_004",
+        "p_digital_014",
+        "p_digital_001"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 81.9
+    },
+    {
+      "case_id": "eval_new_cc_015",
+      "scenario": "chitchat",
+      "query": "今天是几号",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB8e151a46",
+        "p_clothes_003",
+        "p_digital_014"
+      ],
+      "retrieved_top10": [
+        "TB8e151a46",
+        "p_clothes_003",
+        "p_digital_014",
+        "p_food_001",
+        "p_digital_001",
+        "p_clothes_005",
+        "TB097cfe05",
+        "TB92dc0f05",
+        "p_clothes_002",
+        "TBc9393da9"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 91.7
+    },
+    {
+      "case_id": "eval_new_cc_016",
+      "scenario": "chitchat",
+      "query": "你的数据库有多大",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_digital_004",
+        "p_digital_012",
+        "p_digital_006"
+      ],
+      "retrieved_top10": [
+        "p_digital_004",
+        "p_digital_012",
+        "p_digital_006",
+        "JD100017986276",
+        "p_clothes_023",
+        "p_clothes_002",
+        "p_digital_020",
+        "JD100197769762",
+        "p_clothes_001",
+        "JD10010001"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 77.0
+    },
+    {
+      "case_id": "eval_new_cc_017",
+      "scenario": "chitchat",
+      "query": "你是AI吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB1bd78f36",
+        "p_digital_022",
+        "TB097cfe05"
+      ],
+      "retrieved_top10": [
+        "TB1bd78f36",
+        "p_digital_022",
+        "TB097cfe05",
+        "TB065492bc",
+        "JD100156315",
+        "TB1839c917",
+        "TB10000003",
+        "JD100294413340",
+        "JD10020002",
+        "JD100209512296"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 78.0
+    },
+    {
+      "case_id": "eval_new_cc_018",
+      "scenario": "chitchat",
+      "query": "你和Siri谁厉害",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "JD10010001",
+        "p_digital_003",
+        "TB10000004"
+      ],
+      "retrieved_top10": [
+        "JD10010001",
+        "p_digital_003",
+        "TB10000004",
+        "p_digital_025",
+        "p_digital_001",
+        "p_digital_024",
+        "JD100225615118",
+        "JD100129381482",
+        "p_digital_012",
+        "TB1bd78f36"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.4
+    },
+    {
+      "case_id": "eval_new_cc_019",
+      "scenario": "chitchat",
+      "query": "帮我写首诗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB8e151a46",
+        "TB2051016f",
+        "TB64e10767"
+      ],
+      "retrieved_top10": [
+        "TB8e151a46",
+        "TB2051016f",
+        "TB64e10767",
+        "TBc9393da9",
+        "TB962fded0",
+        "TB92dc0f05",
+        "TB09cf2e8c",
+        "p_beauty_021",
+        "TB6cea64e6",
+        "p_clothes_020"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 77.9
+    },
+    {
+      "case_id": "eval_new_cc_020",
+      "scenario": "chitchat",
+      "query": "猫和狗哪个好",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB65d91ea7",
+        "TBe8bd70a7",
+        "TB09385cff"
+      ],
+      "retrieved_top10": [
+        "TB65d91ea7",
+        "TBe8bd70a7",
+        "TB09385cff",
+        "TBe952816a",
+        "TB40a36d57",
+        "TBc1aa77e7",
+        "TB0e967608",
+        "TBa5e29c81",
+        "TB10fea668",
+        "TB8251621d"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 87.3
+    },
+    {
+      "case_id": "eval_new_cc_021",
+      "scenario": "chitchat",
+      "query": "你会说方言吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB8e151a46",
+        "p_food_005",
+        "TBed1bb403"
+      ],
+      "retrieved_top10": [
+        "TB8e151a46",
+        "p_food_005",
+        "TBed1bb403",
+        "p_food_003",
+        "TB1839c917",
+        "p_food_021",
+        "p_food_014",
+        "TBc9393da9",
+        "JD2126492",
+        "p_digital_002"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 85.2
+    },
+    {
+      "case_id": "eval_new_cc_022",
+      "scenario": "chitchat",
+      "query": "推荐一部电影",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TBc9393da9",
+        "TB8e151a46",
+        "TB065492bc"
+      ],
+      "retrieved_top10": [
+        "TBc9393da9",
+        "TB8e151a46",
+        "TB065492bc",
+        "TB92dc0f05",
+        "TB6077a84b",
+        "p_beauty_005",
+        "TB5e696609",
+        "p_beauty_018",
+        "TBa2e8e229",
+        "TB2051016f"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 79.2
+    },
+    {
+      "case_id": "eval_new_cc_023",
+      "scenario": "chitchat",
+      "query": "你的开发者是谁",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB097cfe05",
+        "TB1bd78f36",
+        "TB065492bc"
+      ],
+      "retrieved_top10": [
+        "TB097cfe05",
+        "TB1bd78f36",
+        "TB065492bc",
+        "JD2775959",
+        "p_digital_012",
+        "TB10000002",
+        "p_digital_014",
+        "p_digital_004",
+        "p_digital_006",
+        "p_digital_010"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.4
+    },
+    {
+      "case_id": "eval_new_cc_024",
+      "scenario": "chitchat",
+      "query": "晚安",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB92dc0f05",
+        "TBa2e8e229",
+        "TB962fded0"
+      ],
+      "retrieved_top10": [
+        "TB92dc0f05",
+        "TBa2e8e229",
+        "TB962fded0",
+        "p_beauty_001",
+        "TB8e151a46",
+        "p_beauty_002",
+        "TB64e10767",
+        "JD10040004",
+        "TB09cf2e8c",
+        "JD10080008-A"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 77.6
+    },
+    {
+      "case_id": "eval_new_cc_025",
+      "scenario": "chitchat",
+      "query": "你知道圆周率吗",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB097cfe05",
+        "TB6077a84b",
+        "JD10040004"
+      ],
+      "retrieved_top10": [
+        "TB097cfe05",
+        "TB6077a84b",
+        "JD10040004",
+        "JD10030003",
+        "TBed1bb403",
+        "JD10020002",
+        "TB91d420a9",
+        "JD100225615118-A",
+        "JD100017986276",
+        "TB73201cbb"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 91.8
+    },
+    {
+      "case_id": "eval_s4_001",
+      "scenario": "anti_selection",
+      "query": "推荐降噪耳机，但不要小米的",
+      "ground_truth": [
+        "JD100038798465",
+        "JD100079260610",
+        "JD100209512295"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100209512295"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100209512295",
+        "JD100132209703",
+        "JD100294413340",
+        "JD100082659367",
+        "p_digital_018",
+        "JD100222319152",
+        "TB10000001",
+        "JD100129381482-A"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 110.4
+    },
+    {
+      "case_id": "eval_s4_002",
+      "scenario": "anti_selection",
+      "query": "推荐手机，除了华为以外的",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD2775959",
+        "JD2725859",
+        "p_digital_002"
+      ],
+      "retrieved_top10": [
+        "JD2775959",
+        "JD2725859",
+        "p_digital_002",
+        "JD2113676",
+        "TB10000002",
+        "p_digital_015",
+        "p_digital_010",
+        "p_digital_009",
+        "JD2102664",
+        "p_digital_016"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.4
+    },
+    {
+      "case_id": "eval_s4_003",
+      "scenario": "anti_selection",
+      "query": "不要Sony的耳机有什么推荐",
+      "ground_truth": [
+        "JD100038798465",
+        "JD100079260610",
+        "JD100209512295"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "p_digital_007",
+        "TB10000001"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "p_digital_007",
+        "TB10000001",
+        "JD100082659367",
+        "JD100132209703",
+        "JD100294413340",
+        "JD100222319152",
+        "JD100079260610",
+        "JD100209512295",
+        "JD100183638657"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 93.7
+    },
+    {
+      "case_id": "eval_s4_004",
+      "scenario": "anti_selection",
+      "query": "推荐蓝牙音箱，别给我推荐JBL的",
+      "ground_truth": [
+        "SN12442869770",
+        "JD100099038454-S",
+        "JD10050005"
+      ],
+      "retrieved_top3": [
+        "JD10060006",
+        "JD10070007",
+        "JD10050005"
+      ],
+      "retrieved_top10": [
+        "JD10060006",
+        "JD10070007",
+        "JD10050005",
+        "JD100099038454-S",
+        "JD100099038454",
+        "SN12442869770",
+        "p_digital_007",
+        "JD100082659367",
+        "JD100038798465",
+        "JD100222319152"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 93.8
+    },
+    {
+      "case_id": "eval_s4_005",
+      "scenario": "anti_selection",
+      "query": "不要苹果品牌的手表",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "JD10030003"
+      ],
+      "retrieved_top3": [
+        "JD10010001",
+        "JD10020002",
+        "JD10040004"
+      ],
+      "retrieved_top10": [
+        "JD10010001",
+        "JD10020002",
+        "JD10040004",
+        "JD10030003",
+        "p_digital_001",
+        "TB10000003",
+        "JD100225615118",
+        "p_digital_003",
+        "JD2718739",
+        "TB10000004"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 72.1
+    },
+    {
+      "case_id": "eval_s4_006",
+      "scenario": "anti_selection",
+      "query": "推荐耳机但不要入耳式的",
+      "ground_truth": [
+        "JD100038798465",
+        "JD100079260610",
+        "JD100209512295"
+      ],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100082659367",
+        "p_digital_007"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100082659367",
+        "p_digital_007",
+        "JD100038798465",
+        "JD100294413340",
+        "JD100209512295",
+        "p_digital_018",
+        "JD100183638657",
+        "JD100079260610",
+        "JD100132209703"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 83.9
+    },
+    {
+      "case_id": "eval_s4_007",
+      "scenario": "anti_selection",
+      "query": "找一款不是白色的手机",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_015",
+        "p_digital_016",
+        "JD2102664"
+      ],
+      "retrieved_top10": [
+        "p_digital_015",
+        "p_digital_016",
+        "JD2102664",
+        "p_digital_014",
+        "p_digital_001",
+        "p_digital_002",
+        "JD2855251",
+        "TB10000002",
+        "JD2725859",
+        "JD100222319152"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 96.1
+    },
+    {
+      "case_id": "eval_s4_008",
+      "scenario": "anti_selection",
+      "query": "推荐防晒霜，但不要含酒精的",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_beauty_006",
+        "p_beauty_010",
+        "p_beauty_023"
+      ],
+      "retrieved_top10": [
+        "p_beauty_006",
+        "p_beauty_010",
+        "p_beauty_023",
+        "p_beauty_005",
+        "TBcbbc0b11",
+        "p_beauty_020",
+        "p_beauty_009",
+        "p_beauty_024",
+        "p_beauty_021",
+        "p_beauty_022"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 86.8
+    },
+    {
+      "case_id": "eval_s4_009",
+      "scenario": "anti_selection",
+      "query": "非白色的耳机有哪些",
+      "ground_truth": [
+        "JD100038798465",
+        "JD100079260610",
+        "JD100209512295"
+      ],
+      "retrieved_top3": [
+        "JD100222319152",
+        "p_digital_007",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "JD100222319152",
+        "p_digital_007",
+        "JD100082659367",
+        "JD100079260610",
+        "TB10000001",
+        "JD100183638657",
+        "JD100209512295",
+        "JD100132209703",
+        "JD100038798465",
+        "JD100294413340"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 85.6
+    },
+    {
+      "case_id": "eval_s4_010",
+      "scenario": "anti_selection",
+      "query": "推荐不含糖的蛋白粉",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_food_004",
+        "p_food_024",
+        "p_food_003"
+      ],
+      "retrieved_top10": [
+        "p_food_004",
+        "p_food_024",
+        "p_food_003",
+        "p_food_002",
+        "TBaf8d1e29",
+        "p_food_019",
+        "p_food_017",
+        "p_beauty_013",
+        "p_food_023",
+        "p_food_022"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.3
+    },
+    {
+      "case_id": "eval_s4_011",
+      "scenario": "anti_selection",
+      "query": "推荐除了耳机以外的数码产品",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD10010001",
+        "JD10020002"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100082659367",
+        "JD100222319152",
+        "JD100294413340",
+        "TB10000001",
+        "JD100100010",
+        "JD100132209703",
+        "JD100209512295",
+        "p_digital_010"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 122.2
+    },
+    {
+      "case_id": "eval_s4_012",
+      "scenario": "anti_selection",
+      "query": "我想买数码产品但不要手机",
+      "ground_truth": [
+        "JD100038798465",
+        "JD100079260610",
+        "JD100129381482",
+        "JD100209512296"
+      ],
+      "retrieved_top3": [
+        "JD100100010",
+        "p_digital_019",
+        "JD100225615118"
+      ],
+      "retrieved_top10": [
+        "JD100100010",
+        "p_digital_019",
+        "JD100225615118",
+        "p_digital_014",
+        "p_digital_015",
+        "JD2718819",
+        "p_digital_024",
+        "p_digital_001",
+        "JD100129381482",
+        "p_digital_005"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.1
+    },
+    {
+      "case_id": "eval_s4_013",
+      "scenario": "anti_selection",
+      "query": "除了平板，还有什么设备推荐",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD10010001",
+        "JD10020002"
+      ],
+      "retrieved_top3": [
+        "p_digital_021",
+        "p_digital_019",
+        "p_digital_005"
+      ],
+      "retrieved_top10": [
+        "p_digital_021",
+        "p_digital_019",
+        "p_digital_005",
+        "p_digital_011",
+        "p_digital_024",
+        "JD100129381482",
+        "JD100225615120",
+        "p_digital_013",
+        "JD100209512296",
+        "JD174542270"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 110.2
+    },
+    {
+      "case_id": "eval_s4_014",
+      "scenario": "anti_selection",
+      "query": "推荐降噪耳机，不要Sony也不要Bose的",
+      "ground_truth": [
+        "JD100038798465",
+        "JD100079260610",
+        "JD100209512295"
+      ],
+      "retrieved_top3": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100209512295"
+      ],
+      "retrieved_top10": [
+        "JD100038798465",
+        "p_digital_007",
+        "JD100209512295",
+        "JD100132209703",
+        "JD100294413340",
+        "p_digital_018",
+        "JD100082659367",
+        "TB10000001",
+        "JD100222319152",
+        "JD100099038454"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 92.3
+    },
+    {
+      "case_id": "eval_s4_015",
+      "scenario": "anti_selection",
+      "query": "不要小米也不要华为的手机推荐",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "p_digital_002",
+        "p_digital_009",
+        "JD2775959"
+      ],
+      "retrieved_top10": [
+        "p_digital_002",
+        "p_digital_009",
+        "JD2775959",
+        "p_digital_015",
+        "p_digital_010",
+        "JD2725859",
+        "p_digital_016",
+        "JD2102664",
+        "JD2126492",
+        "TB10000002"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.3
+    },
+    {
+      "case_id": "eval_s4_016",
+      "scenario": "anti_selection",
+      "query": "推荐耳机但不是入耳式的也不要白色的",
+      "ground_truth": [
+        "JD100038798465",
+        "JD100079260610",
+        "JD100209512295"
+      ],
+      "retrieved_top3": [
+        "p_digital_007",
+        "TB10000001",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "TB10000001",
+        "JD100082659367",
+        "JD100222319152",
+        "JD100038798465",
+        "JD100209512295",
+        "p_digital_018",
+        "JD100294413340",
+        "JD100079260610",
+        "JD100183638657"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 107.9
+    },
+    {
+      "case_id": "eval_s4_017",
+      "scenario": "anti_selection",
+      "query": "不要日系也不要含酒精的护肤品",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_beauty_005",
+        "p_beauty_024",
+        "p_beauty_003"
+      ],
+      "retrieved_top10": [
+        "p_beauty_005",
+        "p_beauty_024",
+        "p_beauty_003",
+        "p_beauty_009",
+        "p_beauty_001",
+        "p_beauty_008",
+        "p_beauty_002",
+        "p_beauty_006",
+        "p_beauty_018",
+        "p_beauty_021"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 82.5
+    },
+    {
+      "case_id": "eval_s4_018",
+      "scenario": "anti_selection",
+      "query": "推荐耳机但不要骨传导的",
+      "ground_truth": [
+        "JD100038798465",
+        "JD100079260610",
+        "JD100209512295"
+      ],
+      "retrieved_top3": [
+        "JD100082659367",
+        "JD100294413340",
+        "JD100183638657"
+      ],
+      "retrieved_top10": [
+        "JD100082659367",
+        "JD100294413340",
+        "JD100183638657",
+        "TB10000001",
+        "JD100079260610",
+        "p_digital_007",
+        "JD100038798465",
+        "p_digital_018",
+        "JD100209512295",
+        "JD100099038454"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 88.4
+    },
+    {
+      "case_id": "eval_s4_019",
+      "scenario": "anti_selection",
+      "query": "我要买手机，不过别推荐太贵的，不要超过5000",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD2775959",
+        "JD2102664",
+        "JD2725859"
+      ],
+      "retrieved_top10": [
+        "JD2775959",
+        "JD2102664",
+        "JD2725859",
+        "JD2126492",
+        "JD2855251",
+        "JD100225615118",
+        "JD2718819",
+        "JD2718739",
+        "TB10000002",
+        "JD2113676"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 110.3
+    },
+    {
+      "case_id": "eval_s4_020",
+      "scenario": "anti_selection",
+      "query": "500以内耳机推荐，但是不要那种很容易掉的",
+      "ground_truth": [
+        "JD100038798465",
+        "JD100079260610",
+        "JD100209512295"
+      ],
+      "retrieved_top3": [
+        "p_digital_007",
+        "JD100038798465",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "JD100038798465",
+        "JD100082659367",
+        "JD100132209703",
+        "JD100222319152",
+        "JD100209512295",
+        "TB10000001",
+        "JD100294413340",
+        "p_digital_018",
+        "JD100183638657"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 94.7
+    },
+    {
+      "case_id": "eval_s6_001",
+      "scenario": "cart_operation",
+      "query": "把刚才推荐的降噪耳机加入购物车",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_digital_007",
+        "JD100209512295",
+        "JD100038798465"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "JD100209512295",
+        "JD100038798465",
+        "p_digital_018",
+        "JD100132209703",
+        "JD100294413340",
+        "JD100082659367",
+        "TB10000001",
+        "JD100222319152",
+        "JD100183638657"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.9
+    },
+    {
+      "case_id": "eval_s6_002",
+      "scenario": "cart_operation",
+      "query": "帮我加购这个商品",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB4be05dc0",
+        "TB4a50dfbe",
+        "p_beauty_004"
+      ],
+      "retrieved_top10": [
+        "TB4be05dc0",
+        "TB4a50dfbe",
+        "p_beauty_004",
+        "p_beauty_005",
+        "p_food_002",
+        "p_beauty_018",
+        "p_food_010",
+        "TB61a7a4a7",
+        "p_beauty_013",
+        "p_beauty_022"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 77.9
+    },
+    {
+      "case_id": "eval_s6_003",
+      "scenario": "cart_operation",
+      "query": "加入购物车吧",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB61a7a4a7",
+        "p_food_019",
+        "p_food_009"
+      ],
+      "retrieved_top10": [
+        "TB61a7a4a7",
+        "p_food_019",
+        "p_food_009",
+        "p_beauty_021",
+        "p_digital_002",
+        "TB4be05dc0",
+        "p_food_010",
+        "TB65d91ea7",
+        "p_digital_014",
+        "p_food_002"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 81.7
+    },
+    {
+      "case_id": "eval_s6_004",
+      "scenario": "cart_operation",
+      "query": "帮我把Sony XM5加到购物车里",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "JD100100010",
+        "JD100038798465",
+        "JD100205228688"
+      ],
+      "retrieved_top10": [
+        "JD100100010",
+        "JD100038798465",
+        "JD100205228688",
+        "TBe67b8ae5",
+        "p_digital_010",
+        "JD10080008",
+        "JD100009073095",
+        "JD100225615118-A",
+        "p_digital_017",
+        "p_digital_015"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 98.3
+    },
+    {
+      "case_id": "eval_s6_005",
+      "scenario": "cart_operation",
+      "query": "给我把那款耳机放入购物车",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB10000001",
+        "JD100082659367",
+        "JD100079260610"
+      ],
+      "retrieved_top10": [
+        "TB10000001",
+        "JD100082659367",
+        "JD100079260610",
+        "p_digital_018",
+        "JD100294413340",
+        "p_digital_007",
+        "JD100222319152",
+        "JD100209512295",
+        "JD100183638657",
+        "JD100099038454"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 84.5
+    },
+    {
+      "case_id": "eval_s6_006",
+      "scenario": "cart_operation",
+      "query": "购物车里有什么",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB65d91ea7",
+        "TBa438ca6f",
+        "TB61a7a4a7"
+      ],
+      "retrieved_top10": [
+        "TB65d91ea7",
+        "TBa438ca6f",
+        "TB61a7a4a7",
+        "p_food_005",
+        "TB47bd93a2",
+        "p_food_010",
+        "p_food_009",
+        "TB6800cfde",
+        "p_clothes_018",
+        "p_clothes_004"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 68.8
+    },
+    {
+      "case_id": "eval_s6_007",
+      "scenario": "cart_operation",
+      "query": "看看我的购物车",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB61a7a4a7",
+        "TB65d91ea7",
+        "p_food_019"
+      ],
+      "retrieved_top10": [
+        "TB61a7a4a7",
+        "TB65d91ea7",
+        "p_food_019",
+        "p_beauty_021",
+        "p_food_010",
+        "TB550f8056",
+        "p_food_009",
+        "p_digital_014",
+        "TB4be05dc0",
+        "TBa438ca6f"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 85.9
+    },
+    {
+      "case_id": "eval_s6_008",
+      "scenario": "cart_operation",
+      "query": "购物车里有几件商品",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB65d91ea7",
+        "TB61a7a4a7",
+        "p_food_010"
+      ],
+      "retrieved_top10": [
+        "TB65d91ea7",
+        "TB61a7a4a7",
+        "p_food_010",
+        "TBe38703fa",
+        "TBec6f4e32",
+        "p_clothes_022",
+        "TB4be05dc0",
+        "TB73201cbb",
+        "p_clothes_002",
+        "TBa9213648"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.0
+    },
+    {
+      "case_id": "eval_s6_009",
+      "scenario": "cart_operation",
+      "query": "删掉购物车里第二个商品",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_beauty_017",
+        "p_beauty_003",
+        "p_beauty_013"
+      ],
+      "retrieved_top10": [
+        "p_beauty_017",
+        "p_beauty_003",
+        "p_beauty_013",
+        "TB47bd93a2",
+        "p_beauty_021",
+        "TBcdf3e424",
+        "p_beauty_005",
+        "p_digital_014",
+        "p_digital_010",
+        "TB4be05dc0"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.6
+    },
+    {
+      "case_id": "eval_s6_010",
+      "scenario": "cart_operation",
+      "query": "把耳机从购物车移除",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_digital_018",
+        "p_digital_007",
+        "JD100209512295"
+      ],
+      "retrieved_top10": [
+        "p_digital_018",
+        "p_digital_007",
+        "JD100209512295",
+        "TB10000001",
+        "JD100038798465",
+        "JD100294413340",
+        "JD100079260610",
+        "JD100082659367",
+        "JD100183638657",
+        "JD100132209703"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.5
+    },
+    {
+      "case_id": "eval_s6_011",
+      "scenario": "cart_operation",
+      "query": "这个不要了帮我删掉",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB8e151a46",
+        "p_beauty_017",
+        "p_digital_014"
+      ],
+      "retrieved_top10": [
+        "TB8e151a46",
+        "p_beauty_017",
+        "p_digital_014",
+        "TBcdf3e424",
+        "TB065492bc",
+        "p_digital_019",
+        "p_digital_002",
+        "TB4be05dc0",
+        "TBed1bb403",
+        "TBa2e8e229"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 74.3
+    },
+    {
+      "case_id": "eval_s6_012",
+      "scenario": "cart_operation",
+      "query": "把Sony那个从购物车里去掉",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "JD100100010",
+        "JD100038798465",
+        "JD100205228688"
+      ],
+      "retrieved_top10": [
+        "JD100100010",
+        "JD100038798465",
+        "JD100205228688",
+        "JD10080008",
+        "p_digital_014",
+        "p_digital_010",
+        "TB10000004",
+        "JD100009073095",
+        "p_digital_017",
+        "TB16a6002f"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 97.9
+    },
+    {
+      "case_id": "eval_s6_013",
+      "scenario": "cart_operation",
+      "query": "删掉购物车里所有的耳机",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_digital_018",
+        "p_digital_007",
+        "JD100209512295"
+      ],
+      "retrieved_top10": [
+        "p_digital_018",
+        "p_digital_007",
+        "JD100209512295",
+        "JD100038798465",
+        "JD100079260610",
+        "JD100294413340",
+        "JD100132209703",
+        "JD100082659367",
+        "TB10000001",
+        "JD100183638657"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.4
+    },
+    {
+      "case_id": "eval_s6_014",
+      "scenario": "cart_operation",
+      "query": "这个耳机我要两个",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_digital_007",
+        "p_digital_018",
+        "JD100222319152"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "p_digital_018",
+        "JD100222319152",
+        "JD100082659367",
+        "TB10000001",
+        "JD100209512295",
+        "JD100079260610",
+        "JD100132209703",
+        "JD100294413340",
+        "JD100183638657"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 70.7
+    },
+    {
+      "case_id": "eval_s6_015",
+      "scenario": "cart_operation",
+      "query": "数量改成3个",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB097cfe05",
+        "TB7d8e2c99",
+        "p_digital_018"
+      ],
+      "retrieved_top10": [
+        "TB097cfe05",
+        "TB7d8e2c99",
+        "p_digital_018",
+        "p_food_002",
+        "p_food_009",
+        "p_food_001",
+        "JD08cb17d2",
+        "JD100017986276",
+        "TB4be05dc0",
+        "p_beauty_005"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 102.2
+    },
+    {
+      "case_id": "eval_s6_016",
+      "scenario": "cart_operation",
+      "query": "耳机多要一个",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_digital_018",
+        "p_digital_007",
+        "JD100082659367"
+      ],
+      "retrieved_top10": [
+        "p_digital_018",
+        "p_digital_007",
+        "JD100082659367",
+        "JD100222319152",
+        "JD100132209703",
+        "TB10000001",
+        "JD100209512295",
+        "JD100038798465",
+        "JD100079260610",
+        "JD100294413340"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.1
+    },
+    {
+      "case_id": "eval_s6_017",
+      "scenario": "cart_operation",
+      "query": "清空购物车",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_beauty_017",
+        "p_food_020",
+        "p_food_009"
+      ],
+      "retrieved_top10": [
+        "p_beauty_017",
+        "p_food_020",
+        "p_food_009",
+        "TB61a7a4a7",
+        "TBa6145a7e",
+        "p_food_010",
+        "p_digital_014",
+        "p_food_019",
+        "p_clothes_001",
+        "p_clothes_002"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 78.3
+    },
+    {
+      "case_id": "eval_s6_018",
+      "scenario": "cart_operation",
+      "query": "把购物车全删了",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_beauty_017",
+        "p_digital_014",
+        "p_digital_002"
+      ],
+      "retrieved_top10": [
+        "p_beauty_017",
+        "p_digital_014",
+        "p_digital_002",
+        "p_digital_010",
+        "p_beauty_021",
+        "TB61a7a4a7",
+        "p_food_019",
+        "p_food_020",
+        "p_beauty_005",
+        "p_food_009"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.9
+    },
+    {
+      "case_id": "eval_s6_019",
+      "scenario": "cart_operation",
+      "query": "下单吧，用默认地址",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "JD100017986276",
+        "p_clothes_003",
+        "p_digital_014"
+      ],
+      "retrieved_top10": [
+        "JD100017986276",
+        "p_clothes_003",
+        "p_digital_014",
+        "p_digital_012",
+        "p_food_019",
+        "p_digital_025",
+        "p_digital_001",
+        "p_digital_019",
+        "JD100197769762",
+        "JD100129381482"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.6
+    },
+    {
+      "case_id": "eval_s6_020",
+      "scenario": "cart_operation",
+      "query": "帮我结算购物车",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB65d91ea7",
+        "TB61a7a4a7",
+        "TB8fdfd90e"
+      ],
+      "retrieved_top10": [
+        "TB65d91ea7",
+        "TB61a7a4a7",
+        "TB8fdfd90e",
+        "TB7d8e2c99",
+        "p_food_009",
+        "TB47bd93a2",
+        "p_food_019",
+        "TB4be05dc0",
+        "p_clothes_002",
+        "p_beauty_017"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 92.5
+    },
+    {
+      "case_id": "eval_s7_001",
+      "scenario": "image_search",
+      "query": "[图片描述] 白色运动鞋，Nike标志，网面材质",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "JD66d3036a",
+        "JD171e020b",
+        "JD43873f09"
+      ],
+      "retrieved_top10": [
+        "JD66d3036a",
+        "JD171e020b",
+        "JD43873f09",
+        "JDf972553d",
+        "p_clothes_003",
+        "JDe287c03a",
+        "JD42ea6836",
+        "p_clothes_007",
+        "JDe52f5797",
+        "p_clothes_012"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 108.2
+    },
+    {
+      "case_id": "eval_s7_002",
+      "scenario": "image_search",
+      "query": "[图片描述] 黑色皮夹克，立领设计，金属拉链",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_clothes_002",
+        "p_clothes_005",
+        "p_clothes_001"
+      ],
+      "retrieved_top10": [
+        "p_clothes_002",
+        "p_clothes_005",
+        "p_clothes_001",
+        "p_clothes_003",
+        "p_clothes_022",
+        "TB48bb3b96",
+        "p_clothes_020",
+        "TB0d53c2e6",
+        "TBe4c39e30",
+        "TBc83674cd"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 107.6
+    },
+    {
+      "case_id": "eval_s7_003",
+      "scenario": "image_search",
+      "query": "[图片描述] 蓝色牛仔裤，直筒版型，Levi's标签",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB96476740",
+        "p_clothes_004",
+        "TBd8592228"
+      ],
+      "retrieved_top10": [
+        "TB96476740",
+        "p_clothes_004",
+        "TBd8592228",
+        "p_clothes_006",
+        "p_clothes_022",
+        "p_clothes_001",
+        "p_clothes_016",
+        "p_clothes_023",
+        "p_clothes_005",
+        "TB48bb3b96"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 108.3
+    },
+    {
+      "case_id": "eval_s7_004",
+      "scenario": "image_search",
+      "query": "[图片描述] 红色连衣裙，碎花图案，雪纺材质",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB60965585",
+        "TBd8592228",
+        "TBbd7e7cf5"
+      ],
+      "retrieved_top10": [
+        "TB60965585",
+        "TBd8592228",
+        "TBbd7e7cf5",
+        "TB48bb3b96",
+        "TB2de5437d",
+        "TB96476740",
+        "TBec6f4e32",
+        "p_beauty_004",
+        "p_clothes_016",
+        "TB64e10767"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 96.9
+    },
+    {
+      "case_id": "eval_s7_005",
+      "scenario": "image_search",
+      "query": "[图片描述] 灰色卫衣，连帽设计，胸前有印花logo",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_clothes_005",
+        "p_clothes_022",
+        "TB48bb3b96"
+      ],
+      "retrieved_top10": [
+        "p_clothes_005",
+        "p_clothes_022",
+        "TB48bb3b96",
+        "p_clothes_019",
+        "p_clothes_001",
+        "TBec6f4e32",
+        "p_clothes_002",
+        "TBbd7e7cf5",
+        "p_clothes_003",
+        "p_clothes_020"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 100.3
+    },
+    {
+      "case_id": "eval_s7_006",
+      "scenario": "image_search",
+      "query": "[图片描述] 银色笔记本电脑，超薄设计，发光logo",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_digital_023",
+        "p_digital_020",
+        "p_digital_022"
+      ],
+      "retrieved_top10": [
+        "p_digital_023",
+        "p_digital_020",
+        "p_digital_022",
+        "p_digital_012",
+        "p_digital_006",
+        "JD100156315",
+        "p_digital_004",
+        "p_digital_021",
+        "TB16892645",
+        "JD100129381482"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 127.0
+    },
+    {
+      "case_id": "eval_s7_007",
+      "scenario": "image_search",
+      "query": "[图片描述] 白色无线耳机，入耳式，充电盒方形",
+      "ground_truth": [
+        "JD100038798465",
+        "JD100079260610",
+        "JD100209512295"
+      ],
+      "retrieved_top3": [
+        "p_digital_007",
+        "JD100222319152",
+        "JD100129381482-A"
+      ],
+      "retrieved_top10": [
+        "p_digital_007",
+        "JD100222319152",
+        "JD100129381482-A",
+        "p_digital_018",
+        "JD100209512295",
+        "JD100082659367",
+        "TB10000001",
+        "JD100294413340",
+        "JD100079260610",
+        "JD100225615118-A"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 108.1
+    },
+    {
+      "case_id": "eval_s7_008",
+      "scenario": "image_search",
+      "query": "[图片描述] 黑色电子手表，圆形表盘，硅胶表带",
+      "ground_truth": [
+        "JD10010001",
+        "JD10020002",
+        "JD10030003"
+      ],
+      "retrieved_top3": [
+        "JD10010001",
+        "JD10040004",
+        "JD10020002"
+      ],
+      "retrieved_top10": [
+        "JD10010001",
+        "JD10040004",
+        "JD10020002",
+        "JD10030003",
+        "TB10000003",
+        "TB16a6002f",
+        "p_digital_002",
+        "p_digital_022",
+        "p_digital_001",
+        "p_digital_020"
+      ],
+      "p3": 0.6667,
+      "recall": 0.6667,
+      "latency_ms": 94.0
+    },
+    {
+      "case_id": "eval_s7_009",
+      "scenario": "image_search",
+      "query": "[图片描述] 深蓝色手机，双摄像头，全面屏设计",
+      "ground_truth": [
+        "JD100225615118",
+        "JD2718739",
+        "JD2718819"
+      ],
+      "retrieved_top3": [
+        "JD2725859",
+        "p_digital_015",
+        "p_digital_016"
+      ],
+      "retrieved_top10": [
+        "JD2725859",
+        "p_digital_015",
+        "p_digital_016",
+        "p_digital_017",
+        "JD2113676",
+        "p_digital_002",
+        "JD2775959",
+        "TB10000002",
+        "p_digital_014",
+        "JD2855251"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 108.5
+    },
+    {
+      "case_id": "eval_s7_010",
+      "scenario": "image_search",
+      "query": "[图片描述] 黑色方块蓝牙音箱，Mesh网罩，便携",
+      "ground_truth": [
+        "SN12442869770",
+        "JD100099038454-S",
+        "JD10050005"
+      ],
+      "retrieved_top3": [
+        "JD10060006",
+        "SN12442869770",
+        "JD100099038454"
+      ],
+      "retrieved_top10": [
+        "JD10060006",
+        "SN12442869770",
+        "JD100099038454",
+        "JD10070007",
+        "JD100099038454-S",
+        "JD10050005",
+        "JD100082659367",
+        "TBd3ea6dff",
+        "TB16a6002f",
+        "TB10000001"
+      ],
+      "p3": 0.3333,
+      "recall": 0.3333,
+      "latency_ms": 107.3
+    },
+    {
+      "case_id": "eval_s7_011",
+      "scenario": "image_search",
+      "query": "[图片描述] 棕色手提包，荔枝纹皮革，金色五金件",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TBc83674cd",
+        "TB0d53c2e6",
+        "TB550f8056"
+      ],
+      "retrieved_top10": [
+        "TBc83674cd",
+        "TB0d53c2e6",
+        "TB550f8056",
+        "TBa438ca6f",
+        "TB16892645",
+        "TBb0adde4c",
+        "p_clothes_025",
+        "TB6800cfde",
+        "TBa9213648",
+        "p_clothes_018"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 91.8
+    },
+    {
+      "case_id": "eval_s7_012",
+      "scenario": "image_search",
+      "query": "[图片描述] 黑色双肩包，尼龙材质，多个外袋",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TB16892645",
+        "TBb0adde4c",
+        "p_clothes_025"
+      ],
+      "retrieved_top10": [
+        "TB16892645",
+        "TBb0adde4c",
+        "p_clothes_025",
+        "TB550f8056",
+        "TBa438ca6f",
+        "p_clothes_018",
+        "TB6800cfde",
+        "TBc83674cd",
+        "TBf9bff83e",
+        "TB0d53c2e6"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 108.8
+    },
+    {
+      "case_id": "eval_s7_013",
+      "scenario": "image_search",
+      "query": "[图片描述] 白色帆布鞋，低帮，橡胶鞋底",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_clothes_008",
+        "JDf972553d",
+        "p_clothes_004"
+      ],
+      "retrieved_top10": [
+        "p_clothes_008",
+        "JDf972553d",
+        "p_clothes_004",
+        "JD66d3036a",
+        "JD43873f09",
+        "JD171e020b",
+        "JDfc117d3d",
+        "p_clothes_012",
+        "p_clothes_009",
+        "p_clothes_011"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.7
+    },
+    {
+      "case_id": "eval_s7_014",
+      "scenario": "image_search",
+      "query": "[图片描述] 红色运动鞋，网面透气，跑步鞋",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "JDf972553d",
+        "JD66d3036a",
+        "p_clothes_008"
+      ],
+      "retrieved_top10": [
+        "JDf972553d",
+        "JD66d3036a",
+        "p_clothes_008",
+        "JDe287c03a",
+        "JDfc117d3d",
+        "p_clothes_007",
+        "JD8e53becb",
+        "p_clothes_009",
+        "JDe52f5797",
+        "JD43873f09"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 108.7
+    },
+    {
+      "case_id": "eval_s7_015",
+      "scenario": "image_search",
+      "query": "[图片描述] 卡其色斜挎包，帆布材质，简约设计",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TBc83674cd",
+        "TBa438ca6f",
+        "TBb0adde4c"
+      ],
+      "retrieved_top10": [
+        "TBc83674cd",
+        "TBa438ca6f",
+        "TBb0adde4c",
+        "TB550f8056",
+        "TB0d53c2e6",
+        "TB16892645",
+        "p_clothes_025",
+        "TB6800cfde",
+        "p_clothes_018",
+        "TBf9bff83e"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 107.9
+    },
+    {
+      "case_id": "eval_s7_016",
+      "scenario": "image_search",
+      "query": "[图片描述] 红色口红，金色管身，哑光质地",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TBa3a0add9",
+        "p_beauty_015",
+        "p_beauty_008"
+      ],
+      "retrieved_top10": [
+        "TBa3a0add9",
+        "p_beauty_015",
+        "p_beauty_008",
+        "p_beauty_009",
+        "p_beauty_002",
+        "p_beauty_006",
+        "p_beauty_018",
+        "p_beauty_020",
+        "TBcbbc0b11",
+        "p_beauty_005"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 109.3
+    },
+    {
+      "case_id": "eval_s7_017",
+      "scenario": "image_search",
+      "query": "[图片描述] 白色防晒霜，SPF50+，摇摇乐瓶身",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "TBcbbc0b11",
+        "p_beauty_023",
+        "p_beauty_010"
+      ],
+      "retrieved_top10": [
+        "TBcbbc0b11",
+        "p_beauty_023",
+        "p_beauty_010",
+        "p_beauty_006",
+        "p_beauty_020",
+        "TB18bfc1da",
+        "p_beauty_005",
+        "p_beauty_018",
+        "p_beauty_008",
+        "TBa3a0add9"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 94.2
+    },
+    {
+      "case_id": "eval_s7_018",
+      "scenario": "image_search",
+      "query": "[图片描述] 粉色腮红，圆形铁盒，带小镜子",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_beauty_013",
+        "p_beauty_015",
+        "p_beauty_025"
+      ],
+      "retrieved_top10": [
+        "p_beauty_013",
+        "p_beauty_015",
+        "p_beauty_025",
+        "TBa3a0add9",
+        "p_beauty_014",
+        "TB74ab36a4",
+        "p_beauty_019",
+        "p_beauty_020",
+        "p_beauty_005",
+        "p_beauty_008"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 108.6
+    },
+    {
+      "case_id": "eval_s7_019",
+      "scenario": "image_search",
+      "query": "[图片描述] 透明玻璃瓶精华液，滴管设计，金色盖子",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_beauty_003",
+        "TB327d2f6e",
+        "p_beauty_009"
+      ],
+      "retrieved_top10": [
+        "p_beauty_003",
+        "TB327d2f6e",
+        "p_beauty_009",
+        "p_beauty_002",
+        "p_beauty_001",
+        "TB4cd06034",
+        "p_beauty_005",
+        "p_beauty_018",
+        "p_beauty_024",
+        "p_beauty_004"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 93.0
+    },
+    {
+      "case_id": "eval_s7_020",
+      "scenario": "image_search",
+      "query": "[图片描述] 黑色眼线笔，极细笔尖，防水配方",
+      "ground_truth": [],
+      "retrieved_top3": [
+        "p_beauty_016",
+        "p_beauty_025",
+        "TB962fded0"
+      ],
+      "retrieved_top10": [
+        "p_beauty_016",
+        "p_beauty_025",
+        "TB962fded0",
+        "p_beauty_021",
+        "p_beauty_013",
+        "TBa3a0add9",
+        "TB2ed8c887",
+        "p_beauty_015",
+        "p_beauty_018",
+        "p_beauty_002"
+      ],
+      "p3": 0.0,
+      "recall": 0.0,
+      "latency_ms": 109.1
+    }
+  ]
+}

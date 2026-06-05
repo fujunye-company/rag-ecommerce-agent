@@ -1,6 +1,6 @@
 # RAG 电商 AI 导购 Agent
 
-> **AI 全栈挑战赛 (第3届) — 华南理工大学 2026**  
+> **AI 全栈挑战赛 (第3届) —  2026**  
 > 基于 RAG + LangGraph + Doubao 的智能导购系统  
 > 最高优先级需求：`docs/background/REQS-竞赛核心需求.md`
 

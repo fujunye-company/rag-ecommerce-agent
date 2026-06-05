@@ -18,7 +18,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
-from app.api import chat, products, upload, evaluation, feedback, compare, knowledge, cart, order
+from app.api import chat, products, upload, evaluation, feedback, compare, knowledge, cart, order, favorites, footprints
 from app.core.config import settings
 from app.core.database import engine, Base
 
@@ -187,6 +187,8 @@ for prefix in ["/api/v1"]:
     app.include_router(knowledge.router, prefix=prefix, tags=["knowledge"])
     app.include_router(cart.router, prefix=prefix, tags=["cart"])
     app.include_router(order.router, prefix=prefix, tags=["order"])
+    app.include_router(favorites.router, prefix=prefix, tags=["favorites"])
+    app.include_router(footprints.router, prefix=prefix, tags=["footprints"])
 
 # 商品图片服务 — FastAPI 路由替代 StaticFiles mount
 # 解决中文路径 URL 编码兼容性问题（StaticFiles mount 对中文字符处理不一致）

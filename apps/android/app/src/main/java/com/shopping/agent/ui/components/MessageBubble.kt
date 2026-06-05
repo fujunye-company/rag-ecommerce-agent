@@ -74,7 +74,9 @@ fun CompareDimensionsCard(dimensions: List<Map<String, Any?>>) {
     ) {
         Column(modifier = Modifier.padding(Dimens.space2)) {
             dimensions.forEach { dim ->
+                @Suppress("UNCHECKED_CAST")
                 val name = dim["name"] as? String ?: return@forEach
+                @Suppress("UNCHECKED_CAST")
                 val values = dim["values"] as? Map<String, Any?> ?: emptyMap()
                 val winner = dim["winner"] as? String
 

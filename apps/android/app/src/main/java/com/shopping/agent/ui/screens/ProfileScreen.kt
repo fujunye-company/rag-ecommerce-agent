@@ -10,8 +10,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HeadsetMic
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -191,19 +193,38 @@ private fun OrderStatusSection(modifier: Modifier = Modifier) {
 }
 
 /**
- * 常用功能 2×3 网格 — 使用 Material Icons 替代 Emoji
+ * 常用功能 2×3 网格 — 使用 Material Icons 替代 Emoji。
+ *
+ * "收藏"和"足迹"显示从数据库加载的真实数量，点击可导航到对应页面。
+ * 其他功能仍使用 Mock 占位数据。
+ *
  * 设计规约: §5.4 ProfileFeatureGrid
  */
 @Composable
-private fun ProfileFeatureGrid(modifier: Modifier = Modifier) {
+private fun ProfileFeatureGrid(
+    favoriteCount: Int = 0,
+    footprintCount: Int = 0,
+    onFavoritesClick: () -> Unit = {},
+    onFootprintsClick: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier.fillMaxWidth()) {
         val features = MockProfile.features
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            // 快递（占位）
             FeatureItem(features[0].title, features[0].subtitle, Icons.Default.Settings, Modifier.weight(1f))
-            FeatureItem(features[1].title, features[1].subtitle, Icons.Default.Settings, Modifier.weight(1f))
+            // 收藏 — 显示真实数量
+            FeatureItem(
+                title = features[1].title,
+                subtitle = if (favoriteCount > 0) "${favoriteCount}件收藏" else "暂无收藏",
+                icon = Icons.Default.Favorite,
+                modifier = Modifier.weight(1f),
+                onClick = onFavoritesClick,
+            )
+            // 关注店铺（占位）
             FeatureItem(features[2].title, features[2].subtitle, Icons.Default.HeadsetMic, Modifier.weight(1f))
         }
         Spacer(Modifier.height(12.dp))
@@ -211,8 +232,17 @@ private fun ProfileFeatureGrid(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            FeatureItem(features[3].title, features[3].subtitle, Icons.Default.Settings, Modifier.weight(1f))
+            // 足迹 — 显示真实数量
+            FeatureItem(
+                title = features[3].title,
+                subtitle = if (footprintCount > 0) "${footprintCount}件商品" else "暂无足迹",
+                icon = Icons.Default.Star,
+                modifier = Modifier.weight(1f),
+                onClick = onFootprintsClick,
+            )
+            // 想要（占位）
             FeatureItem(features[4].title, features[4].subtitle, Icons.Default.Settings, Modifier.weight(1f))
+            // 我有（占位）
             FeatureItem(features[5].title, features[5].subtitle, Icons.Default.HeadsetMic, Modifier.weight(1f))
         }
     }
@@ -224,12 +254,14 @@ private fun FeatureItem(
     subtitle: String,
     icon: ImageVector,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
 ) {
     Card(
         modifier = modifier,
         shape = RadiusLg,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        onClick = onClick,
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -455,12 +487,16 @@ fun ProfileScreen(
     onSettingsClick: () -> Unit = {},
     onCustomerServiceClick: () -> Unit = {},
     onCartClick: () -> Unit = {},
+    onFavoritesClick: () -> Unit = {},
+    onFootprintsClick: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val repository = remember { UserRepository(context) }
     var avatarBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     var displayName by remember { mutableStateOf("fujunye") }
     var cartItems by remember { mutableStateOf<List<CartItem>>(emptyList()) }
+    var favoriteCount by remember { mutableIntStateOf(0) }
+    var footprintCount by remember { mutableIntStateOf(0) }
 
     // 懒加载用户头像和昵称：DB 读取均在 IO 线程异步执行
     LaunchedEffect(Unit) {
@@ -509,6 +545,26 @@ fun ProfileScreen(
         }
     }
 
+    // 懒加载收藏数量 — 每次进入页面时刷新一次
+    LaunchedEffect(Unit) {
+        try {
+            val count = withContext(Dispatchers.IO) { repository.getFavoriteCount() }
+            favoriteCount = count
+        } catch (_: Exception) {
+            favoriteCount = 0
+        }
+    }
+
+    // 懒加载足迹数量 — 每次进入页面时刷新一次
+    LaunchedEffect(Unit) {
+        try {
+            val count = withContext(Dispatchers.IO) { repository.getFootprintCount() }
+            footprintCount = count
+        } catch (_: Exception) {
+            footprintCount = 0
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -532,7 +588,12 @@ fun ProfileScreen(
             OrderStatusSection()
 
             // ===== A04: 常用功能 =====
-            ProfileFeatureGrid()
+            ProfileFeatureGrid(
+                favoriteCount = favoriteCount,
+                footprintCount = footprintCount,
+                onFavoritesClick = onFavoritesClick,
+                onFootprintsClick = onFootprintsClick,
+            )
 
             // ===== A05: 领券中心 =====
             CouponCenterSection()

@@ -23,7 +23,7 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
         /** 数据库文件名 */
         const val DATABASE_NAME = "hermes_local.db"
         /** 当前数据库版本号，变更 schema 时递增 */
-        const val DATABASE_VERSION = 8
+        const val DATABASE_VERSION = 9
 
         /** 用户画像表 — 以 "sw" UUID 为主键，avatar 为 BLOB 列 */
         const val TABLE_USER = "user_profile"
@@ -46,6 +46,10 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
         const val TABLE_ORDER_RECORDS = "order_records"
         /** 登录状态表 — 记录用户登录状态，用于启动时判断是否跳过登录页 */
         const val TABLE_LOGIN_STATE = "login_state"
+        /** 商品收藏记录表 — 记录用户收藏的商品 */
+        const val TABLE_FAVORITES = "favorites"
+        /** 商品足迹记录表 — 记录用户浏览过的商品及浏览日期 */
+        const val TABLE_FOOTPRINTS = "footprints"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -407,7 +411,7 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
             var cursor: android.database.Cursor? = null
             try {
                 cursor = db.rawQuery("PRAGMA table_info($TABLE_CART)", null)
-                while (cursor != null && cursor.moveToNext()) {
+                while (cursor.moveToNext()) {
                     val colName = cursor.getString(cursor.getColumnIndexOrThrow("name"))
                     if (colName == "is_selected") {
                         columnAdded = true
@@ -422,6 +426,35 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
             if (!columnAdded) {
                 android.util.Log.e("LocalDatabase", "v8 迁移失败：is_selected 列未能添加到 $TABLE_CART 表，购物车可能无法正常使用")
             }
+        }
+
+        if (oldVersion < 9) {
+            // v9: 新增商品收藏记录表和商品足迹记录表
+            // 收藏记录表 — 复合主键 (user_id, product_id)，满足 3NF
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS $TABLE_FAVORITES (
+                    user_id     TEXT NOT NULL,
+                    product_id  TEXT NOT NULL,
+                    created_at  INTEGER NOT NULL,
+                    PRIMARY KEY (user_id, product_id),
+                    FOREIGN KEY (user_id) REFERENCES $TABLE_USER(id)
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_fav_user ON $TABLE_FAVORITES(user_id, created_at DESC)")
+
+            // 足迹记录表 — 复合主键 (user_id, product_id)，满足 3NF
+            // browse_date 仅记录年月日（毫秒时间戳在读写时转为日期）
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS $TABLE_FOOTPRINTS (
+                    user_id     TEXT NOT NULL,
+                    product_id  TEXT NOT NULL,
+                    browse_date INTEGER NOT NULL,
+                    created_at  INTEGER NOT NULL,
+                    PRIMARY KEY (user_id, product_id),
+                    FOREIGN KEY (user_id) REFERENCES $TABLE_USER(id)
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_fp_user ON $TABLE_FOOTPRINTS(user_id, browse_date DESC)")
         }
     }
 }

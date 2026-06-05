@@ -62,7 +62,10 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
             if (cachedProduct == null) {
                 cachedProduct = detail.toCartProduct()
             }
-            val faved = prefs.getBoolean("fav_$productId", false)
+            // 从数据库查询收藏状态（而非 SharedPreferences）
+            val faved = withContext(Dispatchers.IO) {
+                repository.isFavorited(productId)
+            }
             val following = prefs.getBoolean("follow_${detail.shop.name}", false)
             _uiState.update {
                 it.copy(
@@ -98,9 +101,19 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
 
     fun toggleFavorite() {
         val product = _uiState.value.product ?: return
-        val newState = !_uiState.value.isFavorited
-        prefs.edit().putBoolean("fav_${product.productId}", newState).apply()
-        _uiState.update { it.copy(isFavorited = newState) }
+        viewModelScope.launch {
+            // 1. 操作前端 SQLite 数据库（收藏/取消收藏）
+            val newState = withContext(Dispatchers.IO) {
+                repository.toggleFavorite(product.productId)
+            }
+            // 2. 同步到后端 PostgreSQL
+            withContext(Dispatchers.IO) {
+                // toggleFavorite 返回操作后的状态；若状态改变则同步
+                repository.syncFavoriteToBackend(product.productId, newState)
+            }
+            // 3. 更新 UI
+            _uiState.update { it.copy(isFavorited = newState) }
+        }
     }
 
     fun toggleFollowShop() {

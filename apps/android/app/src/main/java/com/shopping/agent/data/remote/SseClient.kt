@@ -225,6 +225,7 @@ class SseClient(
                 "compare" -> {
                     val node = gson.fromJson(json, com.google.gson.JsonObject::class.java)
                     val dims = node.getAsJsonArray("dimensions")
+                    @Suppress("UNCHECKED_CAST")
                     val dimList = if (dims != null) {
                         gson.fromJson(dims, List::class.java) as List<Map<String, Any?>>
                     } else emptyList()

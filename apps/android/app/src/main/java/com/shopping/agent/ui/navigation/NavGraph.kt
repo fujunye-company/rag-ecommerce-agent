@@ -101,6 +101,8 @@ fun AppNavGraph(
                         )
                     }
                     composable("profile") {
+                        val ctx = androidx.compose.ui.platform.LocalContext.current
+                        val repo = remember { com.shopping.agent.data.local.UserRepository(ctx) }
                         ProfileScreen(
                             onSettingsClick = { navController.navigate("settings") },
                             onCustomerServiceClick = { navController.navigate("customer_service") },
@@ -111,6 +113,8 @@ fun AppNavGraph(
                                     restoreState = true
                                 }
                             },
+                            onFavoritesClick = { navController.navigate(Screen.Favorites.route) },
+                            onFootprintsClick = { navController.navigate(Screen.Footprints.route) },
                         )
                     }
                     composable(Screen.Cart.route) {
@@ -205,6 +209,22 @@ fun AppNavGraph(
                     composable("customer_service") {
                         CustomerServiceScreen(onBack = { navController.popBackStack() })
                     }
+                    composable(Screen.Favorites.route) {
+                        FavoritesScreen(
+                            onBack = { navController.popBackStack() },
+                            onProductClick = { productId ->
+                                navController.navigate(Screen.ProductDetail.createRoute(productId))
+                            },
+                        )
+                    }
+                    composable(Screen.Footprints.route) {
+                        FootprintsScreen(
+                            onBack = { navController.popBackStack() },
+                            onProductClick = { productId ->
+                                navController.navigate(Screen.ProductDetail.createRoute(productId))
+                            },
+                        )
+                    }
                     composable("shipping_address") {
                         ShippingAddressScreen(onBack = { navController.popBackStack() })
                     }
@@ -278,12 +298,25 @@ fun AppNavGraph(
                         val detailViewModel: ProductDetailViewModel = viewModel(
                             viewModelStoreOwner = entry
                         )
+                        val productId = entry.arguments?.getString("productId") ?: ""
+                        val ctx = androidx.compose.ui.platform.LocalContext.current
+                        val repo = remember { com.shopping.agent.data.local.UserRepository(ctx) }
+
+                        // 进入商品详情页时记录浏览足迹（两个数据库）
+                        LaunchedEffect(productId) {
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                repo.recordFootprint(productId)
+                                repo.syncFootprintToBackend(productId)
+                            }
+                        }
+
                         ProductDetailScreen(
-                            productId = entry.arguments?.getString("productId") ?: "",
+                            productId = productId,
                             onBack = { navController.popBackStack() },
-                            onBuyNow = { productId ->
-                                navController.navigate(Screen.Checkout.createRoute("buy", productId))
+                            onBuyNow = { pid ->
+                                navController.navigate(Screen.Checkout.createRoute("buy", pid))
                             },
+                            onCustomerServiceClick = { navController.navigate("customer_service") },
                             viewModel = detailViewModel,
                         )
                     }

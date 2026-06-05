@@ -40,6 +40,7 @@ private data class CheckoutOrder(
     val orderId: String,
     val orderNo: String,
     val total: Double,
+    val itemsSnapshot: String = "",  // 商品快照 JSON，用于写入本地数据库
 )
 
 @Composable
@@ -134,7 +135,19 @@ fun CheckoutScreen(
                                             addBuyNowItem = source == "buy",
                                         )
                                     }
+                                    // 同步写入本地 SQLite 订单记录（待发货状态，绑定后端订单号）
                                     withContext(Dispatchers.IO) {
+                                        val orderBodyJson = JSONObject().apply {
+                                            put("backend_order_no", order.orderNo)
+                                            put("total", order.total)
+                                            put("items", JSONArray(order.itemsSnapshot))
+                                        }
+                                        repository.addOrderRecord(
+                                            orderBody = orderBodyJson.toString(),
+                                            status = UserRepository.OrderStatus.PENDING_SHIPPING,
+                                            backendOrderNo = order.orderNo,
+                                        )
+                                        // 删除已下单的购物车商品
                                         repository.deleteCartItems(items.map { it.product.productId })
                                     }
                                     onOrderCreated(order.orderId)
@@ -326,6 +339,20 @@ private fun submitOrder(
         .url("${NetworkConfig.BASE_URL}/api/v1/orders")
         .post(orderBody.toString().toRequestBody("application/json".toMediaType()))
         .build()
+    // 构建商品快照 JSON（用于写入本地数据库）
+    val snapshotJsonArray = JSONArray().apply {
+        items.forEach { cartItem ->
+            put(JSONObject().apply {
+                put("product_id", cartItem.product.productId)
+                put("title", cartItem.product.title)
+                put("price", cartItem.product.price)
+                put("quantity", cartItem.quantity)
+                put("image_url", cartItem.product.imageUrl ?: "")
+            })
+        }
+    }
+    val itemsSnapshotJson = snapshotJsonArray.toString()
+
     NetworkConfig.httpClient.newCall(orderReq).execute().use { response ->
         if (!response.isSuccessful) throw IllegalStateException("下单失败 ${response.code}")
         val json = JSONObject(response.body?.string().orEmpty())
@@ -333,6 +360,7 @@ private fun submitOrder(
             orderId = json.optString("order_id"),
             orderNo = json.optString("order_no"),
             total = json.optDouble("total"),
+            itemsSnapshot = itemsSnapshotJson,
         )
     }
 }

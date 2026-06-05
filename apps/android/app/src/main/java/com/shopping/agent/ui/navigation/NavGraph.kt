@@ -115,6 +115,9 @@ fun AppNavGraph(
                             },
                             onFavoritesClick = { navController.navigate(Screen.Favorites.route) },
                             onFootprintsClick = { navController.navigate(Screen.Footprints.route) },
+                            onOrdersClick = { statusFilter ->
+                                navController.navigate(Screen.Orders.createRoute(statusFilter))
+                            },
                         )
                     }
                     composable(Screen.Cart.route) {
@@ -219,6 +222,21 @@ fun AppNavGraph(
                     }
                     composable(Screen.Footprints.route) {
                         FootprintsScreen(
+                            onBack = { navController.popBackStack() },
+                            onProductClick = { productId ->
+                                navController.navigate(Screen.ProductDetail.createRoute(productId))
+                            },
+                        )
+                    }
+                    composable(
+                        Screen.Orders.route,
+                        arguments = listOf(navArgument("statusFilter") {
+                            type = NavType.StringType
+                            defaultValue = ""
+                        }),
+                    ) { entry ->
+                        OrdersScreen(
+                            statusFilter = entry.arguments?.getString("statusFilter") ?: "",
                             onBack = { navController.popBackStack() },
                             onProductClick = { productId ->
                                 navController.navigate(Screen.ProductDetail.createRoute(productId))

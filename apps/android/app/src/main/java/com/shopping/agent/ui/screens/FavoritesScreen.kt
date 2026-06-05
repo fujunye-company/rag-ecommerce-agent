@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,8 +30,12 @@ import com.shopping.agent.data.mock.mockProducts
 import com.shopping.agent.data.model.Product
 import com.shopping.agent.ui.theme.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.Request
+import org.json.JSONObject
 
 /** 收藏页面管理状态枚举 */
 private enum class FavoritesManageState {
@@ -68,20 +73,37 @@ fun FavoritesScreen(
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var favoriteProducts by remember { mutableStateOf<List<Product>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    /** 上一次加载的 Job，用于取消并发加载 */
+    var loadJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
 
-    /** 加载收藏商品列表 — 从 SQLite 读取收藏记录并匹配商品数据 */
+    /** 加载收藏商品列表 — 从 SQLite 读取收藏记录，mockProducts 优先，UUID 则调 API 获取完整信息 */
     fun loadFavorites() {
-        scope.launch {
+        // 取消前次加载，防止并发导致数据错乱
+        loadJob?.cancel()
+        loadJob = scope.launch {
             isLoading = true
             try {
                 val records = withContext(Dispatchers.IO) {
                     repository.getFavorites()
                 }
-                // 将收藏记录中的 productId 转换为 Product 对象
-                val products = records.mapNotNull { record ->
+                // 分离匹配和未匹配的记录
+                val (matched, unmatched) = records.partition { record ->
+                    mockProducts.any { it.productId == record.productId }
+                }
+                // mockProducts 匹配的：直接使用完整商品数据
+                val matchedProducts = matched.mapNotNull { record ->
                     mockProducts.find { it.productId == record.productId }
                 }
-                favoriteProducts = products
+                // UUID 等未匹配的：并行调 API 获取完整商品信息
+                val apiProducts = if (unmatched.isNotEmpty()) {
+                    withContext(Dispatchers.IO) {
+                        unmatched.map { record ->
+                            async<Product?> { fetchFavoriteProductFromApi(record.productId) }
+                        }.awaitAll().mapNotNull { it }
+                    }
+                } else emptyList()
+                // 合并并去重（防止 API 返回的 productId 与 mockProducts 碰撞）
+                favoriteProducts = (matchedProducts + apiProducts).distinctBy { it.productId }
             } catch (_: Exception) {
                 favoriteProducts = emptyList()
             }
@@ -273,7 +295,7 @@ fun FavoritesScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    items(favoriteProducts, key = { it.productId }) { product ->
+                    itemsIndexed(favoriteProducts, key = { index, product -> "${product.productId}_$index" }) { _, product ->
                         FavoriteProductCard(
                             product = product,
                             isManageMode = manageState == FavoritesManageState.MANAGING,
@@ -296,6 +318,38 @@ fun FavoritesScreen(
                 }
             }
         }
+    }
+}
+
+/** 从后端 API 获取商品信息并转为 Product 对象（用于 UUID 等 mockProducts 无法匹配的 ID） */
+private suspend fun fetchFavoriteProductFromApi(productId: String): Product? {
+    return try {
+        val request = Request.Builder()
+            .url("${NetworkConfig.BASE_URL}/api/v1/products/$productId")
+            .get()
+            .build()
+        val response = NetworkConfig.httpClient.newCall(request).execute()
+        if (!response.isSuccessful) return null
+        val body = response.body?.string() ?: return null
+        val data = JSONObject(body).optJSONObject("data") ?: return null
+        val imageUrls = data.optJSONArray("image_urls")
+        val firstImage = if (imageUrls != null && imageUrls.length() > 0) {
+            NetworkConfig.resolveImageUrl(imageUrls.optString(0))
+        } else {
+            NetworkConfig.resolveImageUrl(data.optString("image_url").takeIf { it.isNotBlank() })
+        }
+        // productId 使用参数原始值（DB 中存储的 ID），保证与收藏表记录一致，移除/状态查询可正确匹配
+        Product(
+            productId = productId,
+            title = data.optString("title", ""),
+            price = data.optDouble("price", 0.0),
+            brand = data.optString("brand").takeIf { it.isNotBlank() },
+            category = data.optString("category", ""),
+            imageUrl = firstImage,
+            rating = data.optDouble("rating", 3.0).toFloat(),
+        )
+    } catch (_: Exception) {
+        null
     }
 }
 

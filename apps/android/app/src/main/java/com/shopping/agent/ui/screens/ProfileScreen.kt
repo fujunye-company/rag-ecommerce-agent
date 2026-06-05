@@ -140,12 +140,24 @@ private fun ProfileHeader(
     }
 }
 
+/** 个人页面订单状态数量数据类 */
+private data class OrderStatusCount(
+    val label: String,  // 显示文本（如"待付款"）
+    val count: Int,  // 该状态的订单数量
+    val statusKey: String,  // 导航筛选 key（如"unpaid"）
+    val statusFilters: List<String>,  // 对应的 OrderStatus 值列表
+)
+
 /**
  * 订单状态模块 — 5个状态入口
  * 设计规约: §5.3 OrderStatusSection
  */
 @Composable
-private fun OrderStatusSection(modifier: Modifier = Modifier) {
+private fun OrderStatusSection(
+    orderCounts: List<OrderStatusCount>,
+    onOrdersClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Card(
         shape = RadiusLg,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -167,7 +179,7 @@ private fun OrderStatusSection(modifier: Modifier = Modifier) {
                     "全部 >",
                     style = MaterialTheme.typography.bodySmall,
                     color = Primary,
-                    modifier = Modifier.clickable {},
+                    modifier = Modifier.clickable { onOrdersClick("") },
                 )
             }
             Spacer(Modifier.height(12.dp))
@@ -175,8 +187,11 @@ private fun OrderStatusSection(modifier: Modifier = Modifier) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                MockProfile.orderStatuses.forEach { status ->
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                orderCounts.forEach { status ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable { onOrdersClick(status.statusKey) },
+                    ) {
                         Text(
                             "${status.count}",
                             style = MaterialTheme.typography.titleMedium,
@@ -489,6 +504,7 @@ fun ProfileScreen(
     onCartClick: () -> Unit = {},
     onFavoritesClick: () -> Unit = {},
     onFootprintsClick: () -> Unit = {},
+    onOrdersClick: (String) -> Unit = {},  // 订单状态筛选导航回调，空字符串表示全部
 ) {
     val context = LocalContext.current
     val repository = remember { UserRepository(context) }
@@ -565,6 +581,31 @@ fun ProfileScreen(
         }
     }
 
+    // 懒加载订单状态数量 — 每次进入页面时刷新一次
+    var orderCounts by remember { mutableStateOf<List<OrderStatusCount>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        try {
+            val counts = withContext(Dispatchers.IO) {
+                repository.getOrderCountByStatus(UserRepository.OrderStatus.ALL)
+            }
+            orderCounts = listOf(
+                OrderStatusCount("待付款", counts[UserRepository.OrderStatus.PENDING_PAYMENT] ?: 0, "unpaid", listOf(UserRepository.OrderStatus.PENDING_PAYMENT)),
+                OrderStatusCount("待发货", counts[UserRepository.OrderStatus.PENDING_SHIPPING] ?: 0, "shipping", listOf(UserRepository.OrderStatus.PENDING_SHIPPING)),
+                OrderStatusCount("待收货", counts[UserRepository.OrderStatus.PENDING_RECEIPT] ?: 0, "receiving", listOf(UserRepository.OrderStatus.PENDING_RECEIPT)),
+                OrderStatusCount("待评价", counts[UserRepository.OrderStatus.PENDING_REVIEW] ?: 0, "comment", listOf(UserRepository.OrderStatus.PENDING_REVIEW)),
+                OrderStatusCount("退款/售后", (counts[UserRepository.OrderStatus.COMPLETED] ?: 0) + (counts[UserRepository.OrderStatus.CANCELLED] ?: 0), "refund", listOf(UserRepository.OrderStatus.COMPLETED, UserRepository.OrderStatus.CANCELLED)),
+            )
+        } catch (_: Exception) {
+            orderCounts = listOf(
+                OrderStatusCount("待付款", 0, "unpaid", listOf(UserRepository.OrderStatus.PENDING_PAYMENT)),
+                OrderStatusCount("待发货", 0, "shipping", listOf(UserRepository.OrderStatus.PENDING_SHIPPING)),
+                OrderStatusCount("待收货", 0, "receiving", listOf(UserRepository.OrderStatus.PENDING_RECEIPT)),
+                OrderStatusCount("待评价", 0, "comment", listOf(UserRepository.OrderStatus.PENDING_REVIEW)),
+                OrderStatusCount("退款/售后", 0, "refund", listOf(UserRepository.OrderStatus.COMPLETED, UserRepository.OrderStatus.CANCELLED)),
+            )
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -585,7 +626,7 @@ fun ProfileScreen(
             CartPreviewSection(onCartClick = onCartClick, cartItems = cartItems)
 
             // ===== A03: 我的订单 =====
-            OrderStatusSection()
+            OrderStatusSection(orderCounts = orderCounts, onOrdersClick = onOrdersClick)
 
             // ===== A04: 常用功能 =====
             ProfileFeatureGrid(

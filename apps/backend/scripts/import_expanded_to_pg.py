@@ -41,6 +41,7 @@ def map_record(prod: dict) -> tuple:
         json.dumps(prod.get("attributes", {}), ensure_ascii=False),
         prod.get("highlights", []),
         prod.get("scenarios", []),
+        prod["product_id"],                  # source_product_id
     )
 
 
@@ -84,10 +85,11 @@ def main():
     execute_values(
         cur,
         """INSERT INTO products (id, title, description, price, category, brand, rating,
-                                 image_urls, stock, sales, tags, attributes, highlights, scenarios)
+                                 image_urls, stock, sales, tags, attributes, highlights, scenarios,
+                                 source_product_id)
         VALUES %s""",
         new_records,
-        template="(%s, %s, %s, %s, %s, %s, %s, %s::varchar[], %s, %s, %s::varchar[], %s::jsonb, %s::varchar[], %s::varchar[])",
+        template="(%s, %s, %s, %s, %s, %s, %s, %s::varchar[], %s, %s, %s::varchar[], %s::jsonb, %s::varchar[], %s::varchar[], %s)",
         page_size=50,
     )
     conn.commit()

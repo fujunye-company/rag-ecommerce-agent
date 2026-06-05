@@ -1,7 +1,8 @@
 """
 First-run auto-import: ensures Qdrant has product vectors before the app serves traffic.
+Also seeds PostgreSQL products table for REST API queries.
 
-Idempotent — skips if collection already contains data. Designed for one-click deploy.
+Idempotent — skips if collection/table already contains data. Designed for one-click deploy.
 """
 import json
 import logging
@@ -15,8 +16,12 @@ from huggingface_hub import scan_cache_dir, snapshot_download
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qdrant_models
 from sentence_transformers import SentenceTransformer
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.database import engine, AsyncSessionLocal
+from app.models.product import Product
 
 logger = logging.getLogger("startup")
 
@@ -226,6 +231,63 @@ def _ensure_model_available():
     return repo_id
 
 
+async def _seed_pg_products(products: list[dict]) -> int:
+    """将商品数据同时写入 PostgreSQL products 表（幂等：已存在则跳过）。"""
+    if engine is None or AsyncSessionLocal is None:
+        logger.warning("Database not configured, skipping PostgreSQL seed")
+        return 0
+
+    # 确保表已创建
+    async with engine.begin() as conn:
+        await conn.run_sync(Product.metadata.create_all)
+
+    async with AsyncSessionLocal() as db:
+        # 查询已有的 products 数量
+        stmt = select(func.count(Product.id))
+        result = await db.execute(stmt)
+        existing_count = result.scalar()
+        if existing_count >= len(products):
+            logger.info("PostgreSQL already has %d products, skipping seed", existing_count)
+            _state.db_done = True
+            return 0
+
+        # 查询已有 ID 集合，避免重复插入
+        existing_result = await db.execute(select(Product.id))
+        existing_ids = {str(uid) for uid in existing_result.scalars().all()}
+
+        new_count = 0
+        for p in products:
+            uid = _product_id_to_uuid(p["product_id"])
+            if str(uid) in existing_ids:
+                continue
+            image_urls = p.get("image_urls") or []
+            if not image_urls and p.get("image_url"):
+                image_urls = [p["image_url"]]
+            db.add(Product(
+                id=uuid.UUID(uid),
+                title=p["title"][:256],
+                description=p.get("description", ""),
+                price=float(p.get("price", 0)),
+                category=p.get("category", ""),
+                brand=p.get("brand", ""),
+                rating=float(p.get("rating", 3.0)),
+                image_urls=image_urls,
+                stock=100,
+                sales=0,
+                tags=[],
+                attributes=p.get("attributes", {}),
+                highlights=p.get("highlights", []),
+                scenarios=p.get("scenarios", []),
+                source_product_id=p["product_id"],
+            ))
+            new_count += 1
+
+        await db.commit()
+        logger.info("PostgreSQL: seeded %d new products (total: %d)", new_count, existing_count + new_count)
+        _state.db_done = True
+        return new_count
+
+
 async def ensure_qdrant_data() -> None:
     """Ensure Qdrant collection exists and contains product vectors.
 
@@ -256,6 +318,26 @@ async def ensure_qdrant_data() -> None:
 
     client = QdrantClient(url=settings.QDRANT_URL, timeout=60)
     try:
+        # 先加载数据（Qdrant 和 PostgreSQL 共用）
+        products = _load_products()
+        if not products:
+            logger.warning("No products to import")
+            _state.phase = "ready"
+            return
+
+        _state.message = f"Loading {len(products)} products..."
+        logger.info("Auto-import: loading %d products from %s", len(products), JSONL_PATH)
+
+        # PostgreSQL 入库（独立于 Qdrant，始终尝试）
+        _state.phase = "seeding"
+        try:
+            pg_count = await _seed_pg_products(products)
+            if pg_count > 0:
+                logger.info("PostgreSQL seeded %d products", pg_count)
+        except Exception as e:
+            logger.warning("PostgreSQL seed failed (non-fatal): %s", e)
+
+        # Qdrant 入库
         collection_exists = client.collection_exists(settings.QDRANT_COLLECTION)
         if collection_exists:
             count = client.count(collection_name=settings.QDRANT_COLLECTION, exact=True).count
@@ -265,13 +347,10 @@ async def ensure_qdrant_data() -> None:
                 logger.info("Qdrant collection '%s' already has %d vectors, skipping import",
                             settings.QDRANT_COLLECTION, count)
                 _state.phase = "ready"
+                _state.message += " (Qdrant already populated)"
                 return
 
-        # Need to create and/or populate
-        _state.phase = "seeding"
-        products = _load_products()
-        _state.message = f"Loading {len(products)} products..."
-        logger.info("Auto-import: loading %d products from %s", len(products), JSONL_PATH)
+        # Need to create and/or populate Qdrant
 
         # Resolve embedding model — local > HF cache > download with resume
         model_source = _ensure_model_available()

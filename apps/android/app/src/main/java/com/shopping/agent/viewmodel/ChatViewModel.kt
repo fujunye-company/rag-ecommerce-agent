@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
@@ -299,6 +300,37 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             viewModelScope.launch {
                 userRepo.saveMessage(userMessage, _uiState.value.currentConversationId)
                 syncCartAfterChatIfNeeded(text)
+            }
+            // 检查购物车中是否有可下单的商品，避免空购物车跳转至确认订单页面
+            val hasCartItems = runBlocking {
+                try {
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        userRepo.getCartItemsForCurrentUser(cartSessionId).isNotEmpty()
+                    }
+                } catch (_: Exception) {
+                    false
+                }
+            }
+            if (!hasCartItems) {
+                // 购物车为空，不跳转确认订单页面，走正常 SSE 对话流程让 RAG 链路处理
+                _uiState.update {
+                    it.copy(
+                        messages = it.messages + userMessage,
+                        inputText = "",
+                        screenState = ScreenState.Streaming(""),
+                        isStreaming = true,
+                        streamingText = "",
+                        streamingCards = emptyList(),
+                        clarifyChips = emptyList(),
+                        clarifyQuestion = "",
+                        searchStatus = "AI 正在思考…",
+                    )
+                }
+                ttsManager.resetForNewMessage()
+                viewModelScope.launch {
+                    streamWithRetry(text)
+                }
+                return
             }
             _uiState.update {
                 it.copy(

@@ -35,7 +35,7 @@ async def create_order(
         address=address,
         remark=remark,
         items_snapshot=items,
-        status="confirmed",
+        status="pending_shipping",  # 下单后即进入待发货状态
     )
     db.add(order)
     await db.flush()

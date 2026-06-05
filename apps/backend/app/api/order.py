@@ -75,7 +75,9 @@ async def list_orders(
                 "total": o.total,
                 "status": o.status,
                 "items_count": len(o.items_snapshot) if o.items_snapshot else 0,
+                "items_snapshot": o.items_snapshot if o.items_snapshot else [],
                 "created_at": o.created_at.isoformat() if o.created_at else None,
+                "updated_at": o.updated_at.isoformat() if o.updated_at else None,
             }
             for o in orders
         ]

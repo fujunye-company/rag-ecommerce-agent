@@ -902,22 +902,34 @@ class UserRepository(context: Context) {
     data class OrderRecord(
         val orderId: Long = 0,
         val userId: String = "",
+        val backendOrderNo: String = "",  // 后端订单号 ORD 开头，前后端订单关联字段
         val orderBody: String = "",
         val createdAt: Long = 0,
+        val updatedAt: Long = 0,  // 订单更新时间戳
         val status: String = OrderStatus.PENDING_PAYMENT,
     )
 
     /**
      * 新增一条订单记录。
+     * @param orderBody 订单体 JSON（含商品快照、总价等）
+     * @param status 订单状态，默认待付款
+     * @param backendOrderNo 后端订单号，前后端订单关联字段
      * @return 新订单的 orderId，失败返回 -1
      */
-    suspend fun addOrderRecord(orderBody: String, status: String = OrderStatus.PENDING_PAYMENT): Long = withContext(Dispatchers.IO) {
+    suspend fun addOrderRecord(
+        orderBody: String,
+        status: String = OrderStatus.PENDING_PAYMENT,
+        backendOrderNo: String = "",
+    ): Long = withContext(Dispatchers.IO) {
         val userId = getUserId()
         if (userId.isEmpty()) return@withContext -1L
+        val now = System.currentTimeMillis()
         val cv = ContentValues().apply {
             put("user_id", userId)
+            put("backend_order_no", backendOrderNo)
             put("order_body", orderBody)
-            put("created_at", System.currentTimeMillis())
+            put("created_at", now)
+            put("updated_at", now)
             put("status", status)
         }
         db.writableDatabase.insert(LocalDatabase.TABLE_ORDER_RECORDS, null, cv)
@@ -945,8 +957,10 @@ class UserRepository(context: Context) {
             list.add(OrderRecord(
                 orderId = cursor.getLong(cursor.getColumnIndexOrThrow("order_id")),
                 userId = cursor.getString(cursor.getColumnIndexOrThrow("user_id")) ?: "",
+                backendOrderNo = cursor.getString(cursor.getColumnIndexOrThrow("backend_order_no")) ?: "",
                 orderBody = cursor.getString(cursor.getColumnIndexOrThrow("order_body")) ?: "",
                 createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at")),
+                updatedAt = cursor.getLong(cursor.getColumnIndexOrThrow("updated_at")),
                 status = cursor.getString(cursor.getColumnIndexOrThrow("status")) ?: OrderStatus.PENDING_PAYMENT,
             ))
         }
@@ -955,16 +969,40 @@ class UserRepository(context: Context) {
     }
 
     /**
-     * 更新订单状态。
+     * 更新订单状态，同时更新 updated_at 时间戳。
      */
     suspend fun updateOrderStatus(orderId: Long, newStatus: String) = withContext(Dispatchers.IO) {
         val userId = getUserId()
         if (userId.isEmpty()) return@withContext
-        val cv = ContentValues().apply { put("status", newStatus) }
+        val cv = ContentValues().apply {
+            put("status", newStatus)
+            put("updated_at", System.currentTimeMillis())
+        }
         db.writableDatabase.update(
             LocalDatabase.TABLE_ORDER_RECORDS, cv,
             "order_id=? AND user_id=?", arrayOf(orderId.toString(), userId)
         )
+    }
+
+    /**
+     * 按状态列表统计当前用户订单数量。
+     * 用于个人页面展示各状态订单数量。
+     * @param statuses 要统计的状态列表
+     * @return Map<状态, 数量>
+     */
+    suspend fun getOrderCountByStatus(statuses: List<String>): Map<String, Int> = withContext(Dispatchers.IO) {
+        val userId = getUserId()
+        if (userId.isEmpty() || statuses.isEmpty()) return@withContext emptyMap()
+        val result = mutableMapOf<String, Int>()
+        statuses.forEach { status ->
+            val cursor = db.readableDatabase.rawQuery(
+                "SELECT COUNT(*) FROM ${LocalDatabase.TABLE_ORDER_RECORDS} WHERE user_id=? AND status=?",
+                arrayOf(userId, status)
+            )
+            result[status] = if (cursor.moveToFirst()) cursor.getInt(0) else 0
+            cursor.close()
+        }
+        result
     }
 
     // ═══════════════════════════════════════════════════════
@@ -1202,7 +1240,7 @@ class UserRepository(context: Context) {
 
     /**
      * 切换收藏状态：已收藏则取消，未收藏则添加。
-     * @param productId 商品 ID
+     * @param productId 商品 ID（mock 格式，如 "p_clothes_021"，保证与 mockProducts 匹配）
      * @return 操作后的收藏状态（true=已收藏, false=未收藏）
      */
     suspend fun toggleFavorite(productId: String): Boolean = withContext(Dispatchers.IO) {

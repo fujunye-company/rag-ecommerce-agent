@@ -8,8 +8,10 @@ from app.models.cart import CartItem
 from app.models.order import Order
 from app.models.favorite import Favorite
 from app.models.footprint import Footprint
+from app.models.user import User
+from app.models.review import Review
 
 __all__ = [
     "Product", "Session", "Message", "Feedback", "KnowledgeVersion",
-    "CartItem", "Order", "Favorite", "Footprint",
+    "CartItem", "Order", "Favorite", "Footprint", "User", "Review",
 ]

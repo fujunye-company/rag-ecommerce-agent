@@ -241,6 +241,29 @@ fun AppNavGraph(
                             onProductClick = { productId ->
                                 navController.navigate(Screen.ProductDetail.createRoute(productId))
                             },
+                            onBuyAgain = {
+                                // 先退出订单页面返回上一级，再进入购物车页面（购物车不能是订单的子页面）
+                                navController.popBackStack()
+                                navController.navigate(Screen.Cart.route) {
+                                    popUpTo("home") { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            onReview = { orderId, _, _, _, _ ->
+                                navController.navigate(Screen.Review.createRoute(orderId))
+                            },
+                        )
+                    }
+                    // 评价晒单页面
+                    composable(
+                        Screen.Review.route,
+                        arguments = listOf(navArgument("orderId") { type = NavType.LongType }),
+                    ) { entry ->
+                        ReviewScreen(
+                            orderId = entry.arguments?.getLong("orderId") ?: 0,
+                            onBack = { navController.popBackStack() },
+                            onPublishSuccess = { navController.popBackStack() },
                         )
                     }
                     composable("shipping_address") {

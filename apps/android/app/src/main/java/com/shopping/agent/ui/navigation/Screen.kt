@@ -35,6 +35,10 @@ sealed class Screen(val route: String) {
     data object Orders : Screen("orders/{statusFilter}") {
         fun createRoute(statusFilter: String = "") = "orders/$statusFilter"
     }
+    // 评价晒单页面 — 通过 orderId 查询订单数据
+    data object Review : Screen("review/{orderId}") {
+        fun createRoute(orderId: Long) = "review/$orderId"
+    }
 
     // 设置子页面
     data object ShippingAddress : Screen("shipping_address")

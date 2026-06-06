@@ -1627,4 +1627,74 @@ class UserRepository(context: Context) {
             Log.e("UserRepository", "syncFavoriteRemoveToBackend: 同步失败", e)
         }
     }
+
+    // ═══════════════════════════════════════════════════════
+    // 订单操作 — 后端同步
+    // ═══════════════════════════════════════════════════════
+
+    /**
+     * 调用后端 API 取消订单。
+     *
+     * @param backendOrderNo 后端订单号（ORD 开头）
+     */
+    suspend fun cancelOrderOnBackend(backendOrderNo: String) = withContext(Dispatchers.IO) {
+        if (backendOrderNo.isEmpty()) return@withContext
+        try {
+            val baseUrl = NetworkConfig.BASE_URL
+            val client = NetworkConfig.httpClient
+            val request = okhttp3.Request.Builder()
+                .url("$baseUrl/api/v1/orders/$backendOrderNo/cancel")
+                .post("{}".toRequestBody("application/json".toMediaType()))
+                .build()
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) {
+                Log.w("UserRepository", "cancelOrderOnBackend: 后端返回 ${response.code}")
+            }
+        } catch (e: Exception) {
+            Log.e("UserRepository", "cancelOrderOnBackend: 同步失败", e)
+        }
+    }
+
+    /**
+     * 提交商品评价到后端。
+     *
+     * @param productId 商品 ID
+     * @param nickname 用户昵称
+     * @param rating 评分（1-5）
+     * @param content 评价内容
+     * @param isAnonymous 是否匿名评价
+     * @return 评价是否提交成功
+     */
+    suspend fun submitReviewToBackend(
+        productId: String,
+        nickname: String,
+        rating: Int,
+        content: String,
+        isAnonymous: Boolean = false,
+    ): Boolean = withContext(Dispatchers.IO) {
+        val userId = getUserId()
+        if (userId.isEmpty()) return@withContext false
+        try {
+            val baseUrl = NetworkConfig.BASE_URL
+            val client = NetworkConfig.httpClient
+            val body = okhttp3.MultipartBody.Builder()
+                .setType(okhttp3.MultipartBody.FORM)
+                .addFormDataPart("product_id", productId)
+                .addFormDataPart("user_id", userId)
+                .addFormDataPart("nickname", nickname)
+                .addFormDataPart("rating", rating.toString())
+                .addFormDataPart("content", content)
+                .addFormDataPart("is_anonymous", isAnonymous.toString())
+                .build()
+            val request = okhttp3.Request.Builder()
+                .url("$baseUrl/api/v1/reviews")
+                .post(body)
+                .build()
+            val response = client.newCall(request).execute()
+            response.isSuccessful
+        } catch (e: Exception) {
+            Log.e("UserRepository", "submitReviewToBackend: 同步失败", e)
+            false
+        }
+    }
 }

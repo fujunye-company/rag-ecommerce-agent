@@ -23,7 +23,6 @@ import com.shopping.agent.ui.theme.LocalThemeState
 import com.shopping.agent.ui.theme.ShoppingTheme
 import com.shopping.agent.ui.theme.rememberThemeState
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
@@ -48,9 +47,9 @@ class MainActivity : ComponentActivity() {
                 // 首帧绘制后立即释放系统启动画面
                 SideEffect { splashDrawn = true }
 
-                // 并行：登录状态检查 + 最短开屏时间，两者都完成后才进入应用
+                // 启动流程：快速确定导航目标 → 立即进入应用，购物车同步移至后台
                 LaunchedEffect(Unit) {
-                    // 先检查登录状态（IO 操作）
+                    // 1. 快速检查登录状态（单次 SQLite 查询，< 10ms）
                     val isLoggedIn = try {
                         withContext(Dispatchers.IO) {
                             UserRepository(this@MainActivity).isLoggedIn()
@@ -58,7 +57,10 @@ class MainActivity : ComponentActivity() {
                     } catch (_: Exception) { false }
                     startDestination = if (isLoggedIn) "home" else "login"
 
-                    // 登录状态下启动时从后端同步购物车数据到本地 SQLite
+                    // 2. 确定目标后立即释放启动画面，不再阻塞
+                    showSplash = false
+
+                    // 3. 后台异步：从后端同步购物车数据（不阻塞 UI 渲染）
                     if (isLoggedIn) {
                         try {
                             val prefs = getSharedPreferences("cart_prefs", android.content.Context.MODE_PRIVATE)
@@ -72,10 +74,6 @@ class MainActivity : ComponentActivity() {
                             // 同步失败不影响启动流程
                         }
                     }
-
-                    // 确保开屏动画至少展示 1.5 秒
-                    delay(1500)
-                    showSplash = false
                 }
 
                 Box(modifier = Modifier.fillMaxSize().background(Color.White)) {

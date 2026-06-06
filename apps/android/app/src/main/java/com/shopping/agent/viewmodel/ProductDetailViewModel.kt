@@ -27,6 +27,7 @@ data class ProductDetailUiState(
     val isFavorited: Boolean = false,
     val isFollowingShop: Boolean = false,
     val addToCartResult: String? = null,
+    val favoriteResult: String? = null,  // 收藏操作结果提示
     val error: String? = null,
 )
 
@@ -122,11 +123,24 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
                 repository.toggleFavorite(localId)
             }
             // 2. 同步到后端 PostgreSQL（使用 UUID，后端只认识 UUID）
+            var backendSuccess = true
             withContext(Dispatchers.IO) {
-                repository.syncFavoriteToBackend(backendId, newState)
+                try {
+                    repository.syncFavoriteToBackend(backendId, newState)
+                } catch (e: Exception) {
+                    android.util.Log.e("ProductDetailVM", "收藏同步后端失败", e)
+                    backendSuccess = false
+                }
             }
-            // 3. 更新 UI
-            _uiState.update { it.copy(isFavorited = newState) }
+            // 3. 更新 UI + 弹窗提示
+            val message = if (!backendSuccess) {
+                "当前网络不佳，请稍后重试"
+            } else if (newState) {
+                "收藏成功"
+            } else {
+                "取消收藏成功"
+            }
+            _uiState.update { it.copy(isFavorited = newState, favoriteResult = message) }
         }
     }
 
@@ -195,6 +209,10 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
 
     fun dismissResult() {
         _uiState.update { it.copy(addToCartResult = null) }
+    }
+
+    fun dismissFavoriteResult() {
+        _uiState.update { it.copy(favoriteResult = null) }
     }
 
     private fun ProductDetailData.toCartProduct(): Product? {

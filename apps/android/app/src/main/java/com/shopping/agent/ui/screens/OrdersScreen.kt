@@ -27,6 +27,8 @@ import com.shopping.agent.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
 /* ═══════════════════════════════════════════════════════════ */
@@ -53,6 +55,7 @@ private data class OrderDisplayData(
     val firstProductTitle: String,
     val hasMoreItems: Boolean,
     val status: String,
+    val rawOrderBody: String = "",  // 原始 order_body JSON，用于再次购买时解析所有商品
 )
 
 /* ═══════════════════════════════════════════════════════════ */
@@ -91,6 +94,8 @@ private val FILTER_TABS = listOf(
  * @param statusFilter 初始筛选状态键（从导航参数传入），空字符串表示全部
  * @param onBack 返回回调
  * @param onProductClick 点击商品回调，传入商品 ID
+ * @param onBuyAgain 再次购买回调（加入购物车后跳转至购物车页面）
+ * @param onReview 评价晒单回调，传入订单数据
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,6 +103,8 @@ fun OrdersScreen(
     statusFilter: String = "",
     onBack: () -> Unit = {},
     onProductClick: (String) -> Unit = {},
+    onBuyAgain: () -> Unit = {},
+    onReview: (orderId: Long, backendOrderNo: String, productId: String, productTitle: String, productImage: String) -> Unit = { _, _, _, _, _ -> },
 ) {
     val context = LocalContext.current
     val repository = remember { UserRepository(context) }
@@ -107,6 +114,9 @@ fun OrdersScreen(
     var selectedTab by remember { mutableStateOf<String?>(statusFilter.takeIf { it.isNotEmpty() }) }
     var displayOrders by remember { mutableStateOf<List<OrderDisplayData>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+
+    // 取消订单弹窗状态
+    var cancelDialogOrder by remember { mutableStateOf<OrderDisplayData?>(null) }
 
     /** 从 SQLite 加载订单并解析展示数据 */
     fun loadOrders(filterKey: String?) {
@@ -149,6 +159,46 @@ fun OrdersScreen(
     // 监听 selectedTab 变化，重新加载
     LaunchedEffect(selectedTab) {
         loadOrders(selectedTab)
+    }
+
+    // 取消订单确认弹窗
+    if (cancelDialogOrder != null) {
+        AlertDialog(
+            onDismissRequest = { cancelDialogOrder = null },
+            title = { Text("真的要取消订单吗？") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val order = cancelDialogOrder ?: return@TextButton
+                        scope.launch {
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    // 1. 先调后端 API 取消订单
+                                    repository.cancelOrderOnBackend(order.backendOrderNo)
+                                    // 2. 更新前端 SQLite 状态为已取消
+                                    repository.updateOrderStatus(
+                                        order.orderId,
+                                        UserRepository.OrderStatus.CANCELLED,
+                                    )
+                                }
+                                Toast.makeText(context, "订单已取消", Toast.LENGTH_SHORT).show()
+                                loadOrders(selectedTab)
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "取消订单失败", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        cancelDialogOrder = null
+                    },
+                ) {
+                    Text("确认取消", color = Primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { cancelDialogOrder = null }) {
+                    Text("取消")
+                }
+            },
+        )
     }
 
     Scaffold(
@@ -289,6 +339,85 @@ fun OrdersScreen(
                                     }
                                 }
                             },
+                            onCancelOrder = {
+                                // 弹出取消订单确认弹窗
+                                cancelDialogOrder = order
+                            },
+                            onBuyAgain = {
+                                // 将订单中所有商品加入购物车：先 POST 后端 API，成功后同步前端 SQLite
+                                scope.launch {
+                                    try {
+                                        val allSuccess = withContext(Dispatchers.IO) {
+                                            val json = JSONObject(order.rawOrderBody)
+                                            val itemsArray = json.optJSONArray("items") ?: return@withContext false
+                                            val sessionId = com.shopping.agent.data.local.CartSessionManager.getOrCreate(context)
+                                            val userId = repository.getUserId()
+                                            val client = NetworkConfig.httpClient
+                                            val baseUrl = NetworkConfig.BASE_URL
+
+                                            var anyFailed = false
+                                            for (i in 0 until itemsArray.length()) {
+                                                val item = itemsArray.getJSONObject(i)
+                                                val pid = item.optString("product_id", "")
+                                                val title = item.optString("title", "")
+                                                val price = item.optDouble("price", 0.0)
+                                                val imageUrl = item.optString("image_url", "")
+
+                                                // 1. POST 后端 API 加入购物车
+                                                val apiSuccess = try {
+                                                    val body = org.json.JSONObject().apply {
+                                                        put("session_id", sessionId)
+                                                        put("product_id", pid)
+                                                        put("title", title)
+                                                        put("price", price)
+                                                        put("user_id", userId)
+                                                    }
+                                                    val request = okhttp3.Request.Builder()
+                                                        .url("$baseUrl/api/v1/cart/add")
+                                                        .post(body.toString().toRequestBody("application/json".toMediaType()))
+                                                        .build()
+                                                    client.newCall(request).execute().isSuccessful
+                                                } catch (_: Exception) {
+                                                    false
+                                                }
+                                                if (!apiSuccess) {
+                                                    anyFailed = true
+                                                    continue
+                                                }
+
+                                                // 2. 后端成功后同步前端 SQLite
+                                                val product = com.shopping.agent.data.model.Product(
+                                                productId = pid,
+                                                title = title,
+                                                price = price,
+                                                brand = null,
+                                                imageUrl = imageUrl,
+                                                category = "",
+                                            )
+                                            repository.saveCartItemForCurrentUser(product, sessionId, 1)
+                                        }
+                                        !anyFailed
+                                        }
+                                        if (allSuccess) {
+                                            Toast.makeText(context, "已加入购物车", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "部分商品加购失败", Toast.LENGTH_SHORT).show()
+                                        }
+                                        onBuyAgain()
+                                    } catch (_: Exception) {
+                                        Toast.makeText(context, "操作失败", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            onReview = {
+                                onReview(
+                                    order.orderId,
+                                    order.backendOrderNo,
+                                    order.firstProductId,
+                                    order.firstProductTitle,
+                                    order.firstProductImage,
+                                )
+                            },
                             onPlaceholderAction = {
                                 Toast.makeText(context, "该功能暂未开放", Toast.LENGTH_SHORT).show()
                             },
@@ -317,7 +446,10 @@ private fun OrderCard(
     order: OrderDisplayData,
     onProductClick: () -> Unit,
     onConfirmReceipt: () -> Unit,
-    onUrgeShipping: () -> Unit,  // 催发货：弹窗提示 + 状态改为待收货 + 刷新
+    onUrgeShipping: () -> Unit,  // 催发货：状态改为待收货 + 刷新
+    onCancelOrder: () -> Unit,   // 取消订单：弹窗确认后状态改为已取消
+    onBuyAgain: () -> Unit,      // 再次购买：加入购物车 + 跳转至购物车页面
+    onReview: () -> Unit,        // 评价晒单：跳转至评价页面
     onPlaceholderAction: () -> Unit,
 ) {
     Card(
@@ -395,13 +527,12 @@ private fun OrderCard(
             ) {
                 OrderActionButtons(
                     status = order.status,
-                    onCancelOrder = onPlaceholderAction,
+                    onCancelOrder = onCancelOrder,
                     onPayNow = onPlaceholderAction,
                     onUrgeShipping = onUrgeShipping,
-                    onViewLogistics = onPlaceholderAction,
                     onConfirmReceipt = onConfirmReceipt,
-                    onBuyAgain = onPlaceholderAction,
-                    onReview = onPlaceholderAction,
+                    onBuyAgain = onBuyAgain,
+                    onReview = onReview,
                 )
             }
         }
@@ -414,9 +545,13 @@ private fun OrderCard(
 
 /**
  * 根据订单状态渲染不同的操作按钮组。
- * "确认收货"：状态改为待评价，刷新列表。
- * "催发货"：弹窗提示成功，状态改为待收货，刷新列表。
- * 其余按钮为占位符，暂不实现功能。
+ *
+ * 按钮规则（AGENTS.md §订单页面功能完善）：
+ * - 待付款：取消订单 + 去付款（蓝色）
+ * - 待发货：取消订单 + 催发货
+ * - 待收货：确认收货（蓝色）— 已移除查看物流按钮
+ * - 待评价：再次购买 + 评价晒单（蓝色）
+ * - 已完成/已取消：再次购买（蓝色）
  */
 @Composable
 private fun OrderActionButtons(
@@ -424,7 +559,6 @@ private fun OrderActionButtons(
     onCancelOrder: () -> Unit,
     onPayNow: () -> Unit,
     onUrgeShipping: () -> Unit,
-    onViewLogistics: () -> Unit,
     onConfirmReceipt: () -> Unit,
     onBuyAgain: () -> Unit,
     onReview: () -> Unit,
@@ -453,11 +587,8 @@ private fun OrderActionButtons(
                     Text("催发货", style = MaterialTheme.typography.bodySmall)
                 }
             }
-            // 待收货：查看物流 + 确认收货（蓝色）
+            // 待收货：确认收货（蓝色）— 已移除查看物流按钮
             UserRepository.OrderStatus.PENDING_RECEIPT -> {
-                OutlinedButton(onClick = onViewLogistics, shape = CircleShape) {
-                    Text("查看物流", style = MaterialTheme.typography.bodySmall)
-                }
                 Button(
                     onClick = onConfirmReceipt,
                     colors = ButtonDefaults.buttonColors(containerColor = Primary),
@@ -539,6 +670,7 @@ private fun parseOrderBody(record: UserRepository.OrderRecord): OrderDisplayData
             firstProductTitle = firstItem.optString("title", "商品"),
             hasMoreItems = itemsArray.length() > 1,
             status = record.status,
+            rawOrderBody = record.orderBody,
         )
     } catch (_: Exception) {
         null

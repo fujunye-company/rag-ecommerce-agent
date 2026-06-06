@@ -530,6 +530,7 @@ private fun OrderCard(
                     onCancelOrder = onCancelOrder,
                     onPayNow = onPlaceholderAction,
                     onUrgeShipping = onUrgeShipping,
+                    onViewLogistics = onPlaceholderAction,
                     onConfirmReceipt = onConfirmReceipt,
                     onBuyAgain = onBuyAgain,
                     onReview = onReview,
@@ -559,6 +560,7 @@ private fun OrderActionButtons(
     onCancelOrder: () -> Unit,
     onPayNow: () -> Unit,
     onUrgeShipping: () -> Unit,
+    onViewLogistics: () -> Unit,
     onConfirmReceipt: () -> Unit,
     onBuyAgain: () -> Unit,
     onReview: () -> Unit,
@@ -589,6 +591,9 @@ private fun OrderActionButtons(
             }
             // 待收货：确认收货（蓝色）— 已移除查看物流按钮
             UserRepository.OrderStatus.PENDING_RECEIPT -> {
+                OutlinedButton(onClick = onViewLogistics, shape = CircleShape) {
+                    Text("查看物流", style = MaterialTheme.typography.bodySmall)
+                }
                 Button(
                     onClick = onConfirmReceipt,
                     colors = ButtonDefaults.buttonColors(containerColor = Primary),

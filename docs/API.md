@@ -147,6 +147,17 @@ Body: `{ "session_id": "...", "address": "收货地址" }`
 
 视觉检索 readiness 检查（检查 Doubao 视觉 API 配置，不触发本地模型加载）。
 
+## 语音输入接口
+
+### POST /audio/transcribe
+
+本地语音识别。multipart/form-data: `file`  
+返回: `{ text, language, language_probability, duration }`
+
+### GET /audio/asr-status
+
+本地 faster-whisper ASR readiness 检查。
+
 ### POST /documents/upload
 
 知识文档上传。multipart/form-data: `file`

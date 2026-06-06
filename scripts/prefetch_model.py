@@ -1,8 +1,9 @@
-"""预下载 Embedding 模型到本地 data/models/ 目录，避免 deploy 时在线下载。
+"""预下载本地模型到 data/models/ 目录，避免 deploy 时在线下载。
 
 用法:
   python scripts/prefetch_model.py               # 下载 bge-large-zh-v1.5 (embedding)
   python scripts/prefetch_model.py --reranker     # 下载 bge-reranker-v2-m3
+  python scripts/prefetch_model.py --asr          # 下载 faster-whisper-small
   python scripts/prefetch_model.py --all          # 下载全部
   python scripts/prefetch_model.py --check        # 仅检查已有模型状态
 
@@ -29,6 +30,10 @@ MODELS = {
     "reranker": {
         "repo": "BAAI/bge-reranker-v2-m3",
         "dir": MODEL_DIR / "bge-reranker-v2-m3",
+    },
+    "asr": {
+        "repo": "Systran/faster-whisper-small",
+        "dir": MODEL_DIR / "faster-whisper-small",
     },
 }
 
@@ -91,8 +96,9 @@ def download_model(repo_id: str, dest_dir: Path) -> bool:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Prefetch embedding/reranker models")
+    parser = argparse.ArgumentParser(description="Prefetch embedding/reranker/ASR models")
     parser.add_argument("--reranker", action="store_true")
+    parser.add_argument("--asr", action="store_true")
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--check", action="store_true", help="Only check status, no download")
     args = parser.parse_args()
@@ -111,7 +117,9 @@ def main():
 
     targets = []
     if args.all:
-        targets = ["embedding", "reranker"]
+        targets = ["embedding", "reranker", "asr"]
+    elif args.asr:
+        targets = ["asr"]
     elif args.reranker:
         targets = ["reranker"]
     else:

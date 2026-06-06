@@ -1,10 +1,9 @@
 package com.shopping.agent.ui.components
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.MediaRecorder
 import android.net.Uri
-import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -21,6 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,8 +29,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
+import com.shopping.agent.data.remote.AudioClient
 import com.shopping.agent.ui.theme.*
 import com.shopping.agent.viewmodel.ChatViewModel
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -54,6 +56,8 @@ fun ChatInputBar(
     var showChooser by remember { mutableStateOf(false) }
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val audioClient = remember { AudioClient() }
 
     // 相册选择器
     val galleryPicker = rememberLauncherForActivityResult(
@@ -121,47 +125,94 @@ fun ChatInputBar(
         }
     }
 
-    // 语音识别
-    val speechRecognizer = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            val matches = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-            val spoken = matches?.firstOrNull() ?: return@rememberLauncherForActivityResult
-            inputText = spoken
-            chatViewModel.onInputChange(spoken)
+    // 本地后端 ASR 录音
+    var isRecording by remember { mutableStateOf(false) }
+    var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
+    var recordingFile by remember { mutableStateOf<File?>(null) }
+
+    fun stopAndTranscribe() {
+        val activeRecorder = recorder ?: return
+        val audioFile = recordingFile ?: return
+        try {
+            activeRecorder.stop()
+            activeRecorder.release()
+        } catch (e: Exception) {
+            android.util.Log.e("ChatInputBar", "Audio recorder stop failed", e)
+            try {
+                activeRecorder.release()
+            } catch (_: Exception) {
+            }
+            android.widget.Toast.makeText(context, "录音时间太短，请重试", android.widget.Toast.LENGTH_SHORT).show()
+            recorder = null
+            recordingFile = null
+            isRecording = false
+            return
+        }
+
+        recorder = null
+        recordingFile = null
+        isRecording = false
+        android.widget.Toast.makeText(context, "正在识别语音…", android.widget.Toast.LENGTH_SHORT).show()
+        scope.launch {
+            try {
+                val text = audioClient.transcribe(audioFile)
+                if (text.isBlank()) {
+                    android.widget.Toast.makeText(context, "没有识别到语音内容", android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    inputText = text
+                    chatViewModel.onInputChange(text)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ChatInputBar", "Local ASR failed", e)
+                android.widget.Toast.makeText(context, "本地语音识别失败，请检查后端服务", android.widget.Toast.LENGTH_SHORT).show()
+            } finally {
+                audioFile.delete()
+            }
         }
     }
-    var pendingVoiceIntent by remember { mutableStateOf<Intent?>(null) }
+
+    fun startRecording() {
+        try {
+            val audioFile = File(context.cacheDir, "voice_${System.currentTimeMillis()}.m4a")
+            val newRecorder = MediaRecorder().apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioSamplingRate(16000)
+                setAudioEncodingBitRate(64000)
+                setOutputFile(audioFile.absolutePath)
+                prepare()
+                start()
+            }
+            recordingFile = audioFile
+            recorder = newRecorder
+            isRecording = true
+            android.widget.Toast.makeText(context, "正在录音，再点一次结束", android.widget.Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            android.util.Log.e("ChatInputBar", "Audio recorder start failed", e)
+            android.widget.Toast.makeText(context, "录音启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
     val voicePermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            pendingVoiceIntent?.let { intent ->
-                try {
-                    speechRecognizer.launch(intent)
-                } catch (e: Exception) {
-                    android.util.Log.e("ChatInputBar", "Speech recognizer launch failed", e)
-                    android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
-                }
-            }
+            startRecording()
         } else {
             android.widget.Toast.makeText(context, "需要麦克风权限才能使用语音输入", android.widget.Toast.LENGTH_SHORT).show()
         }
-        pendingVoiceIntent = null
     }
 
-    fun launchVoiceInput(intent: Intent) {
+    fun onVoiceClick() {
+        if (isRecording) {
+            stopAndTranscribe()
+            return
+        }
         val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         if (hasPermission) {
-            try {
-                speechRecognizer.launch(intent)
-            } catch (e: Exception) {
-                android.util.Log.e("ChatInputBar", "Speech recognizer launch failed", e)
-                android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
-            }
+            startRecording()
         } else {
-            pendingVoiceIntent = intent
             voicePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
@@ -243,25 +294,15 @@ fun ChatInputBar(
                 )
                 // 语音输入按钮
                 if (showIcons) {
-                    val hasSpeech = remember {
-                        android.speech.SpeechRecognizer.isRecognitionAvailable(context)
-                    }
                     IconButton(
-                        onClick = {
-                            if (hasSpeech) {
-                                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                                    putExtra(RecognizerIntent.EXTRA_PROMPT, "说出你想买的商品...")
-                                }
-                                launchVoiceInput(intent)
-                            } else {
-                                android.widget.Toast.makeText(context, "语音识别不可用", android.widget.Toast.LENGTH_SHORT).show()
-                            }
-                        },
+                        onClick = { onVoiceClick() },
                         modifier = Modifier.size(44.dp)
                     ) {
-                        Icon(Icons.Default.Mic, "语音输入", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Default.Mic,
+                            if (isRecording) "结束录音" else "语音输入",
+                            tint = if (isRecording) Primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
                 FilledIconButton(

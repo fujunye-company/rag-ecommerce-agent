@@ -18,7 +18,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
-from app.api import chat, products, upload, evaluation, feedback, compare, knowledge, cart, order, favorites, footprints, user, review
+from app.api import audio, chat, products, upload, evaluation, feedback, compare, knowledge, cart, order, favorites, footprints, user, review
 from app.core.config import settings
 from app.core.database import engine, Base
 
@@ -104,6 +104,7 @@ app = FastAPI(
 - **智能导购**: 9 种意图识别（推荐/对比/详情/场景/反选/购物车/拍照找货/售后/闲聊）
 - **多轮对话**: 上下文继承、澄清反问、槽位填充
 - **拍照找货**: Doubao 视觉 API 图片解析 → 向量检索 → 商品匹配
+- **语音输入**: 本地 faster-whisper ASR → 文本导购
 - **流式响应**: SSE (Server-Sent Events) 实时推送
 
 ## 技术栈
@@ -191,6 +192,7 @@ for prefix in ["/api/v1"]:
     app.include_router(footprints.router, prefix=prefix, tags=["footprints"])
     app.include_router(user.router, prefix=prefix, tags=["user"])
     app.include_router(review.router, prefix=prefix, tags=["review"])
+    app.include_router(audio.router, prefix=prefix, tags=["audio"])
 
 # 商品图片服务 — FastAPI 路由替代 StaticFiles mount
 # 解决中文路径 URL 编码兼容性问题（StaticFiles mount 对中文字符处理不一致）

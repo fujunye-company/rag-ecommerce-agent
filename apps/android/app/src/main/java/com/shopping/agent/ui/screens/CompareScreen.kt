@@ -1,10 +1,9 @@
 package com.shopping.agent.ui.screens
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.MediaRecorder
 import android.net.Uri
-import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -47,6 +46,7 @@ import coil.compose.AsyncImage
 import com.shopping.agent.data.mock.MockCompareData
 import com.shopping.agent.data.model.Product
 import com.shopping.agent.data.model.SSEEvent
+import com.shopping.agent.data.remote.AudioClient
 import com.shopping.agent.data.remote.SseClient
 import com.shopping.agent.data.repository.CompareRepository
 import com.shopping.agent.ui.components.*
@@ -409,64 +409,102 @@ private fun CompareSearchBar(
             )
             // 语音输入
             val context = LocalContext.current
-            val hasSpeech = remember { android.speech.SpeechRecognizer.isRecognitionAvailable(context) }
-            val voiceLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.StartActivityForResult()
-            ) { result ->
-                if (result.resultCode == android.app.Activity.RESULT_OK) {
-                    val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull() ?: return@rememberLauncherForActivityResult
-                    onQueryChange(spoken)
+            val scope = rememberCoroutineScope()
+            val audioClient = remember { AudioClient() }
+            var isRecording by remember { mutableStateOf(false) }
+            var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
+            var recordingFile by remember { mutableStateOf<File?>(null) }
+
+            fun stopAndTranscribe() {
+                val activeRecorder = recorder ?: return
+                val audioFile = recordingFile ?: return
+                try {
+                    activeRecorder.stop()
+                    activeRecorder.release()
+                } catch (e: Exception) {
+                    android.util.Log.e("CompareScreen", "Audio recorder stop failed", e)
+                    try { activeRecorder.release() } catch (_: Exception) {}
+                    android.widget.Toast.makeText(context, "录音时间太短，请重试", android.widget.Toast.LENGTH_SHORT).show()
+                    recorder = null
+                    recordingFile = null
+                    isRecording = false
+                    return
+                }
+                recorder = null
+                recordingFile = null
+                isRecording = false
+                android.widget.Toast.makeText(context, "正在识别语音…", android.widget.Toast.LENGTH_SHORT).show()
+                scope.launch {
+                    try {
+                        val text = audioClient.transcribe(audioFile)
+                        if (text.isBlank()) {
+                            android.widget.Toast.makeText(context, "没有识别到语音内容", android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            onQueryChange(text)
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("CompareScreen", "Local ASR failed", e)
+                        android.widget.Toast.makeText(context, "本地语音识别失败，请检查后端服务", android.widget.Toast.LENGTH_SHORT).show()
+                    } finally {
+                        audioFile.delete()
+                    }
                 }
             }
-            var pendingVoiceIntent by remember { mutableStateOf<Intent?>(null) }
+
+            fun startRecording() {
+                try {
+                    val audioFile = File(context.cacheDir, "compare_voice_${System.currentTimeMillis()}.m4a")
+                    val newRecorder = MediaRecorder().apply {
+                        setAudioSource(MediaRecorder.AudioSource.MIC)
+                        setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                        setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                        setAudioSamplingRate(16000)
+                        setAudioEncodingBitRate(64000)
+                        setOutputFile(audioFile.absolutePath)
+                        prepare()
+                        start()
+                    }
+                    recordingFile = audioFile
+                    recorder = newRecorder
+                    isRecording = true
+                    android.widget.Toast.makeText(context, "正在录音，再点一次结束", android.widget.Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    android.util.Log.e("CompareScreen", "Audio recorder start failed", e)
+                    android.widget.Toast.makeText(context, "录音启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+
             val voicePermissionLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.RequestPermission()
             ) { granted ->
                 if (granted) {
-                    pendingVoiceIntent?.let { intent ->
-                        try {
-                            voiceLauncher.launch(intent)
-                        } catch (e: Exception) {
-                            android.util.Log.e("CompareScreen", "Speech recognizer launch failed", e)
-                            android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
-                        }
-                    }
+                    startRecording()
                 } else {
                     android.widget.Toast.makeText(context, "需要麦克风权限才能使用语音输入", android.widget.Toast.LENGTH_SHORT).show()
                 }
-                pendingVoiceIntent = null
             }
 
-            fun launchVoiceInput(intent: Intent) {
+            fun onVoiceClick() {
+                if (isRecording) {
+                    stopAndTranscribe()
+                    return
+                }
                 val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
                 if (hasPermission) {
-                    try {
-                        voiceLauncher.launch(intent)
-                    } catch (e: Exception) {
-                        android.util.Log.e("CompareScreen", "Speech recognizer launch failed", e)
-                        android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
-                    }
+                    startRecording()
                 } else {
-                    pendingVoiceIntent = intent
                     voicePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                 }
             }
             IconButton(
-                onClick = {
-                    if (hasSpeech) {
-                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                            putExtra(RecognizerIntent.EXTRA_PROMPT, "说出想对比的商品...")
-                        }
-                        launchVoiceInput(intent)
-                    } else {
-                        android.widget.Toast.makeText(context, "语音识别不可用", android.widget.Toast.LENGTH_SHORT).show()
-                    }
-                },
+                onClick = { onVoiceClick() },
                 modifier = Modifier.size(44.dp)
             ) {
-                Icon(Icons.Default.Mic, "语音输入", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(
+                    Icons.Default.Mic,
+                    if (isRecording) "结束录音" else "语音输入",
+                    tint = if (isRecording) Primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             // 发送按钮
             FilledIconButton(

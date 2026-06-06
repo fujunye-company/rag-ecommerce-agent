@@ -1,9 +1,8 @@
 package com.shopping.agent.ui.screens
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.speech.RecognizerIntent
+import android.media.MediaRecorder
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -31,10 +30,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.shopping.agent.data.local.UserRepository
+import com.shopping.agent.data.remote.AudioClient
 import com.shopping.agent.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -98,6 +99,10 @@ fun CustomerServiceScreen(
     var questionStartIndex by remember { mutableIntStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
     var lastLoadedId by remember { mutableLongStateOf(0L) }
+    val audioClient = remember { AudioClient() }
+    var isRecording by remember { mutableStateOf(false) }
+    var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
+    var recordingFile by remember { mutableStateOf<File?>(null) }
 
     val sessionStartTime = remember { System.currentTimeMillis() }
     val sessionStartLabel = remember { CS_DATE_FORMAT.format(Date(sessionStartTime)) }
@@ -140,51 +145,87 @@ fun CustomerServiceScreen(
         }
     }
 
-    val voiceLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                ?.firstOrNull()?.let { spoken ->
-                    inputText = spoken
+    fun stopAndTranscribe() {
+        val activeRecorder = recorder ?: return
+        val audioFile = recordingFile ?: return
+        try {
+            activeRecorder.stop()
+            activeRecorder.release()
+        } catch (e: Exception) {
+            android.util.Log.e("CustomerServiceScreen", "Audio recorder stop failed", e)
+            try { activeRecorder.release() } catch (_: Exception) {}
+            android.widget.Toast.makeText(context, "录音时间太短，请重试", android.widget.Toast.LENGTH_SHORT).show()
+            recorder = null
+            recordingFile = null
+            isRecording = false
+            return
+        }
+        recorder = null
+        recordingFile = null
+        isRecording = false
+        android.widget.Toast.makeText(context, "正在识别语音…", android.widget.Toast.LENGTH_SHORT).show()
+        scope.launch {
+            try {
+                val text = audioClient.transcribe(audioFile)
+                if (text.isBlank()) {
+                    android.widget.Toast.makeText(context, "没有识别到语音内容", android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    inputText = text
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("CustomerServiceScreen", "Local ASR failed", e)
+                android.widget.Toast.makeText(context, "本地语音识别失败，请检查后端服务", android.widget.Toast.LENGTH_SHORT).show()
+            } finally {
+                audioFile.delete()
             }
         }
     }
-    var pendingVoiceIntent by remember { mutableStateOf<Intent?>(null) }
+
+    fun startRecording() {
+        try {
+            val audioFile = File(context.cacheDir, "cs_voice_${System.currentTimeMillis()}.m4a")
+            val newRecorder = MediaRecorder().apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioSamplingRate(16000)
+                setAudioEncodingBitRate(64000)
+                setOutputFile(audioFile.absolutePath)
+                prepare()
+                start()
+            }
+            recordingFile = audioFile
+            recorder = newRecorder
+            isRecording = true
+            android.widget.Toast.makeText(context, "正在录音，再点一次结束", android.widget.Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            android.util.Log.e("CustomerServiceScreen", "Audio recorder start failed", e)
+            android.widget.Toast.makeText(context, "录音启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
     val voicePermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            pendingVoiceIntent?.let { intent ->
-                try {
-                    voiceLauncher.launch(intent)
-                } catch (e: Exception) {
-                    android.util.Log.e("CustomerServiceScreen", "Speech recognizer launch failed", e)
-                    android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
-                }
-            }
+            startRecording()
         } else {
             android.widget.Toast.makeText(context, "需要麦克风权限才能使用语音输入", android.widget.Toast.LENGTH_SHORT).show()
         }
-        pendingVoiceIntent = null
     }
 
-    fun launchVoiceInput(intent: Intent) {
+    fun onVoiceClick() {
+        if (isRecording) {
+            stopAndTranscribe()
+            return
+        }
         val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         if (hasPermission) {
-            try {
-                voiceLauncher.launch(intent)
-            } catch (e: Exception) {
-                android.util.Log.e("CustomerServiceScreen", "Speech recognizer launch failed", e)
-                android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
-            }
+            startRecording()
         } else {
-            pendingVoiceIntent = intent
             voicePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
-
-    val hasSpeech = remember { android.speech.SpeechRecognizer.isRecognitionAvailable(context) }
 
     LaunchedEffect(Unit) {
         try {
@@ -290,20 +331,8 @@ fun CustomerServiceScreen(
                     }
                 }
             },
-            onVoiceClick = {
-                val hasRecognition = android.speech.SpeechRecognizer.isRecognitionAvailable(context)
-                if (hasRecognition) {
-                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                        putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault())
-                        putExtra(RecognizerIntent.EXTRA_PROMPT, "说出您的问题...")
-                    }
-                    launchVoiceInput(intent)
-                } else {
-                    android.widget.Toast.makeText(context, "语音识别不可用", android.widget.Toast.LENGTH_SHORT).show()
-                }
-            },
-            hasSpeech = hasSpeech,
+            onVoiceClick = { onVoiceClick() },
+            isRecording = isRecording,
         )
     }
 }
@@ -486,7 +515,7 @@ private fun CsInputBar(
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
     onVoiceClick: () -> Unit,
-    hasSpeech: Boolean,
+    isRecording: Boolean,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -529,7 +558,7 @@ private fun CsInputBar(
                 ) {
                     Icon(
                         Icons.Default.Mic, "语音",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = if (isRecording) Primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(22.dp),
                     )
                 }

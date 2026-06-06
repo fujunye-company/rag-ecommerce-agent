@@ -99,8 +99,14 @@ fun ChatInputBar(
     }
 
     val launchTakePicture: (Uri) -> Unit = { uri ->
-        cameraUri = uri
-        cameraLauncher.launch(uri)
+        try {
+            cameraUri = uri
+            cameraLauncher.launch(uri)
+        } catch (e: Exception) {
+            android.util.Log.e("ChatInputBar", "Camera launch failed", e)
+            cameraUri = null
+            android.widget.Toast.makeText(context, "拍照搜索启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 
     /** 相机权限请求 launcher — 用户授权后自动打开相机 */
@@ -291,6 +297,7 @@ fun ChatInputBar(
                                 showChooser = false
                                 val dateStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
                                 val photoFile = File(context.cacheDir, "JPEG_${dateStamp}.jpg")
+                                photoFile.createNewFile()
                                 val uri = androidx.core.content.FileProvider.getUriForFile(
                                     context,
                                     "${context.packageName}.fileprovider",

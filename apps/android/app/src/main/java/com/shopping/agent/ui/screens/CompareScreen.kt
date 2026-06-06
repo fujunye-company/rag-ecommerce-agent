@@ -180,8 +180,14 @@ fun CompareTabScreen() {
     }
 
     val launchTakePicture: (Uri) -> Unit = { uri ->
-        cameraUri = uri
-        cameraLauncher.launch(uri)
+        try {
+            cameraUri = uri
+            cameraLauncher.launch(uri)
+        } catch (e: Exception) {
+            android.util.Log.e("CompareScreen", "Camera launch failed", e)
+            cameraUri = null
+            android.widget.Toast.makeText(context, "拍照搜索启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
@@ -320,6 +326,7 @@ fun CompareTabScreen() {
                                 showChooser = false
                                 val dateStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(java.util.Date())
                                 val photoFile = File(context.cacheDir, "JPEG_${dateStamp}.jpg")
+                                photoFile.createNewFile()
                                 val uri = androidx.core.content.FileProvider.getUriForFile(
                                     context,
                                     "${context.packageName}.fileprovider",

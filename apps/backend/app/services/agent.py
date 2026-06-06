@@ -954,6 +954,10 @@ async def node_generate(state: AgentState) -> AgentState:
 def _extract_cart_action(query: str) -> str:
     """从用户查询中提取购物车操作类型"""
     q = query.lower()
+    if any(kw in q for kw in ["加入购物车", "加到购物车", "加购", "放入购物车", "拍下"]):
+        return "add"
+    if any(kw in q for kw in ["剩下", "其余", "余下", "剩余"]) and any(kw in q for kw in ["买", "购买", "加入"]):
+        return "add"
     quantity_patterns = [
         r"(?:数量|数目|件数|个数)",
         r"(?:改成|改为|设为|设置为|调整为|调为|调到|改到|变成)\s*[0-9一二两三四五六七八九十]",
@@ -977,6 +981,14 @@ def _extract_cart_action(query: str) -> str:
 
 def _parse_quantity(query: str) -> int | None:
     """解析“设置为 N 件”类绝对数量。"""
+    clear_match = re.search(
+        r"(?:买|要|来|加购|加入|放入|加到|拍)\s*([0-9]+|[一二两三四五六七八九十]+)\s*(?:件|个|台|只|双|套|份)",
+        query,
+        re.I,
+    )
+    if clear_match:
+        return _quantity_token_to_int(clear_match.group(1))
+
     patterns = [
         r"(?:数量|数目|件数|个数).{0,8}?(?:改成|改为|设为|设置为|调整为|调为|调到|改到|变成|到|为)?\s*([0-9]+|[一二两三四五六七八九十]+)",
         r"(?:改成|改为|设为|设置为|调整为|调为|调到|改到|变成)\s*([0-9]+|[一二两三四五六七八九十]+)",
@@ -1018,6 +1030,17 @@ def _parse_quantity_delta(query: str) -> int | None:
 
 
 def _quantity_token_to_int(raw: str) -> int | None:
+    clear_cn_nums = {"一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+    if raw in clear_cn_nums:
+        return clear_cn_nums[raw]
+    if raw == "十":
+        return 10
+    if raw.startswith("十") and len(raw) == 2:
+        return 10 + clear_cn_nums.get(raw[1], 0)
+    if raw.endswith("十") and len(raw) == 2:
+        return clear_cn_nums.get(raw[0], 0) * 10
+    if "十" in raw and len(raw) == 3:
+        return clear_cn_nums.get(raw[0], 0) * 10 + clear_cn_nums.get(raw[2], 0)
     if raw.isdigit():
         return max(0, int(raw))
     cn_nums = {
@@ -1033,6 +1056,34 @@ def _quantity_token_to_int(raw: str) -> int | None:
     if "十" in raw and len(raw) == 3:
         return cn_nums.get(raw[0], 0) * 10 + cn_nums.get(raw[2], 0)
     return cn_nums.get(raw)
+
+
+def _resolve_remaining_product_card(query: str, product_cards: list[dict]) -> dict | None:
+    """Resolve fuzzy references like "排除前两个，剩下的那个加购"."""
+    if not product_cards:
+        return None
+    remaining_markers = ("剩下", "其余", "余下", "剩余", "留下")
+    exclude_markers = ("排除", "不要", "去掉", "剔除", "除了", "删掉")
+    if not any(marker in query for marker in remaining_markers):
+        return None
+    if not any(marker in query for marker in exclude_markers):
+        return product_cards[0] if len(product_cards) == 1 else None
+
+    excluded: set[int] = set()
+    if re.search(r"(前|头)\s*(?:2|二|两)\s*(?:个|件|款|项)?", query):
+        excluded.update([0, 1])
+    elif re.search(r"(前|头)\s*(?:3|三)\s*(?:个|件|款|项)?", query):
+        excluded.update([0, 1, 2])
+    elif re.search(r"(前|头)\s*(?:1|一)\s*(?:个|件|款|项)?", query):
+        excluded.add(0)
+
+    ordinal_map = {"一": 0, "1": 0, "二": 1, "两": 1, "2": 1, "三": 2, "3": 2, "四": 3, "4": 3, "五": 4, "5": 4}
+    for token, idx in ordinal_map.items():
+        if re.search(rf"(?:第\s*{re.escape(token)}|{re.escape(token)}\s*号)", query):
+            excluded.add(idx)
+
+    remaining = [card for idx, card in enumerate(product_cards) if idx not in excluded]
+    return remaining[0] if len(remaining) == 1 else None
 
 
 def _cart_item_matches_query(item, query: str) -> bool:
@@ -1094,6 +1145,14 @@ async def _find_product_for_cart(query: str, state: "AgentState") -> dict | None
     prev_cards = slots.get("product_cards", [])
     if not product_cards and prev_cards:
         product_cards = prev_cards
+
+    remaining_card = _resolve_remaining_product_card(query, product_cards)
+    if remaining_card:
+        return {
+            "id": remaining_card.get("product_id") or remaining_card.get("id", ""),
+            "title": remaining_card.get("title", ""),
+            "price": remaining_card.get("price", 0),
+        }
 
     # 1. 序号匹配: "第一个"、"第二个"、"第1个"
     ordinal_map = {
@@ -1265,11 +1324,16 @@ async def node_cart(state: "AgentState") -> "AgentState":
             elif cart_action == "add":
                 product = await _find_product_for_cart(query, state)
                 if product and product.get("id") and len(product.get("id","")) > 10:
+                    requested_quantity = _parse_quantity(query) or 1
                     await cart_service.add_to_cart(
                         db, session_id,
                         product["id"], product["title"], product["price"],
                         user_id=user_id,
                     )
+                    if requested_quantity > 1:
+                        await cart_service.update_quantity(
+                            db, session_id, product["id"], requested_quantity, user_id=user_id
+                        )
                     items = await cart_service.get_cart(db, session_id, user_id=user_id)
                     total = await cart_service.get_cart_total(db, session_id, user_id=user_id)
                     state["response"] = (

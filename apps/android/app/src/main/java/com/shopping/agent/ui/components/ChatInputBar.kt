@@ -126,6 +126,39 @@ fun ChatInputBar(
             chatViewModel.onInputChange(spoken)
         }
     }
+    var pendingVoiceIntent by remember { mutableStateOf<Intent?>(null) }
+    val voicePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            pendingVoiceIntent?.let { intent ->
+                try {
+                    speechRecognizer.launch(intent)
+                } catch (e: Exception) {
+                    android.util.Log.e("ChatInputBar", "Speech recognizer launch failed", e)
+                    android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        } else {
+            android.widget.Toast.makeText(context, "需要麦克风权限才能使用语音输入", android.widget.Toast.LENGTH_SHORT).show()
+        }
+        pendingVoiceIntent = null
+    }
+
+    fun launchVoiceInput(intent: Intent) {
+        val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        if (hasPermission) {
+            try {
+                speechRecognizer.launch(intent)
+            } catch (e: Exception) {
+                android.util.Log.e("ChatInputBar", "Speech recognizer launch failed", e)
+                android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            pendingVoiceIntent = intent
+            voicePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
 
     // 同步外部状态到本地
     if (uiState.inputText.isEmpty() && inputText.isNotEmpty()) {
@@ -215,7 +248,7 @@ fun ChatInputBar(
                                     putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
                                     putExtra(RecognizerIntent.EXTRA_PROMPT, "说出你想买的商品...")
                                 }
-                                speechRecognizer.launch(intent)
+                                launchVoiceInput(intent)
                             } else {
                                 android.widget.Toast.makeText(context, "语音识别不可用", android.widget.Toast.LENGTH_SHORT).show()
                             }

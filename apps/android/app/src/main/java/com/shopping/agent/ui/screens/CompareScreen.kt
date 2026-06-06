@@ -411,6 +411,39 @@ private fun CompareSearchBar(
                     onQueryChange(spoken)
                 }
             }
+            var pendingVoiceIntent by remember { mutableStateOf<Intent?>(null) }
+            val voicePermissionLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { granted ->
+                if (granted) {
+                    pendingVoiceIntent?.let { intent ->
+                        try {
+                            voiceLauncher.launch(intent)
+                        } catch (e: Exception) {
+                            android.util.Log.e("CompareScreen", "Speech recognizer launch failed", e)
+                            android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    android.widget.Toast.makeText(context, "需要麦克风权限才能使用语音输入", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                pendingVoiceIntent = null
+            }
+
+            fun launchVoiceInput(intent: Intent) {
+                val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                if (hasPermission) {
+                    try {
+                        voiceLauncher.launch(intent)
+                    } catch (e: Exception) {
+                        android.util.Log.e("CompareScreen", "Speech recognizer launch failed", e)
+                        android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    pendingVoiceIntent = intent
+                    voicePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            }
             IconButton(
                 onClick = {
                     if (hasSpeech) {
@@ -419,7 +452,7 @@ private fun CompareSearchBar(
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
                             putExtra(RecognizerIntent.EXTRA_PROMPT, "说出想对比的商品...")
                         }
-                        voiceLauncher.launch(intent)
+                        launchVoiceInput(intent)
                     } else {
                         android.widget.Toast.makeText(context, "语音识别不可用", android.widget.Toast.LENGTH_SHORT).show()
                     }

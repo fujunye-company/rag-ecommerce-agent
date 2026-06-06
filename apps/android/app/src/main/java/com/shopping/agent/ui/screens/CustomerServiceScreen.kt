@@ -1,6 +1,8 @@
 package com.shopping.agent.ui.screens
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.shopping.agent.data.local.UserRepository
 import com.shopping.agent.ui.theme.*
 import kotlinx.coroutines.Dispatchers
@@ -144,7 +147,40 @@ fun CustomerServiceScreen(
             result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                 ?.firstOrNull()?.let { spoken ->
                     inputText = spoken
+            }
+        }
+    }
+    var pendingVoiceIntent by remember { mutableStateOf<Intent?>(null) }
+    val voicePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            pendingVoiceIntent?.let { intent ->
+                try {
+                    voiceLauncher.launch(intent)
+                } catch (e: Exception) {
+                    android.util.Log.e("CustomerServiceScreen", "Speech recognizer launch failed", e)
+                    android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
                 }
+            }
+        } else {
+            android.widget.Toast.makeText(context, "需要麦克风权限才能使用语音输入", android.widget.Toast.LENGTH_SHORT).show()
+        }
+        pendingVoiceIntent = null
+    }
+
+    fun launchVoiceInput(intent: Intent) {
+        val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        if (hasPermission) {
+            try {
+                voiceLauncher.launch(intent)
+            } catch (e: Exception) {
+                android.util.Log.e("CustomerServiceScreen", "Speech recognizer launch failed", e)
+                android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            pendingVoiceIntent = intent
+            voicePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
 
@@ -262,7 +298,7 @@ fun CustomerServiceScreen(
                         putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault())
                         putExtra(RecognizerIntent.EXTRA_PROMPT, "说出您的问题...")
                     }
-                    voiceLauncher.launch(intent)
+                    launchVoiceInput(intent)
                 } else {
                     android.widget.Toast.makeText(context, "语音识别不可用", android.widget.Toast.LENGTH_SHORT).show()
                 }

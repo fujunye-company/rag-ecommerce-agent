@@ -8,6 +8,7 @@ from app.services.agent import (
     _cart_item_matches_query,
     _extract_cart_item_index,
     _extract_cart_action,
+    _find_product_for_cart,
     _parse_quantity,
     _parse_quantity_delta,
 )
@@ -154,3 +155,26 @@ async def test_chat_confirm_checkout_does_not_clear_cart(db_check):
         assert len(cart_items) == 1
         await cart_service.clear_cart(db, cart_session_id, user_id=user_id)
         await db.commit()
+
+
+@pytest.mark.asyncio
+async def test_cart_backref_can_add_remaining_card_after_exclusions():
+    product = await _find_product_for_cart(
+        "排除前两个，剩下的那个加入购物车并买两件",
+        {
+            "product_cards": [
+                {"product_id": "11111111-1111-1111-1111-111111111111", "title": "候选一", "price": 10.0},
+                {"product_id": "22222222-2222-2222-2222-222222222222", "title": "候选二", "price": 20.0},
+                {"product_id": "33333333-3333-3333-3333-333333333333", "title": "候选三", "price": 30.0},
+            ],
+            "slots": {},
+        },
+    )
+
+    assert _extract_cart_action("排除前两个，剩下的那个加入购物车并买两件") == "add"
+    assert _parse_quantity("排除前两个，剩下的那个加入购物车并买两件") == 2
+    assert product == {
+        "id": "33333333-3333-3333-3333-333333333333",
+        "title": "候选三",
+        "price": 30.0,
+    }

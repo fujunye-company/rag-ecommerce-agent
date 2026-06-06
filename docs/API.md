@@ -145,7 +145,7 @@ Body: `{ "session_id": "...", "address": "收货地址" }`
 
 ### GET /upload/vision-status
 
-视觉检索 readiness 检查（不触发模型加载）。
+视觉检索 readiness 检查（检查 Doubao 视觉 API 配置，不触发本地模型加载）。
 
 ### POST /documents/upload
 

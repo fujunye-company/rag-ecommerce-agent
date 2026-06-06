@@ -30,10 +30,6 @@ MODELS = {
         "repo": "BAAI/bge-reranker-v2-m3",
         "dir": MODEL_DIR / "bge-reranker-v2-m3",
     },
-    "vlm": {
-        "repo": "Qwen/Qwen3-VL-2B-Instruct",
-        "dir": Path.home() / ".cache" / "modelscope" / "qwen" / "Qwen3-VL-2B-Instruct",
-    },
 }
 
 
@@ -95,9 +91,8 @@ def download_model(repo_id: str, dest_dir: Path) -> bool:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Prefetch embedding/reranker/VLM models")
+    parser = argparse.ArgumentParser(description="Prefetch embedding/reranker models")
     parser.add_argument("--reranker", action="store_true")
-    parser.add_argument("--vlm", action="store_true")
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--check", action="store_true", help="Only check status, no download")
     args = parser.parse_args()
@@ -116,9 +111,7 @@ def main():
 
     targets = []
     if args.all:
-        targets = ["embedding", "reranker", "vlm"]
-    elif args.vlm:
-        targets = ["vlm"]
+        targets = ["embedding", "reranker"]
     elif args.reranker:
         targets = ["reranker"]
     else:

@@ -174,7 +174,7 @@ if not errorlevel 1 (
     echo   Models: ready
     exit /b 0
 )
-echo   Missing model files detected. Downloading embedding + reranker + VLM models...
+echo   Missing model files detected. Downloading embedding + reranker models...
 echo   This is resumable; if interrupted, run start.bat again.
 %PYTHON_CMD% "%ROOT_DIR%\scripts\prefetch_model.py" --all
 if errorlevel 1 (

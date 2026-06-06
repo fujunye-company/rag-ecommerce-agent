@@ -27,6 +27,7 @@ data class ProductDetailUiState(
     val isFavorited: Boolean = false,
     val isFollowingShop: Boolean = false,
     val addToCartResult: String? = null,
+    val favoriteResult: String? = null,  // 收藏操作结果提示
     val error: String? = null,
 )
 
@@ -43,6 +44,13 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
     /** 加载商品时缓存的 Product 对象，用于加购时写入数据库 */
     private var cachedProduct: Product? = null
 
+    /** 导航传入的原始 productId（mock ID，如 "p_clothes_021"），用于本地 SQLite 操作 */
+    private var navProductId: String = ""
+
+    /** API 返回的 UUID（如 "a1b2c3d4-..."），用于后端同步。
+     *  若 API 未返回或请求失败则为空，此时回退使用 navProductId。 */
+    private var apiProductId: String = ""
+
     private val baseUrl = NetworkConfig.BASE_URL
 
     private val sessionId: String
@@ -52,6 +60,8 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
 
     fun loadProduct(productId: String) {
         _uiState.update { it.copy(isLoading = true) }
+        // 缓存导航 productId（mock ID），用于本地 DB 匹配 mockProducts
+        navProductId = productId
         // 缓存 mock Product 对象，用于加购写入数据库
         val sourceProduct = com.shopping.agent.data.mock.mockProducts.find { it.productId == productId }
         cachedProduct = sourceProduct
@@ -59,12 +69,16 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
             // 优先从后端 API 获取商品详情
             val apiDetail = fetchProductFromApi(productId)
             val detail = apiDetail ?: buildMockDetail(productId)
+            // 缓存 API 返回的 UUID，用于后端同步
+            if (apiDetail != null) {
+                apiProductId = apiDetail.productId
+            }
             if (cachedProduct == null) {
                 cachedProduct = detail.toCartProduct()
             }
-            // 从数据库查询收藏状态（而非 SharedPreferences）
+            // 从数据库查询收藏状态（使用 navProductId，保证与 mockProducts 匹配）
             val faved = withContext(Dispatchers.IO) {
-                repository.isFavorited(productId)
+                repository.isFavorited(navProductId)
             }
             val following = prefs.getBoolean("follow_${detail.shop.name}", false)
             _uiState.update {
@@ -100,19 +114,33 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun toggleFavorite() {
-        val product = _uiState.value.product ?: return
+        // 本地 DB 使用 mock ID（与 mockProducts 匹配），后端同步使用 UUID
+        val localId = navProductId.ifEmpty { _uiState.value.product?.productId } ?: return
+        val backendId = apiProductId.ifEmpty { localId }
         viewModelScope.launch {
-            // 1. 操作前端 SQLite 数据库（收藏/取消收藏）
+            // 1. 操作前端 SQLite（使用 mock ID，保证与 mockProducts 匹配）
             val newState = withContext(Dispatchers.IO) {
-                repository.toggleFavorite(product.productId)
+                repository.toggleFavorite(localId)
             }
-            // 2. 同步到后端 PostgreSQL
+            // 2. 同步到后端 PostgreSQL（使用 UUID，后端只认识 UUID）
+            var backendSuccess = true
             withContext(Dispatchers.IO) {
-                // toggleFavorite 返回操作后的状态；若状态改变则同步
-                repository.syncFavoriteToBackend(product.productId, newState)
+                try {
+                    repository.syncFavoriteToBackend(backendId, newState)
+                } catch (e: Exception) {
+                    android.util.Log.e("ProductDetailVM", "收藏同步后端失败", e)
+                    backendSuccess = false
+                }
             }
-            // 3. 更新 UI
-            _uiState.update { it.copy(isFavorited = newState) }
+            // 3. 更新 UI + 弹窗提示
+            val message = if (!backendSuccess) {
+                "当前网络不佳，请稍后重试"
+            } else if (newState) {
+                "收藏成功"
+            } else {
+                "取消收藏成功"
+            }
+            _uiState.update { it.copy(isFavorited = newState, favoriteResult = message) }
         }
     }
 
@@ -181,6 +209,10 @@ class ProductDetailViewModel(application: Application) : AndroidViewModel(applic
 
     fun dismissResult() {
         _uiState.update { it.copy(addToCartResult = null) }
+    }
+
+    fun dismissFavoriteResult() {
+        _uiState.update { it.copy(favoriteResult = null) }
     }
 
     private fun ProductDetailData.toCartProduct(): Product? {

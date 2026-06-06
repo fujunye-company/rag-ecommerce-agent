@@ -23,7 +23,7 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
         /** 数据库文件名 */
         const val DATABASE_NAME = "hermes_local.db"
         /** 当前数据库版本号，变更 schema 时递增 */
-        const val DATABASE_VERSION = 9
+        const val DATABASE_VERSION = 11
 
         /** 用户画像表 — 以 "sw" UUID 为主键，avatar 为 BLOB 列 */
         const val TABLE_USER = "user_profile"
@@ -212,13 +212,17 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
 
         // ═══════════════ 订单记录表 ═══════════════
         // status: "待付款" / "待发货" / "待收货" / "待评价" / "已完成" / "已取消"
+        // backend_order_no: 后端订单号（ORD 开头），前后端订单关联字段
+        // updated_at: 订单更新时间戳
         db.execSQL("""
             CREATE TABLE $TABLE_ORDER_RECORDS (
-                user_id     TEXT NOT NULL,
-                order_id    INTEGER PRIMARY KEY AUTOINCREMENT,
-                order_body  TEXT DEFAULT '',
-                created_at  INTEGER NOT NULL,
-                status      TEXT DEFAULT '待付款',
+                user_id           TEXT NOT NULL,
+                order_id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                backend_order_no  TEXT DEFAULT '',
+                order_body        TEXT DEFAULT '',
+                created_at        INTEGER NOT NULL,
+                updated_at        INTEGER NOT NULL DEFAULT 0,
+                status            TEXT DEFAULT '待付款',
                 FOREIGN KEY (user_id) REFERENCES $TABLE_USER(id)
             )
         """.trimIndent())
@@ -235,6 +239,34 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
                 FOREIGN KEY (user_id) REFERENCES $TABLE_USER(id)
             )
         """.trimIndent())
+
+        // ═══════════════ 商品收藏记录表 ═══════════════
+        // 复合主键 (user_id, product_id)，满足 3NF
+        db.execSQL("""
+            CREATE TABLE $TABLE_FAVORITES (
+                user_id     TEXT NOT NULL,
+                product_id  TEXT NOT NULL,
+                created_at  INTEGER NOT NULL,
+                PRIMARY KEY (user_id, product_id),
+                FOREIGN KEY (user_id) REFERENCES $TABLE_USER(id)
+            )
+        """.trimIndent())
+        db.execSQL("CREATE INDEX idx_fav_user ON $TABLE_FAVORITES(user_id, created_at DESC)")
+
+        // ═══════════════ 商品足迹记录表 ═══════════════
+        // 复合主键 (user_id, product_id)，满足 3NF
+        // browse_date 仅记录年月日（毫秒时间戳在读写时转为日期）
+        db.execSQL("""
+            CREATE TABLE $TABLE_FOOTPRINTS (
+                user_id     TEXT NOT NULL,
+                product_id  TEXT NOT NULL,
+                browse_date INTEGER NOT NULL,
+                created_at  INTEGER NOT NULL,
+                PRIMARY KEY (user_id, product_id),
+                FOREIGN KEY (user_id) REFERENCES $TABLE_USER(id)
+            )
+        """.trimIndent())
+        db.execSQL("CREATE INDEX idx_fp_user ON $TABLE_FOOTPRINTS(user_id, browse_date DESC)")
     }
 
     /**
@@ -430,7 +462,6 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
 
         if (oldVersion < 9) {
             // v9: 新增商品收藏记录表和商品足迹记录表
-            // 收藏记录表 — 复合主键 (user_id, product_id)，满足 3NF
             db.execSQL("""
                 CREATE TABLE IF NOT EXISTS $TABLE_FAVORITES (
                     user_id     TEXT NOT NULL,
@@ -441,9 +472,6 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
                 )
             """.trimIndent())
             db.execSQL("CREATE INDEX IF NOT EXISTS idx_fav_user ON $TABLE_FAVORITES(user_id, created_at DESC)")
-
-            // 足迹记录表 — 复合主键 (user_id, product_id)，满足 3NF
-            // browse_date 仅记录年月日（毫秒时间戳在读写时转为日期）
             db.execSQL("""
                 CREATE TABLE IF NOT EXISTS $TABLE_FOOTPRINTS (
                     user_id     TEXT NOT NULL,
@@ -456,5 +484,51 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
             """.trimIndent())
             db.execSQL("CREATE INDEX IF NOT EXISTS idx_fp_user ON $TABLE_FOOTPRINTS(user_id, browse_date DESC)")
         }
+
+        // v10: 补偿迁移 — v9 的 onCreate 未包含收藏/足迹表，需为已创建的 v9 数据库补建
+        if (oldVersion < 10) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS $TABLE_FAVORITES (
+                    user_id     TEXT NOT NULL,
+                    product_id  TEXT NOT NULL,
+                    created_at  INTEGER NOT NULL,
+                    PRIMARY KEY (user_id, product_id),
+                    FOREIGN KEY (user_id) REFERENCES $TABLE_USER(id)
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_fav_user ON $TABLE_FAVORITES(user_id, created_at DESC)")
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS $TABLE_FOOTPRINTS (
+                    user_id     TEXT NOT NULL,
+                    product_id  TEXT NOT NULL,
+                    browse_date INTEGER NOT NULL,
+                    created_at  INTEGER NOT NULL,
+                    PRIMARY KEY (user_id, product_id),
+                    FOREIGN KEY (user_id) REFERENCES $TABLE_USER(id)
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_fp_user ON $TABLE_FOOTPRINTS(user_id, browse_date DESC)")
+        }
+
+        // v11: 订单记录表增加 backend_order_no（绑定后端订单号）和 updated_at（更新时间）列
+        if (oldVersion < 11) {
+            try {
+                db.execSQL("ALTER TABLE $TABLE_ORDER_RECORDS ADD COLUMN backend_order_no TEXT DEFAULT ''")
+            } catch (_: Exception) {
+                // 列已存在则忽略
+            }
+            try {
+                db.execSQL("ALTER TABLE $TABLE_ORDER_RECORDS ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0")
+            } catch (_: Exception) {
+                // 列已存在则忽略
+            }
+            // 已有记录的 updated_at 设为 created_at
+            try {
+                db.execSQL("UPDATE $TABLE_ORDER_RECORDS SET updated_at = created_at WHERE updated_at = 0")
+            } catch (_: Exception) {
+                // 忽略
+            }
+        }
+
     }
 }

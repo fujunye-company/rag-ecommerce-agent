@@ -1,5 +1,4 @@
 """购物车 API 端点"""
-import hashlib
 import uuid
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,15 +15,6 @@ def _validate_uuid(value: str, name: str = "session_id") -> uuid.UUID:
         return uuid.UUID(value)
     except (ValueError, AttributeError):
         raise HTTPException(status_code=400, detail=f"无效的 {name} 格式: {value}")
-
-
-def _product_id_to_uuid(product_id: str) -> uuid.UUID:
-    """将任意 product_id 转为确定性 UUID（兼容 Qdrant 字符串 ID 和非 UUID 格式）"""
-    try:
-        return uuid.UUID(product_id)
-    except (ValueError, AttributeError):
-        digest = hashlib.md5(product_id.encode()).hexdigest()
-        return uuid.UUID(digest)
 
 
 class CartAddRequest(BaseModel):
@@ -64,9 +54,8 @@ async def get_cart(
     cart_items = []
     for i in items:
         from app.services import product_service
-        # product_id 可能是 Qdrant 字符串 ID，通过确定性 UUID 查询商品表
-        pid = _product_id_to_uuid(i.product_id)
-        prod = await product_service.get_product_by_id(db, str(pid))
+        # 直接传原始 product_id，get_product_by_id 内部已支持 UUID / source_product_id 双重查找
+        prod = await product_service.get_product_by_id(db, i.product_id)
         cart_items.append({
             "product_id": i.product_id,
             "title": i.title,
@@ -91,8 +80,8 @@ async def add_item(body: CartAddRequest, db: AsyncSession = Depends(get_db)):
 
     # 服务端查商品表，不信任客户端传入的 price/title
     from app.services import product_service
-    pid = _product_id_to_uuid(body.product_id)
-    product = await product_service.get_product_by_id(db, str(pid))
+    # 直接传原始 product_id，get_product_by_id 内部已支持 UUID / source_product_id 双重查找
+    product = await product_service.get_product_by_id(db, body.product_id)
     if product is None:
         raise HTTPException(status_code=404, detail="商品不存在")
 

@@ -70,6 +70,12 @@ fun ProductDetailScreen(
             viewModel.dismissResult()
         }
     }
+    LaunchedEffect(uiState.favoriteResult) {
+        uiState.favoriteResult?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.dismissFavoriteResult()
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },

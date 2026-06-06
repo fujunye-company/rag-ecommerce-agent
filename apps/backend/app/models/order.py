@@ -13,7 +13,7 @@ class Order(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     order_no: Mapped[str] = mapped_column(String(32), nullable=False, unique=True, index=True)
     session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
-    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending/confirmed/cancelled
+    status: Mapped[str] = mapped_column(String(20), default="pending_payment")  # pending_payment/pending_shipping/pending_receipt/pending_review/completed/cancelled
     total: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     address: Mapped[str] = mapped_column(String(512), default="默认地址")
     remark: Mapped[str] = mapped_column(Text, default="")

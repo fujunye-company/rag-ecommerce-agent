@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -18,13 +19,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.shopping.agent.core.network.NetworkConfig
 import com.shopping.agent.data.local.UserRepository
 import com.shopping.agent.data.mock.mockProducts
 import com.shopping.agent.data.model.Product
 import com.shopping.agent.ui.theme.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.Request
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -68,27 +74,54 @@ fun FootprintsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var showFilterDialog by remember { mutableStateOf(false) }
     var filterState by remember { mutableStateOf(FilterState()) }
+    /** 上一次加载的 Job，用于取消并发加载防止 LazyColumn key 重复 */
+    var loadJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
 
-    /** 加载足迹商品列表 — 从 SQLite 读取并按日期分组 */
+    /** 加载足迹商品列表 — mockProducts 优先，UUID 则调 API 获取完整信息并按日期分组 */
     fun loadFootprints(startDate: Long = 0, endDate: Long = 0) {
-        scope.launch {
+        // 取消前次加载，防止并发导致 LazyColumn key 冲突
+        loadJob?.cancel()
+        loadJob = scope.launch {
             isLoading = true
             try {
                 val records = withContext(Dispatchers.IO) {
                     repository.getFootprints(startDate = startDate, endDate = endDate)
                 }
-                // 将足迹记录按日期分组，并转换为 Product 对象
-                val grouped = linkedMapOf<String, List<Product>>()
-                records.forEach { record ->
-                    val dateLabel = DATE_DISPLAY_FORMAT.format(Date(record.browseDate))
-                    val product = mockProducts.find { it.productId == record.productId }
-                    if (product != null) {
-                        grouped.getOrPut(dateLabel) { mutableListOf() }.let {
-                            (it as MutableList).add(product)
-                        }
+                // 分离匹配和未匹配的记录，并行处理
+                val (matched, unmatched) = records.partition { record ->
+                    mockProducts.any { it.productId == record.productId }
+                }
+                // 构建 productId → Product 的映射
+                val productMap = mutableMapOf<String, Product>()
+                matched.forEach { record ->
+                    mockProducts.find { it.productId == record.productId }?.let {
+                        productMap[record.productId] = it
                     }
                 }
-                footprintsByDate = grouped
+                // UUID 记录：并行调 API 获取完整商品信息
+                if (unmatched.isNotEmpty()) {
+                    val apiResults = withContext(Dispatchers.IO) {
+                        unmatched.map { record ->
+                            async<Pair<String, Product?>> { record.productId to fetchFootprintProductFromApi(record.productId) }
+                        }.awaitAll()
+                    }
+                    apiResults.forEach { (id, product) ->
+                        if (product != null) productMap[id] = product
+                    }
+                }
+                // 按日期分组（去重：同一日期组内相同 productId 只保留一条）
+                val grouped = linkedMapOf<String, MutableList<Product>>()
+                records.forEach { record ->
+                    val product = productMap[record.productId] ?: return@forEach
+                    val dateLabel = DATE_DISPLAY_FORMAT.format(Date(record.browseDate))
+                    val list = grouped.getOrPut(dateLabel) { mutableListOf() }
+                    // 防止同一 productId 被重复添加（兜底去重）
+                    if (list.none { it.productId == product.productId }) {
+                        list.add(product)
+                    }
+                }
+                @Suppress("UNCHECKED_CAST")
+                footprintsByDate = grouped as Map<String, List<Product>>
             } catch (_: Exception) {
                 footprintsByDate = emptyMap()
             }
@@ -190,8 +223,8 @@ fun FootprintsScreen(
                                 modifier = Modifier.padding(vertical = 8.dp),
                             )
                         }
-                        // 该日期下的商品卡片
-                        items(products, key = { "fp_${it.productId}" }) { product ->
+                        // 该日期下的商品卡片（key 含日期+productId+索引，三重防冲突）
+                        itemsIndexed(products, key = { index, product -> "fp_${dateLabel}_${product.productId}_$index" }) { _, product ->
                             FootprintProductCard(
                                 product = product,
                                 onTap = { onProductClick(product.productId) },
@@ -201,6 +234,37 @@ fun FootprintsScreen(
                 }
             }
         }
+    }
+}
+
+/** 从后端 API 获取商品信息并转为 Product 对象（用于 UUID 等 mockProducts 无法匹配的 ID） */
+private suspend fun fetchFootprintProductFromApi(productId: String): Product? {
+    return try {
+        val request = Request.Builder()
+            .url("${NetworkConfig.BASE_URL}/api/v1/products/$productId")
+            .get()
+            .build()
+        val response = NetworkConfig.httpClient.newCall(request).execute()
+        if (!response.isSuccessful) return null
+        val body = response.body?.string() ?: return null
+        val data = JSONObject(body).optJSONObject("data") ?: return null
+        val imageUrls = data.optJSONArray("image_urls")
+        val firstImage = if (imageUrls != null && imageUrls.length() > 0) {
+            NetworkConfig.resolveImageUrl(imageUrls.optString(0))
+        } else {
+            NetworkConfig.resolveImageUrl(data.optString("image_url").takeIf { it.isNotBlank() })
+        }
+        Product(
+            productId = productId,
+            title = data.optString("title", ""),
+            price = data.optDouble("price", 0.0),
+            brand = data.optString("brand").takeIf { it.isNotBlank() },
+            category = data.optString("category", ""),
+            imageUrl = firstImage,
+            rating = data.optDouble("rating", 3.0).toFloat(),
+        )
+    } catch (_: Exception) {
+        null
     }
 }
 

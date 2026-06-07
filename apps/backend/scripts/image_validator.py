@@ -1,8 +1,8 @@
 """
 P3 — 图片验证器
-检查 data/images/ 下商品图片的完整性
+检查 apps/backend/data/images/ 下商品图片的完整性
 
-用法: python image_validator.py [--dir data/images]
+用法: python image_validator.py [--dir apps/backend/data/images]
 """
 
 import argparse
@@ -100,7 +100,7 @@ def main():
     parser.add_argument("-o", "--output", default=None, help="输出 JSON 报告路径")
     args = parser.parse_args()
 
-    project_root = Path(__file__).resolve().parent.parent.parent.parent
+    project_root = Path(__file__).resolve().parent.parent
     images_dir = args.dir or (project_root / "data" / "images")
 
     print(f"扫描图片目录: {images_dir}")

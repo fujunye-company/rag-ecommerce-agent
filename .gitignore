@@ -80,7 +80,7 @@ apps/android/.kotlin/
 products.*
 
 # Local validation reports with machine-specific absolute paths
-data/images/image_validation.json
+apps/backend/data/images/image_validation.json
 
 # User-specific MCP configuration
 .mcp.json

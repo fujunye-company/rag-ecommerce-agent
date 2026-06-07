@@ -232,7 +232,7 @@ docs/                        # 技术文档
 docker compose -f infrastructure/docker-compose.yml up -d
 
 # 2. 数据导入
-cd apps/backend/data/qdrant && python ingest_to_qdrant.py
+cd apps/backend && python -c "from app.startup import ensure_qdrant_data; import asyncio; asyncio.run(ensure_qdrant_data())"
 
 # 3. 后端服务
 cd apps/backend && uvicorn app.main:app --host 0.0.0.0 --port 8080

@@ -637,7 +637,7 @@ NavGraph {
   + "用户评价: {review_texts}"
 
 Embedding: BAAI/bge-large-zh-v1.5 (1024维, sentence-transformers)
-入库: ingest_to_qdrant.py → 删除旧collection → 重建 → 向量化 → upsert
+入库: app.startup.ensure_qdrant_data() → 删除旧collection → 重建 → 向量化 → upsert
 环境: HF_HUB_OFFLINE=1 HF_OFFLINE=1 (离线模式)
 ```
 

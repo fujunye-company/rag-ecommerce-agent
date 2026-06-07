@@ -139,10 +139,10 @@ curl http://localhost:6333/healthz
 ## 七、数据入库
 
 ```bash
-cd apps/backend/data/qdrant
+cd apps/backend
 
-# 执行入库（首次约 30 秒）
-python ingest_to_qdrant.py
+# 执行入库（首次约 30 秒，含 embedding 编码）
+python -c "from app.startup import ensure_qdrant_data; import asyncio; asyncio.run(ensure_qdrant_data())"
 ```
 
 预期输出：
@@ -158,7 +158,9 @@ Done: 190 vectors ingested
 验证检索可用：
 
 ```bash
-python retrieve_from_qdrant.py --test
+curl -X POST http://localhost:8080/api/v1/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "降噪耳机", "top_k": 3}'
 ```
 
 ---

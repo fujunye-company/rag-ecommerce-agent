@@ -199,7 +199,7 @@ for prefix in ["/api/v1"]:
 
 # 商品图片服务 — FastAPI 路由替代 StaticFiles mount
 # 解决中文路径 URL 编码兼容性问题（StaticFiles mount 对中文字符处理不一致）
-IMAGES_DIR = Path(__file__).resolve().parent.parent.parent.parent / "data" / "images"
+IMAGES_DIR = Path(__file__).resolve().parent.parent / "data" / "images"
 
 if IMAGES_DIR.exists():
     @app.get("/images/{file_path:path}")

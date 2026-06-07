@@ -712,6 +712,6 @@ ChatMessage(
 | 向量库 | Qdrant (1024维, Cosine距离) |
 | Embedding | BAAI/bge-large-zh-v1.5 |
 | 视觉 API | Doubao OpenAI-compatible vision API |
-| LLM | DeepSeek v4-pro |
+| LLM | Doubao-Seed-2.0-lite |
 | 数据库 | PostgreSQL + pgvector |
 | 代理 | Clash Verge → http://172.24.48.1:7897 |

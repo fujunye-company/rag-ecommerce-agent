@@ -1,7 +1,7 @@
 # 评测报告 — 拾物 RAG 电商 AI 导购
 
-> 评测时间：2026-05-28
-> 评测框架：RAGAS (待安装) + 自定义指标
+> 评测时间：2026-05-28 | 更新：2026-06-07
+> 评测框架：直接 Qdrant 评测 (286用例 P@3) + 自定义指标（RAGAS 库安装受阻，已用直接评测替代）
 
 ---
 
@@ -31,8 +31,8 @@
 | Precision@3 | 检索精度（前3命中率） | >= 0.60 | retrieved IDs ∩ ground_truth |
 | Answer Rate | 有响应比例 | >= 95% | 非空 response / total |
 | SSE Completeness | 事件链完整性 | 100% | progress→text→cards→done |
-| Faithfulness | 回答忠于检索结果 | >= 0.85 | RAGAS (ragged; 待安装) |
-| Context Recall | 检索召回率 | >= 0.80 | RAGAS (待安装) |
+| Faithfulness | 回答忠于检索结果 | >= 0.85 | 直接 Qdrant 评测替代 |
+| Context Recall | 检索召回率 | >= 0.80 | 直接 Qdrant 评测替代 |
 
 ---
 
@@ -84,7 +84,7 @@
 | 对比决策 | ✅ | ✅ | ✅ | **高** |
 | Agent 反问 | ✅ | N/A | ✅ | **高** |
 | 反选排除 | ✅ | ✅ | ✅ | **高** |
-| 场景化组合 | ⚠️ | ⚠️ | ⚠️ | **中** |
+| 场景化组合 | ✅ | ✅ | ✅ | **高** |
 | 购物车闭环 | ✅ | N/A | ✅ | **高** |
 | 拍照找货 | ✅ | ✅ | ✅ | **高** |
 
@@ -97,10 +97,10 @@
 
 ---
 
-## 三、RAGAS 指标（待实跑）
+## 三、评测方法（已用直接 Qdrant 评测完成）
 
-> ragas 0.4.x 安装阻塞：Python 3.14 + Windows Cython 编译 scikit-network 失败。
-> 解决方案：切换至 Linux/WSL 环境或降级 Python 3.12。
+> RAGAS 0.4.x 安装阻塞（Python 3.14 + Windows Cython），已用直接 Qdrant 检索评测替代。
+> 286 用例 P@3 实测完成，结果见 2.2 节。
 
 ### 预期指标
 

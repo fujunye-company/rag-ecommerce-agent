@@ -13,7 +13,7 @@
 | 数据库 | PostgreSQL + pgvector (async SQLAlchemy) |
 | LLM | **Doubao-Seed-2.0-lite** ✅ (Key 已验证通过，DeepSeek 保留降级) |
 | Embedding | BGE-large-zh-v1.5 |
-| 前端 | Kotlin + Jetpack Compose (Android 原生, 33 kt) |
+| 前端 | Kotlin + Jetpack Compose (Android 原生, 36+ kt) |
 | Python | 3.11 @ ~/.hermes-venv |
 
 ### Doubao API
@@ -26,16 +26,15 @@ Key:  见 apps/backend/.env (DOUBAO_API_KEY)
 ## 关键命令
 
 ```bash
-cd apps/backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+cd apps/backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 docker compose -f infrastructure/docker-compose.yml up -d
-cd apps/backend/data/qdrant && python ingest_to_qdrant.py
-cd apps/backend/data/qdrant && python retrieve_from_qdrant.py --test
+cd apps/backend && python -c "from app.startup import ensure_qdrant_data; import asyncio; asyncio.run(ensure_qdrant_data())"
 ```
 
 ## 当前里程碑
 
 ```
-M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ⚠️  M6 ✅  M7 ⚠️  M8 ⚠️  M9 ✅  M10 ✅
+M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ✅  M6 ✅  M7 ✅  M8 ✅  M9 ✅  M10 ✅
 ```
 
 **M10 完成项**：
@@ -47,22 +46,21 @@ M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ⚠️  M6 ✅  M7 ⚠️  M8 ⚠️  M9 ✅ 
 
 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ |
+| ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-> 场景7: 后端部分完成，Android 前端就绪  
-> 场景9: VLM+RAG四层打通（审计确认）
+> 9/9 场景全栈代码就绪。场景7已通过动态品类映射+品类感知MMR采样+场景感知Prompt+ScenarioEvent SSE完整实现。
 
 ## 比赛评分权重
 
 | 维度 | 权重 | 当前估计 |
 |------|:---:|:--:|
-| 基础功能完整性 | 35% | ~28% |
-| 工程质量 | 25% | ~24% |
-| 效果与可靠性 | 20% | ~15% |
+| 基础功能完整性 | 35% | ~33% |
+| 工程质量 | 25% | ~23% |
+| 效果与可靠性 | 20% | ~17% |
 | 加分项深度 | 20% | ~17% |
-| **合计** | **100%** | **~84%** |
+| **合计** | **100%** | **~90%** |
 
-> APK 编译成功(24.1MB) / 全部 P0 清零 / Qdrant UUID5 / 商品详情页9组件 / E2E测试9场景
+> APK 编译成功(24.1MB) / 全部 P0 清零 / 9/9 场景全栈代码就绪 / 190条商品94品类
 > 演示脚本+PPT大纲+评测报告 / 交付包就绪 / 剩余: 真机联调 → 演示视频录制
 
 ## 严禁项

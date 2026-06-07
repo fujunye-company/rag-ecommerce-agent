@@ -151,8 +151,8 @@ python ingest_to_qdrant.py
 Loading embedding model: BAAI/bge-large-zh-v1.5
 Embedding model ready, dim=1024
 Creating collection: products 1024-dim
-Upserting 50 products with reviews...
-Done: 50 vectors ingested
+Upserting 190 products with reviews...
+Done: 190 vectors ingested
 ```
 
 验证检索可用：

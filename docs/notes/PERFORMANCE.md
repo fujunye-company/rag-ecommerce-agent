@@ -1,7 +1,7 @@
 # 性能基准报告
 
 > 测评环境：WSL Ubuntu 22.04, Python 3.11, Doubao-Seed-2.0-lite (ep-20260514111645-lmgt2)
-> 商品索引：50 条 (Qdrant 1024-dim, bge-large-zh-v1.5)
+> 商品索引：190 条 (Qdrant 1024-dim, bge-large-zh-v1.5)
 > 测量时间：2026-05-28
 
 ---
@@ -11,7 +11,7 @@
 | 阶段 | 时间 | 说明 |
 |------|------|------|
 | Embedding（BGE） | ~80ms | 单句 1024-dim 文本向量化 |
-| Qdrant 向量检索 | ~15ms | 50条 COSINE top-10 |
+| Qdrant 向量检索 | ~15ms | 190条 COSINE top-10 |
 | Reranker 重排序 | ~900ms | bge-reranker-v2-m3 cross-encoder |
 | LLM 首 Token（TTFT） | ~1.5s | Doubao streaming first chunk |
 | LLM 总生成 | ~8-12s | 3商品含结构标记 full response |

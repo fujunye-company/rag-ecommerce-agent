@@ -19,7 +19,7 @@
 | 数据库 | PostgreSQL + pgvector | ✅ |
 | LLM | Doubao-Seed-2.0-lite | ✅ 已验证 |
 | Embedding | BGE-large-zh-v1.5 | ✅ |
-| 前端 | Kotlin + Jetpack Compose (35+ kt) | ✅ 代码就绪 |
+| 前端 | Kotlin + Jetpack Compose (36+ kt) | ✅ 代码就绪 |
 
 ## 项目结构
 
@@ -38,7 +38,7 @@
 ## 里程碑 (M0-M10)
 
 ```
-M0 ✅  M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ⚠️  M6 ✅  M7 ⚠️  M8 ⚠️  M9 ✅  M10 🔜
+M0 ✅  M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ✅  M6 ✅  M7 ✅  M8 ✅  M9 ✅  M10 ✅
 ```
 
 详见 `docs/progress/M0-M10-全项目规划.md`
@@ -53,11 +53,11 @@ M0 ✅  M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ⚠️  M6 ✅  M7 ⚠️  M8 ⚠️ 
 | 4 | 对比决策 | ✅ | ✅ | ❓ |
 | 5 | Agent 主动反问 | ✅ | ✅ | ❓ |
 | 6 | 反选排除 | ✅ | ✅ | ❓ |
-| 7 | 场景化组合 | ⚠️ | ✅ | ❓ |
+| 7 | 场景化组合 | ✅ | ✅ | ❓ |
 | 8 | 购物车下单 | ✅ | ✅ | ❓ |
-| 9 | 拍照找货 | ✅ | ✅ | ❌ |
+| 9 | 拍照找货 | ✅ | ✅ | ❓ |
 
-> 场景 1-6,8-9 全栈代码就绪（7/9），场景 7 后端部分完成。联调待 APK 编译后执行。
+> 9/9 场景全栈代码就绪。场景 7 已完成动态品类映射 + 品类感知 MMR 采样 + 场景感知 Prompt + ScenarioEvent SSE + Android 品类分组 UI。
 
 ## 快速开始
 
@@ -66,8 +66,8 @@ M0 ✅  M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ⚠️  M6 ✅  M7 ⚠️  M8 ⚠️ 
 ```bash
 # 已配置好环境？三步跑起来：
 docker compose -f infrastructure/docker-compose.yml up -d   # 启动基础设施
-cd apps/backend/data/qdrant && python ingest_to_qdrant.py   # 数据入库
-cd .. && uvicorn app.main:app --reload --host 0.0.0.0 --port 8080  # 启动后端
+cd apps/backend && python -c "from app.startup import ensure_qdrant_data; import asyncio; asyncio.run(ensure_qdrant_data())"  # 数据入库
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8080  # 启动后端
 ```
 
 ## 相关文档

@@ -28,7 +28,7 @@ Android(Kotlin/Compose) ← SSE → FastAPI ← LangGraph → Qdrant/PostgreSQL 
 | Agent | LangGraph StateGraph | |
 | RAG | LlamaIndex + Qdrant | |
 | 数据库 | PostgreSQL + pgvector | |
-| LLM | **Doubao-Seed-2.0-lite** ⚠️ Key待验证 | 比赛提供 Key（当前 DeepSeek 降级可用） |
+| LLM | **Doubao-Seed-2.0-lite** ✅ 已验证 | 比赛提供 Key（DeepSeek 保留降级） |
 | Embedding | BGE-large-zh-v1.5 | 比赛推荐 Doubao-embedding-vision，不强制 |
 
 ### Doubao API

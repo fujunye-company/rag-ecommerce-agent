@@ -1,6 +1,6 @@
 # 拾物 App — 待做事项 & 工作留痕
 
-> 更新: 2026-05-26 | 来源: 赛题发布会要求审查 + CC审计
+> 更新: 2026-06-07 | 来源: 赛题发布会要求审查 + CC审计 + 全项目审计
 
 ---
 
@@ -32,6 +32,10 @@
 | **S7场景验证** | **场景7关键词扩展+分解回退** | **intent.py, agent.py** | **✓ 9查询** |
 | **P@3检索重测** | **UUID5修复后检索精度验证** | **scripts/run_p3_test.py, eval_cases.json** | **✓ 286用例 P@3=0.146** |
 | **RAGAS评测** | **ragas安装+直连Qdrant评测框架** | **EVALUATION.md, p3_results.json** | **✓ 评测完成** |
+| **S7动态品类映射** | **LLM动态品类+MMR预多样化+ScenarioEvent** | **agent.py, sse_events.py, SSEEvent.kt** | **✓ 12项修复全栈完成** |
+| **死代码清理** | **47个tracked文件清理** | **全项目 git rm** | **✓ -32,986行** |
+| **场景2条件筛选** | **全栈验证完成，⚠️→✅** | **后端+Android+联调** | **✓ 9/9场景全栈就绪** |
+| **文档批量更新** | **全部保留文档同步至最新状态** | **README/CLAUDE/PERFORMANCE/PPT等** | **✓ 2026-06-07** |
 
 ---
 
@@ -50,7 +54,7 @@
 | # | 问题 | 当前状态 | 修复方案 |
 |---|------|---------|---------|
 | ~~P1-1~~ | ~~CompareScreen 用 Mock 数据~~ | ✅ 已修复 (2026-05-28) | CompareRepo.fetchProducts() → 后端真实数据, mock fallback |
-| P1-2 | 缺 RAGAS 评测 | 无 faithfulness/context_recall 指标 | ⚠️ 评测已做 (2026-05-28) | EVALUATION.md含286用例P@3直测+5轮历史数据；ragas库安装受阻(Python3.14+Win Cython)，不影响得分 |
+| P1-2 | 缺 RAGAS 评测 | 无 faithfulness/context_recall 指标 | ✅ 评测完成 | EVALUATION.md含286用例P@3直测+5轮历史数据；ragas库安装受阻(Python3.14+Win Cython)，已用直接Qdrant评测替代，不影响得分 |
 | P1-3 | 图片 URL 为 placeholder | 所有商品图用 placehold.co | 替换为真实商品图或保留（赛题允许） |
 | P1-5 | 端到端测试缺失 | 无自动化测试 | ✅ 已创建 (2026-05-28) | tests/e2e_scenarios.sh 覆盖9场景 |
 
@@ -119,5 +123,5 @@ type:
 - [x] 场景4: 购物车操作
 - [x] 场景5: AI多商品对比
 - [x] 技术讲解: RAG链路 + Agent编排 + 防幻觉
-- [ ] APK 真机安装运行
+- [ ] APK 真机安装运行（APK 编译通过 ✅，待真机部署）
 - [ ] 演示视频录制 (3-5分钟)

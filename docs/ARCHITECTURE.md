@@ -76,7 +76,7 @@ classify_intent → route_after_intent
 
 | 节点 | 职责 | 关键逻辑 |
 |------|------|----------|
-| `node_classify_intent` | 意图分类 + 槽位提取 | 9类意图：commodity_recommend/compare/detail/scenario/after_sales/chitchat/anti_selection/cart_operation/image_search |
+| `node_classify_intent` | 意图分类 + 槽位提取 | 9类意图 + 38对品类关键词推理 + 对话历史品类继承 + 品类切换自动重置偏好 + 否定语义解析 |
 | `node_clarify` | 缺失信息追问 | LLM 生成自然追问（品类/预算/场景），含 LLM 失败时的模板降级 |
 | `node_retrieve` | RAG 检索 + 精排 | Qdrant → Reranker → 文本级否定过滤（场景化购物自动分解多类目检索） |
 | `node_rank` | 多维排序 | 语义(40%) × 价格(20%) × 评分(15%) × 品牌(10%) × 属性(15%) |
@@ -142,9 +142,9 @@ LLM 输出使用结构化标记 `[SUMMARY]` / `[PRODUCT_N]` / `[CLOSING]`，`_em
 | 拍照找货 | ⭐⭐⭐ | Doubao 视觉 API 图像理解 → 结构化属性 → Qdrant 相似检索 → SSE 流式返回 |
 | 多商品对比 | ⭐⭐⭐ | 多维属性提取 + LLM 对比总结 + 维度可视化面板 |
 | 反选与排除 | ⭐⭐ | Clarify Chips 反选 + 文本级兜底过滤 + 否定语义解析 |
-| 购物车管理 | ⭐⭐ | 对话式 CRUD + 自然语言序号/名称匹配 |
+| 购物车管理 | ⭐⭐ | 对话式 CRUD + 自然语言序号/名称匹配 + 多商品批量操作（索引提取） |
 | 下单确认流程 | ⭐⭐⭐ | 订单汇总展示 → "确认下单"确认 → 清空购物车 + 订单号 |
-| 多轮上下文记忆 | ⭐ | Session 持久化（SQLite + PostgreSQL）+ 上下文递进收敛 |
+| 多轮上下文记忆 | ⭐ | Session 持久化（SQLite + PostgreSQL）+ 品类上下文继承 + 切换品类自动重置偏好 |
 | 场景化组合推荐 | ⭐⭐⭐ | LLM 场景分解 → 多类目并行检索 → 去重合并 → 品类分组推荐 |
 
 ---

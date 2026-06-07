@@ -8,7 +8,7 @@
 ## 目录
 
 1. [主页对话推荐机制](#1-主页对话推荐机制)
-2. [VLM 拍照找货机制](#2-vlm-拍照找货机制)
+2. [Doubao 视觉 API 拍照找货机制](#2-doubao-视觉-api-拍照找货机制)
 3. [比价页搜索与分类机制](#3-比价页搜索与分类机制)
 4. [探索页社交帖机制](#4-探索页社交帖机制)
 5. [设置页机制](#5-设置页机制)
@@ -163,7 +163,7 @@ ChatViewModel : ViewModel()
 
 ---
 
-## 2. VLM 拍照找货机制
+## 2. Doubao 视觉 API 拍照找货机制
 
 ### 2.1 完整流程
 
@@ -185,7 +185,7 @@ ChatViewModel : ViewModel()
 │ 2. 大小限制: 10MB                                    │
 │ 3. 保存图片: save_upload_image() → uploads/UUID.jpg  │
 │                                                      │
-│ 4. VLM 识别:                                         │
+│ 4. Doubao 视觉 API 识别:                              │
 │    product_info = await parse_product_image(contents) │
 │    └─ 失败 → SSE ErrorEvent + DoneEvent             │
 │                                                      │
@@ -209,26 +209,26 @@ ChatViewModel : ViewModel()
         │
         ▼
 ┌─────────────────────────────────────────────────────┐
-│ VLM 推理: image_parser.py                            │
+│ 视觉解析: image_parser.py                             │
 │                                                      │
-│ 模型: Qwen3-VL-2B-Instruct (4GB, ModelScope缓存)     │
-│ 框架: transformers 5.9.0                             │
+│ Provider: Doubao OpenAI-compatible vision API         │
+│ 配置: DOUBAO_API_KEY + LLM_MODEL                     │
 │                                                      │
 │ parse_product_image(image_bytes):                    │
-│   1. asyncio.to_thread(_parse_with_local, ...)       │
-│      └─ 线程池执行, 不阻塞FastAPI事件循环             │
+│   1. 检查 DOUBAO_API_KEY                              │
+│   2. base64 编码图片并构造 image_url data URL         │
+│   3. 调用 client.chat.completions.create(...)         │
 │                                                      │
-│ _parse_with_local():                                 │
+│ _parse_with_doubao():                                │
 │   1. base64编码: img_b64 = b64encode(image_bytes)    │
 │   2. data_url = "data:image/jpeg;base64,{img_b64}"   │
-│   3. 构造 messages:                                   │
+│   3. 构造 OpenAI-compatible messages:                 │
 │      [{role: "user", content: [                      │
-│        {type: "image", url: data_url},               │
+│        {type: "image_url", image_url: {url:data_url}},│
 │        {type: "text", text: prompt}                  │
 │      ]}]                                             │
-│   4. processor.apply_chat_template(messages)         │
-│   5. model.generate(**inputs, max_new_tokens=256)    │
-│   6. 解码输出 → _parse_vlm_output(text)              │
+│   4. 调用 Doubao 视觉模型                             │
+│   5. 读取 message.content → _parse_vlm_output(text)  │
 │                                                      │
 │ Prompt: "分析商品图片提取品类/品牌/颜色/材质/         │
 │          风格/关键词/描述, 只输出JSON"                │
@@ -239,7 +239,7 @@ ChatViewModel : ViewModel()
 │ JSON解析: 去markdown代码块 → json.loads              │
 │          失败 → regex提取{} → 兜底空字典              │
 │                                                      │
-│ 推理耗时: ~17s (CPU, 含模型首次加载~7s)               │
+│ 耗时取决于云端 API 网络与模型响应，不再加载本地视觉模型 │
 └─────────────────────────────────────────────────────┘
         │
         ▼
@@ -271,13 +271,13 @@ ChatViewModel : ViewModel()
 └─────────────────────────────────────────────────────┘
 ```
 
-### 2.2 VLM 错误处理
+### 2.2 视觉 API 错误处理
 
 ```
 parse_product_image() 失败
-    → RuntimeError("VLM模型未就绪...")
+    → RuntimeError("Doubao vision API failed...")
     → upload.py catch RuntimeError
-    → SSE ErrorEvent(code="VLM_UNAVAILABLE", message="...")
+    → SSE ErrorEvent(code="VISION_API_UNAVAILABLE", message="...")
     → SSE DoneEvent(total_cards=0, message="...")
     → StreamingResponse (非500错误)
 ```
@@ -711,7 +711,7 @@ ChatMessage(
 | 后端 | FastAPI + uvicorn |
 | 向量库 | Qdrant (1024维, Cosine距离) |
 | Embedding | BAAI/bge-large-zh-v1.5 |
-| VLM | Qwen3-VL-2B-Instruct (transformers 5.9.0) |
+| 视觉 API | Doubao OpenAI-compatible vision API |
 | LLM | DeepSeek v4-pro |
 | 数据库 | PostgreSQL + pgvector |
 | 代理 | Clash Verge → http://172.24.48.1:7897 |

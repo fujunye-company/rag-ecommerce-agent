@@ -2,6 +2,7 @@ package com.shopping.agent.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.media.MediaRecorder
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -48,6 +49,7 @@ import com.shopping.agent.core.network.NetworkConfig
 import com.shopping.agent.data.mock.MockCompareData
 import com.shopping.agent.data.model.Product
 import com.shopping.agent.data.model.SSEEvent
+import com.shopping.agent.data.remote.AudioClient
 import com.shopping.agent.data.remote.SseClient
 import com.shopping.agent.data.repository.CompareRepository
 import com.shopping.agent.ui.components.*
@@ -185,8 +187,14 @@ fun CompareTabScreen() {
     }
 
     val launchTakePicture: (Uri) -> Unit = { uri ->
-        cameraUri = uri
-        cameraLauncher.launch(uri)
+        try {
+            cameraUri = uri
+            cameraLauncher.launch(uri)
+        } catch (e: Exception) {
+            android.util.Log.e("CompareScreen", "Camera launch failed", e)
+            cameraUri = null
+            android.widget.Toast.makeText(context, "拍照搜索启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
@@ -325,6 +333,7 @@ fun CompareTabScreen() {
                                 showChooser = false
                                 val dateStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(java.util.Date())
                                 val photoFile = File(context.cacheDir, "JPEG_${dateStamp}.jpg")
+                                photoFile.createNewFile()
                                 val uri = androidx.core.content.FileProvider.getUriForFile(
                                     context,
                                     "${context.packageName}.fileprovider",

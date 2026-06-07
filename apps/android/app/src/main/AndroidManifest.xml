@@ -9,10 +9,7 @@
 
     <queries>
         <intent>
-            <action android:name="android.speech.RecognitionService" />
-        </intent>
-        <intent>
-            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
         </intent>
     </queries>
 

@@ -117,7 +117,7 @@ async def search_similar_products(
     拍照找货专用：文本查询 → Embedding → Qdrant 向量检索 → 结构化商品列表
 
     Args:
-        query_text: 由 VLM 提取的商品描述文本
+        query_text: 由视觉解析提取的商品描述文本
         top_k: 返回数量
 
     Returns:

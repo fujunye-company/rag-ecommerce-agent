@@ -16,6 +16,7 @@ CONFIG_DIR = Path(__file__).resolve().parents[2]  # backend/
 
 _HF_EMBEDDING = "BAAI/bge-large-zh-v1.5"
 _HF_RERANKER = "BAAI/bge-reranker-v2-m3"
+_HF_ASR = "Systran/faster-whisper-small"
 
 
 def resolve_model_path(local_path: str, hf_name: str) -> str:
@@ -58,6 +59,13 @@ class Settings(BaseSettings):
     # 不存在时自动降级为 BAAI/bge-reranker-v2-m3 (HF)
     RERANKER_MODEL: str = str(Path(__file__).resolve().parents[2] / "data" / "models" / "bge-reranker-v2-m3")
 
+    # ── Local ASR ──
+    # 默认: <backend>/data/models/faster-whisper-small
+    # 不存在时自动降级为 Systran/faster-whisper-small (HF)
+    ASR_MODEL: str = str(Path(__file__).resolve().parents[2] / "data" / "models" / "faster-whisper-small")
+    ASR_DEVICE: str = "cpu"
+    ASR_COMPUTE_TYPE: str = "int8"
+
     # ── HuggingFace ──
     HF_ENDPOINT: str = "https://hf-mirror.com"
 
@@ -80,6 +88,11 @@ class Settings(BaseSettings):
     @classmethod
     def _resolve_reranker(cls, v: str) -> str:
         return resolve_model_path(v, _HF_RERANKER)
+
+    @field_validator("ASR_MODEL", mode="after")
+    @classmethod
+    def _resolve_asr(cls, v: str) -> str:
+        return resolve_model_path(v, _HF_ASR)
 
     model_config = {
         "env_file": str(CONFIG_DIR / ".env"),

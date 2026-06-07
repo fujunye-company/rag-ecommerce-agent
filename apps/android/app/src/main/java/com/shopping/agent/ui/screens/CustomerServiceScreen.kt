@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.shopping.agent.core.network.NetworkConfig
 import com.shopping.agent.data.local.UserRepository
+import com.shopping.agent.data.remote.AudioClient
 import com.shopping.agent.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -104,6 +105,10 @@ fun CustomerServiceScreen(
     var questionStartIndex by remember { mutableIntStateOf(0) }
     var isLoading by remember { mutableStateOf(true) }
     var lastLoadedId by remember { mutableLongStateOf(0L) }
+    val audioClient = remember { AudioClient() }
+    var isRecording by remember { mutableStateOf(false) }
+    var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
+    var recordingFile by remember { mutableStateOf<File?>(null) }
 
     val sessionStartTime = remember { System.currentTimeMillis() }
     val sessionStartLabel = remember { CS_DATE_FORMAT.format(Date(sessionStartTime)) }

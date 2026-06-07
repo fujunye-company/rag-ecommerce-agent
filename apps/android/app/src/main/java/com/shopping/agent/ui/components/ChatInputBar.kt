@@ -2,6 +2,7 @@ package com.shopping.agent.ui.components
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.media.MediaRecorder
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +27,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,8 +37,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
+import com.shopping.agent.data.remote.AudioClient
 import com.shopping.agent.ui.theme.*
 import com.shopping.agent.viewmodel.ChatViewModel
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -60,6 +64,8 @@ fun ChatInputBar(
     var showChooser by remember { mutableStateOf(false) }
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val audioClient = remember { AudioClient() }
 
     // 相册选择器
     val galleryPicker = rememberLauncherForActivityResult(
@@ -105,8 +111,14 @@ fun ChatInputBar(
     }
 
     val launchTakePicture: (Uri) -> Unit = { uri ->
-        cameraUri = uri
-        cameraLauncher.launch(uri)
+        try {
+            cameraUri = uri
+            cameraLauncher.launch(uri)
+        } catch (e: Exception) {
+            android.util.Log.e("ChatInputBar", "Camera launch failed", e)
+            cameraUri = null
+            android.widget.Toast.makeText(context, "拍照搜索启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 
     /** 相机权限请求 launcher — 用户授权后自动打开相机 */
@@ -296,6 +308,7 @@ fun ChatInputBar(
                                 showChooser = false
                                 val dateStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
                                 val photoFile = File(context.cacheDir, "JPEG_${dateStamp}.jpg")
+                                photoFile.createNewFile()
                                 val uri = androidx.core.content.FileProvider.getUriForFile(
                                     context,
                                     "${context.packageName}.fileprovider",

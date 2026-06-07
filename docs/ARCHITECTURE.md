@@ -58,7 +58,7 @@
 | LLM | Doubao-Seed-2.0-lite | 比赛提供，TPM 80万，RPM 700 |
 | Embedding | BGE-large-zh-v1.5 | 中文电商领域 SOTA |
 | Reranker | BGE-Reranker-large | 中文精排提升 |
-| VLM | Doubao-Seed-2.0-lite | 拍照找货图像理解 |
+| 视觉 API | Doubao-Seed-2.0-lite | 拍照找货图像理解 |
 
 ---
 
@@ -131,7 +131,7 @@ LLM 输出使用结构化标记 `[SUMMARY]` / `[PRODUCT_N]` / `[CLOSING]`，`_em
 | 6 | 反选/排除约束 | 高级 | ✅ |
 | 7 | 场景化组合推荐 | 高级 | ✅ (LLM场景分解+多类目检索) |
 | 8 | 购物车与下单 | 高级 | ✅ (对话CRUD+2步下单确认) |
-| 9 | 拍照找货（多模态） | 高级 | ✅ (VLM+相似检索) |
+| 9 | 拍照找货（多模态） | 高级 | ✅ (Doubao 视觉 API + 相似检索) |
 
 ---
 
@@ -139,7 +139,7 @@ LLM 输出使用结构化标记 `[SUMMARY]` / `[PRODUCT_N]` / `[CLOSING]`，`_em
 
 | 加分项 | 难度 | 说明 |
 |--------|:--:|------|
-| 拍照找货 | ⭐⭐⭐ | VLM 图像理解 → 结构化属性 → Qdrant 相似检索 → SSE 流式返回 |
+| 拍照找货 | ⭐⭐⭐ | Doubao 视觉 API 图像理解 → 结构化属性 → Qdrant 相似检索 → SSE 流式返回 |
 | 多商品对比 | ⭐⭐⭐ | 多维属性提取 + LLM 对比总结 + 维度可视化面板 |
 | 反选与排除 | ⭐⭐ | Clarify Chips 反选 + 文本级兜底过滤 + 否定语义解析 |
 | 购物车管理 | ⭐⭐ | 对话式 CRUD + 自然语言序号/名称匹配 |
@@ -165,7 +165,7 @@ LLM 输出使用结构化标记 `[SUMMARY]` / `[PRODUCT_N]` / `[CLOSING]`，`_em
 ```
 相机拍照 → ChatInputBar (Uri → tempFile) → ChatViewModel.sendImage()
   → POST /api/v1/upload/vision-search (multipart/form-data)
-  → VLM 图像理解 → product_info (name/description/category/attributes)
+  → Doubao 视觉 API 图像理解 → product_info (description/category/attributes)
   → Qdrant 相似商品检索 (top_k=3)
   → SSE stream: vision_parsed | product_cards | done
 ```
@@ -200,7 +200,7 @@ apps/backend/app/            # 后端服务
 │   ├── product_ranker.py    # 多维排序
 │   ├── comparator.py        # 商品对比
 │   ├── cart_service.py      # 购物车持久化
-│   └── image_parser.py      # VLM 图像理解
+│   └── image_parser.py      # Doubao 视觉 API 图像理解
 └── data/qdrant/             # 数据导入脚本
 
 apps/android/app/src/main/java/com/shopping/agent/

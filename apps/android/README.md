@@ -151,7 +151,7 @@ SSEEvent.Error       → 显示错误
 1. `ChatInputBar` 相机按钮 → `ActivityResultContracts.GetContent("image/*")`
 2. Uri → tempFile (ContentResolver copy)
 3. `SseClient.connectVision(file)` → multipart POST
-4. 后端 Qwen3-VL-2B CPU 推理 ~17s → Qdrant 检索
+4. 后端 Doubao 视觉 API 解析 → Qdrant 检索
 5. SSE 流返回识别结果 + 8 件相似商品
 
 ### 多轮上下文
@@ -211,6 +211,7 @@ export ANDROID_HOME=/mnt/c/Users/fujunye/AppData/Local/Android/Sdk
 
 - **API 地址**: 模拟器使用 `10.0.2.2:8080`，真机使用宿主机 IP
 - **WSL 代理**: Gradle 必须配置 `-Dhttp.proxyHost=172.24.48.1 -Dhttp.proxyPort=7897`
-- **SSE 超时**: OkHttp readTimeout 设为 120s（VLM 推理需要）
+- **SSE 超时**: OkHttp readTimeout 设为 120s（云端视觉识别与检索需要）
+- **语音输入**: 真机不依赖系统语音引擎，App 录音后上传 `/api/v1/audio/transcribe`，由后端本地 faster-whisper 识别
 - **数据格式**: 严格遵循 `docs/standards/DATA-CONTRACT.md`
 - **编译前**: 确认 `ANDROID_HOME` 指向 Windows SDK 目录

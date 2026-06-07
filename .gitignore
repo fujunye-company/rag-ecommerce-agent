@@ -81,3 +81,12 @@ products.*
 
 # Local validation reports with machine-specific absolute paths
 data/images/image_validation.json
+
+# User-specific MCP configuration
+.mcp.json
+
+# Auto-generated eval/benchmark outputs (source cases in eval_cases.json are tracked)
+apps/backend/data/test_cases/eval_quick_results.json
+apps/backend/data/test_cases/eval_results_*.json
+apps/backend/data/test_cases/p3_results.json
+docs/optimization/ttft_benchmark_*.json

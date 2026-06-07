@@ -1,13 +1,12 @@
 package com.shopping.agent.ui.screens
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,6 +34,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -44,6 +44,7 @@ import java.util.Locale
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
+import com.shopping.agent.core.network.NetworkConfig
 import com.shopping.agent.data.mock.MockCompareData
 import com.shopping.agent.data.model.Product
 import com.shopping.agent.data.model.SSEEvent
@@ -54,6 +55,10 @@ import com.shopping.agent.ui.navigation.LocalOnMenuClick
 import com.shopping.agent.ui.theme.*
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 
 @Composable
 fun CompareTabScreen() {
@@ -372,14 +377,67 @@ private fun CompareSearchBar(
     placeholder: String,
     onCameraClick: () -> Unit = {},
 ) {
+    // 语音录音状态
+    val cmpContext = LocalContext.current
+    val cmpRecorder = remember { com.shopping.agent.data.local.VoiceRecorder(cmpContext) }
+    var cmpRecording by remember { mutableStateOf(false) }
+    var cmpRecVolume by remember { mutableStateOf(0f) }
+    var cmpRecStartTime by remember { mutableLongStateOf(0L) }
+    var cmpElapsed by remember { mutableIntStateOf(0) }
+    var cmpTranscribing by remember { mutableStateOf(false) }
+    val cmpPermRef = remember { mutableStateOf<androidx.activity.result.ActivityResultLauncher<String>?>(null) }
+
+    if (cmpRecording) { LaunchedEffect(cmpRecStartTime) { while (cmpRecording) { cmpElapsed = ((System.currentTimeMillis() - cmpRecStartTime) / 1000).toInt(); kotlinx.coroutines.delay(500) } } }
+
+    fun uploadAndTranscribe(file: java.io.File, ctx: android.content.Context, onText: (String) -> Unit, onDone: () -> Unit) {
+        kotlinx.coroutines.MainScope().launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val bytes = file.readBytes(); val mimeType = com.shopping.agent.data.local.VoiceRecorder.MIME_TYPE
+                val multipart = MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("audio", file.name, bytes.toRequestBody(mimeType.toMediaType())).build()
+                val resp = NetworkConfig.httpClient.newCall(okhttp3.Request.Builder().url("${NetworkConfig.BASE_URL}/api/v1/voice/recognize").post(multipart).build()).execute()
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    onDone()
+                    if (resp.isSuccessful) { val json = JSONObject(resp.body?.string() ?: ""); val text = json.optString("text", ""); if (json.optBoolean("success") && text.isNotBlank()) onText(text) else android.widget.Toast.makeText(ctx, json.optString("error", "未识别到语音内容"), android.widget.Toast.LENGTH_LONG).show() }
+                    else android.widget.Toast.makeText(ctx, "语音识别失败 (HTTP ${resp.code})", android.widget.Toast.LENGTH_SHORT).show()
+                    file.delete()
+                }
+            } catch (e: Exception) { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onDone(); android.widget.Toast.makeText(ctx, "语音识别失败: ${e.localizedMessage?.take(40) ?: "网络异常"}", android.widget.Toast.LENGTH_SHORT).show(); try { file.delete() } catch (_: Exception) {} } }
+        }
+    }
+
+    fun startCmpRecording() {
+        cmpRecorder.start(object : com.shopping.agent.data.local.VoiceRecorder.RecordCallback {
+            override fun onStart() { cmpRecording = true; cmpRecStartTime = System.currentTimeMillis() }
+            override fun onVolume(volume: Float) { cmpRecVolume = volume }
+            override fun onResult(audioFile: java.io.File) { cmpRecording = false; cmpTranscribing = true; uploadAndTranscribe(audioFile, cmpContext, onQueryChange) { cmpTranscribing = false } }
+            override fun onError(message: String) { cmpRecording = false; android.widget.Toast.makeText(cmpContext, message, android.widget.Toast.LENGTH_LONG).show() }
+        })
+    }
+
+    val cmpPermLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) startCmpRecording() else android.widget.Toast.makeText(cmpContext, "需要麦克风权限", android.widget.Toast.LENGTH_SHORT).show()
+    }
+    SideEffect { cmpPermRef.value = cmpPermLauncher }
+
     Surface(shadowElevation = 3.dp, color = MaterialTheme.colorScheme.surface) {
-        Row(
-            Modifier
-                .padding(horizontal = Dimens.space3, vertical = Dimens.space2)
-                .fillMaxWidth()
-                .navigationBarsPadding(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 录音状态条
+            if (cmpRecording || cmpTranscribing) {
+                val animatedVolume by animateFloatAsState(cmpRecVolume, label = "cmpVol")
+                Surface(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), shape = RoundedCornerShape(8.dp), color = Primary.copy(alpha = 0.08f)) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (cmpTranscribing) "🎤 正在语音识别…" else "🔴 正在录音 ${cmpElapsed}s / 60s", style = MaterialTheme.typography.bodySmall, color = Primary, modifier = Modifier.weight(1f))
+                            if (!cmpTranscribing) Text("轻触麦克风停止", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        if (!cmpTranscribing) { Spacer(Modifier.height(4.dp)); Box(Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))) { Box(Modifier.fillMaxWidth((animatedVolume / 10f).coerceIn(0f, 1f)).height(3.dp).clip(RoundedCornerShape(2.dp)).background(Primary)) } }
+                    }
+                }
+            }
+            Row(
+                Modifier.padding(horizontal = Dimens.space3, vertical = Dimens.space2).fillMaxWidth().navigationBarsPadding(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
             // 拍照搜物图标
             IconButton(onClick = onCameraClick, modifier = Modifier.size(44.dp)) {
                 Icon(Icons.Default.CameraAlt, "拍照搜物", tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -400,66 +458,20 @@ private fun CompareSearchBar(
                 modifier = Modifier.weight(1f),
                 maxLines = 4
             )
-            // 语音输入
-            val context = LocalContext.current
-            val hasSpeech = remember { android.speech.SpeechRecognizer.isRecognitionAvailable(context) }
-            val voiceLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.StartActivityForResult()
-            ) { result ->
-                if (result.resultCode == android.app.Activity.RESULT_OK) {
-                    val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull() ?: return@rememberLauncherForActivityResult
-                    onQueryChange(spoken)
-                }
-            }
-            var pendingVoiceIntent by remember { mutableStateOf<Intent?>(null) }
-            val voicePermissionLauncher = rememberLauncherForActivityResult(
-                ActivityResultContracts.RequestPermission()
-            ) { granted ->
-                if (granted) {
-                    pendingVoiceIntent?.let { intent ->
-                        try {
-                            voiceLauncher.launch(intent)
-                        } catch (e: Exception) {
-                            android.util.Log.e("CompareScreen", "Speech recognizer launch failed", e)
-                            android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                } else {
-                    android.widget.Toast.makeText(context, "需要麦克风权限才能使用语音输入", android.widget.Toast.LENGTH_SHORT).show()
-                }
-                pendingVoiceIntent = null
-            }
-
-            fun launchVoiceInput(intent: Intent) {
-                val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-                if (hasPermission) {
-                    try {
-                        voiceLauncher.launch(intent)
-                    } catch (e: Exception) {
-                        android.util.Log.e("CompareScreen", "Speech recognizer launch failed", e)
-                        android.widget.Toast.makeText(context, "语音输入启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    pendingVoiceIntent = intent
-                    voicePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                }
-            }
+            // 语音按钮 — VoiceRecorder + 豆包转录
             IconButton(
                 onClick = {
-                    if (hasSpeech) {
-                        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                            putExtra(RecognizerIntent.EXTRA_PROMPT, "说出想对比的商品...")
-                        }
-                        launchVoiceInput(intent)
+                    if (cmpRecording) {
+                        val f = cmpRecorder.stop(); cmpRecording = false
+                        if (f != null && f.length() > 0) { cmpTranscribing = true; uploadAndTranscribe(f, cmpContext, onQueryChange) { cmpTranscribing = false } }
                     } else {
-                        android.widget.Toast.makeText(context, "语音识别不可用", android.widget.Toast.LENGTH_SHORT).show()
+                        val hasPerm = ContextCompat.checkSelfPermission(cmpContext, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                        if (hasPerm) startCmpRecording() else cmpPermLauncher.launch(Manifest.permission.RECORD_AUDIO)
                     }
                 },
                 modifier = Modifier.size(44.dp)
             ) {
-                Icon(Icons.Default.Mic, "语音输入", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(Icons.Default.Mic, "语音输入", tint = if (cmpRecording) Primary else MaterialTheme.colorScheme.onSurfaceVariant)
             }
             // 发送按钮
             FilledIconButton(
@@ -475,6 +487,7 @@ private fun CompareSearchBar(
                 Icon(Icons.AutoMirrored.Filled.Send, "发送", tint = OnPrimary)
             }
         }
+        } // Column
     }
 }
 

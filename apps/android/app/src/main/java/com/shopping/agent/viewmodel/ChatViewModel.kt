@@ -13,6 +13,7 @@ import com.shopping.agent.data.remote.SseClient
 import com.shopping.agent.data.repository.ChatRepository
 import com.shopping.agent.data.tts.TtsManager
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -64,6 +65,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private val chatRepository = ChatRepository()
     private val visionClient = SseClient()
+    private val voiceClient = SseClient()
     private val userRepo = UserRepository(application)
     private val ttsManager = TtsManager(application)
     private val initComplete = CompletableDeferred<Unit>()
@@ -717,6 +719,76 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         if (lastUserMsg != null) {
             _uiState.update { it.copy(inputText = lastUserMsg.content) }
             sendMessage()
+        }
+    }
+
+    // ── 语音输入 ──────────────────────────────────────────
+
+    fun sendVoice(audioFile: File) {
+        if (_uiState.value.isStreaming) return
+        val convId = _uiState.value.currentConversationId
+        val context = getApplication<android.app.Application>()
+
+        val durationMs = try {
+            val retriever = android.media.MediaMetadataRetriever()
+            retriever.setDataSource(audioFile.absolutePath)
+            val d = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)
+            retriever.release()
+            d?.toLongOrNull() ?: 0L
+        } catch (_: Exception) { 0L }
+        val minutes = durationMs / 1000 / 60
+        val seconds = (durationMs / 1000) % 60
+        val durationText = if (minutes > 0) "${minutes}:${seconds.toString().padStart(2, '0')}" else "${seconds}秒"
+
+        val voiceMessage = ChatMessage(id = UUID.randomUUID().toString(), role = MessageRole.User,
+            content = "🎤 语音消息 · $durationText", audioUri = audioFile.absolutePath, status = MessageStatus.Sent)
+
+        _uiState.update { it.copy(messages = it.messages + voiceMessage, screenState = ScreenState.Streaming(""),
+            isStreaming = true, streamingText = "", streamingCards = emptyList(), searchStatus = "🎤 正在识别语音…") }
+        ttsManager.resetForNewMessage()
+
+        viewModelScope.launch {
+            val uploadFile = withContext(Dispatchers.IO) { com.shopping.agent.data.local.AudioCompressor.compress(context, audioFile) }
+            val accText = StringBuilder(); val accCards = mutableListOf<Product>()
+            val accWebResults = mutableListOf<WebSearchItem>(); var accCompareDims: List<Map<String, Any?>> = emptyList()
+            try {
+                voiceClient.connectVoice(audioFile = uploadFile, conversationId = convId, cartSessionId = cartSessionId, userId = userRepo.getUserId())
+                    .collect { event -> when (event) {
+                        is SSEEvent.Progress -> { _uiState.update { it.copy(searchStatus = event.message) } }
+                        is SSEEvent.WebSearchResult -> { accWebResults.add(WebSearchItem(title = event.title, url = event.url, snippet = event.snippet, index = event.index, total = event.total)) }
+                        is SSEEvent.Compare -> { accCompareDims = event.dimensions }
+                        is SSEEvent.Clarify -> { _uiState.update { it.copy(clarifyQuestion = event.question, clarifyChips = event.options.ifEmpty { event.missingSlots.map { s -> "补充$s" } }, isStreaming = false, streamingText = "", searchStatus = "") }; ttsManager.speakFull(event.question) }
+                        is SSEEvent.TextDelta -> { accText.append(event.content); _uiState.update { it.copy(streamingText = accText.toString()) }; ttsManager.speakIncremental(accText.toString()) }
+                        is SSEEvent.ProductCard -> {
+                            val product = Product(productId = event.productId, title = event.title, price = event.price, rating = event.rating.toFloat(), highlights = event.highlights, imageUrl = event.imageUrl, imageUrls = event.imageUrls, brand = event.brand, category = event.category, matchScore = event.matchScore)
+                            accCards.add(product)
+                            val textSoFar = accText.toString().trim()
+                            if (textSoFar.isNotEmpty()) {
+                                val (summaryText, productText) = if (event.index == 1) splitSummaryFromFirstProduct(textSoFar) else null to textSoFar
+                                if (!summaryText.isNullOrBlank()) { val dims = accCompareDims.toList(); accCompareDims = emptyList(); val sm = ChatMessage(id = UUID.randomUUID().toString(), role = MessageRole.Assistant, content = summaryText.trim(), compareDimensions = dims, status = MessageStatus.Sent); _uiState.update { it.copy(messages = it.messages + sm) }; userRepo.saveMessage(sm, convId) }
+                                val pm = ChatMessage(id = UUID.randomUUID().toString(), role = MessageRole.Assistant, content = productText.trim(), productCards = listOf(product), status = MessageStatus.Sent); _uiState.update { it.copy(messages = it.messages + pm, streamingText = "", streamingCards = emptyList()) }; userRepo.saveMessage(pm, convId); accText.clear()
+                            } else { val cm = ChatMessage(id = UUID.randomUUID().toString(), role = MessageRole.Assistant, content = "", productCards = listOf(product), status = MessageStatus.Sent); _uiState.update { it.copy(messages = it.messages + cm, streamingCards = emptyList()) }; userRepo.saveMessage(cm, convId) }
+                        }
+                        is SSEEvent.Done -> {
+                            userRepo.saveMessage(voiceMessage, convId)
+                            val rt = accText.toString().trim(); if (rt.isNotEmpty() || accWebResults.isNotEmpty() || accCompareDims.isNotEmpty()) { val cm = ChatMessage(id = UUID.randomUUID().toString(), role = MessageRole.Assistant, content = rt, productCards = emptyList(), webSearchResults = accWebResults.toList(), compareDimensions = accCompareDims.toList(), status = MessageStatus.Sent); _uiState.update { it.copy(messages = it.messages + cm) }; userRepo.saveMessage(cm, convId) }
+                            _uiState.update { it.copy(isStreaming = false, streamingText = "", streamingCards = emptyList(), searchStatus = "", screenState = ScreenState.Content(accCards.isNotEmpty())) }
+                            val t = userRepo.getConversationMetas().find { it.id == convId }?.title ?: ""; if (t.isEmpty() || t == "每日推荐") userRepo.updateConversationTitle(convId, "语音对话")
+                            syncCartAfterChatIfNeeded(accText.toString()); refreshConversationList()
+                            val fc = accCards.toList(); if (fc.isNotEmpty()) { val brands = fc.mapNotNull { it.brand }.filter { it.isNotBlank() }.distinct().take(4); _uiState.update { it.copy(clarifyChips = brands.map { "排除 $it" }, clarifyQuestion = "") }; userRepo.setSetting("clarify_chips_$convId", Gson().toJson(brands.map { "排除 $it" })) } else { userRepo.setSetting("clarify_chips_$convId", "") }
+                        }
+                        is SSEEvent.Error -> { _uiState.update { it.copy(searchStatus = "", screenState = ScreenState.Error(event.message), isStreaming = false) } }
+                    } }
+            } catch (e: java.io.IOException) {
+                // 网络异常：保存已收数据，不重新抛出（避免 crash）
+                userRepo.saveMessage(voiceMessage, convId); val rt = accText.toString().trim()
+                if (rt.isNotEmpty() || accCards.isNotEmpty()) { val pm = ChatMessage(id = UUID.randomUUID().toString(), role = MessageRole.Assistant, content = rt, productCards = accCards.toList(), status = MessageStatus.Sent); userRepo.saveMessage(pm, convId); _uiState.update { it.copy(messages = it.messages + pm) } }
+                _uiState.update { it.copy(searchStatus = "", screenState = ScreenState.Error("网络连接失败，请检查网络后重试"), isStreaming = false, streamingText = "", streamingCards = emptyList()) }
+            } catch (e: Exception) {
+                userRepo.saveMessage(voiceMessage, convId); val rt = accText.toString().trim()
+                if (rt.isNotEmpty() || accCards.isNotEmpty()) { val pm = ChatMessage(id = UUID.randomUUID().toString(), role = MessageRole.Assistant, content = rt.ifEmpty { "语音识别中断" }, productCards = accCards.toList(), status = MessageStatus.Sent); userRepo.saveMessage(pm, convId); _uiState.update { it.copy(messages = it.messages + pm) } }
+                _uiState.update { it.copy(searchStatus = "", screenState = ScreenState.Error("语音识别失败，请重试"), isStreaming = false, streamingText = "", streamingCards = emptyList()) }
+            }
         }
     }
 

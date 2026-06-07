@@ -10,6 +10,7 @@ data class ChatMessage(
     val timestamp: Long = System.currentTimeMillis(),
     val status: MessageStatus = MessageStatus.Sent,
     val errorMessage: String? = null,
+    val audioUri: String? = null,
 )
 
 data class WebSearchItem(

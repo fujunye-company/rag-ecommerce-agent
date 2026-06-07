@@ -145,9 +145,9 @@ async def clear_state(session_id: str) -> None:
         logger.warning("Failed to deactivate session: %s", e)
 
 
-async def save_message(session_id: str, role: str, content: str, product_ids: list = None) -> None:
+async def save_message(session_id: str, role: str, content: str, product_ids: list = None, audio_data: bytes = None) -> None:
     """持久化单条消息到 messages 表"""
-    if not content.strip():
+    if not content.strip() and not audio_data:
         return
     if not _HAS_DB:
         return
@@ -157,8 +157,9 @@ async def save_message(session_id: str, role: str, content: str, product_ids: li
             msg = Message(
                 session_id=sid,
                 role=role,
-                content=content[:2000],  # 截断过长内容
+                content=content[:2000],
                 product_ids=product_ids or [],
+                audio_data=audio_data,
             )
             db.add(msg)
             await db.commit()

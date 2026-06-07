@@ -11,17 +11,17 @@
 
 | 场景 | 用例数 | 覆盖比例 |
 |------|:--:|:--:|
-| commodity_recommend（单轮推荐） | 50 | 22% |
-| scenario_shopping（场景化组合） | 40 | 18% |
-| commodity_compare（对比决策） | 30 | 13% |
-| commodity_detail（商品详情） | 30 | 13% |
-| chitchat（闲聊/问候） | 30 | 13% |
-| after_sales（售后） | 20 | 9% |
-| anti_selection（反选排除） | 8 | 4% |
-| cart_operation（购物车） | 6 | 3% |
-| multi_turn（多轮追问） | 6 | 3% |
-| image_search（拍照找货） | 6 | 3% |
-| **合计** | **226** | **100%** |
+| commodity_recommend（单轮推荐） | 50 | 17% |
+| scenario_shopping（场景化组合） | 40 | 14% |
+| commodity_compare（对比决策） | 30 | 10% |
+| commodity_detail（商品详情） | 30 | 10% |
+| chitchat（闲聊/问候） | 30 | 10% |
+| anti_selection（反选排除） | 28 | 10% |
+| cart_operation（购物车） | 26 | 9% |
+| image_search（拍照找货） | 26 | 9% |
+| after_sales（售后） | 20 | 7% |
+| multi_turn（多轮追问） | 6 | 2% |
+| **合计** | **286** | **100%** |
 
 ### 1.2 评测指标
 
@@ -50,8 +50,8 @@
 
 > 注：ckpt_20 退化原因为 DeepSeek Key 缺失 + fast path 降级。
 > P@3 = 0 原因为 ground_truth IDs 与 Qdrant point IDs 不一致（已随 UUID5 修复解决）。
-> p3_direct: 使用 BGE-large-zh-v1.5 直连 Qdrant（无 reranker），290 商品，200/286 用例有 ground truth。
-> P@3=0.146 反映真实检索精度（290 商品小数据集 + 自动标注 ground truth）。商品推荐类独立 P@3=0.213。
+> p3_direct: 使用 BGE-large-zh-v1.5 直连 Qdrant（无 reranker），评测时 290 商品（当前种子数据为 190 条）
+> P@3=0.146 反映评测时检索精度（290 商品小数据集 + 自动标注 ground truth）。商品推荐类独立 P@3=0.213。
 > Keyword intent accuracy=61.89%，LLM 路径预期 ≥90%。
 > 注：直连检索不含 reranker。Agent 全链路含 reranker 后预期 P@3 可达 0.25-0.35。
 
@@ -74,7 +74,7 @@
 > GT = Ground Truth。chitchat/after_sales/cart 类无商品检索需求，P@3 不适用。
 > 全量结果：`data/test_cases/p3_results.json`
 
-### 2.3 各场景预期质量（代码审计评估）
+### 2.3 各场景代码审计评估
 
 | 场景 | 意图准确 | 检索质量 | 生成质量 | 综合 |
 |------|:--:|:--:|:--:|:--:|
@@ -88,7 +88,7 @@
 | 购物车闭环 | ✅ | N/A | ✅ | **高** |
 | 拍照找货 | ✅ | ✅ | ✅ | **高** |
 
-### 2.3 防幻觉验证
+### 2.4 防幻觉验证
 
 通过 Prompt 结构标记 + RAG 检索绑定 + 缓存版本校验三层机制，确保：
 - LLM 不编造商品名称/价格/优惠券

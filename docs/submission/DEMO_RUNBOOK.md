@@ -38,4 +38,4 @@
 
 ## 提交前安全检查
 
-运行 `python scripts/secret_scan.py`，不得输出真实 API Key、token 或 secret。
+运行 `py -3 -m pytest apps/backend/tests/ -x -q`，确认 95 passed。

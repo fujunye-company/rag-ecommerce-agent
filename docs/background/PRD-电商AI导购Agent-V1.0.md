@@ -1,11 +1,17 @@
 # 电商 AI 导购 Agent 产品需求文档（PRD）
 
-> **项目代号**：暂定
-> **版本**：V1.0（初稿）
-> **作者**：产品经理（字节全栈开发比赛 · 项目组）
-> **日期**：2026-05-19
+> **项目名称**：拾物
+> **版本**：V1.0（2026-05-19 初稿，最终实现有调整 — 见文末 §13 实现差异说明）
+> **作者**：傅钧烨、唐荣炜、周芯仪（华南理工大学 · AI 全栈挑战赛第3届）
 > **赛题方**：字节跳动
-> **技术栈**：Android (Kotlin) + FastAPI + LangGraph + LlamaIndex + Qdrant + PostgreSQL + LLM OpenAPI
+> **技术栈**：Android (Kotlin) + FastAPI + LangGraph + Qdrant + PostgreSQL + Doubao LLM
+>
+> **⚠️ 阅读提示**：本文档为 2026-05-19 初稿，部分技术选型与实际实现有差异：
+> - LlamaIndex 未实际使用（改用 Qdrant 原生客户端）
+> - 数据集从 HuggingFace superlinked/external-benchmarking 改为自建 190 条中文商品库
+> - LangGraph 从 7 节点规划演进为 10 节点实现
+> - LLM 从 DeepSeek/豆包/通义 多选改为 Doubao-Seed-2.0-lite 主力
+> - 详细差异见文末 §13
 
 ---
 
@@ -668,8 +674,8 @@
        ▼
 ┌────────────────────────────────────────┐
 │  5. LLM OpenAPI                         │
-│   - 主力：DeepSeek / 豆包 / 通义        │
-│   - 多模态：豆包视觉 / GPT-4o（备用）   │
+│   - 主力：Doubao-Seed-2.0-lite         │
+│   - 多模态：Doubao Vision API          │
 └────────────────────────────────────────┘
                │
                ▼
@@ -1035,5 +1041,25 @@ MVP 视为通过验收，需满足以下全部条件：
 
 ---
 
-> **文档状态**：V1.0 初稿，待小组评审
+> **文档状态**：V1.0 初稿，2026-06-07 补充 §13 实现差异说明
 > **下一步**：交叉评审 → 技术 Spike 验证关键假设 → V1.1 修订
+>
+> ---
+>
+> ## §13 实现差异说明（2026-06-07 补充）
+>
+> 以下为 PRD 初稿与实际交付版本的差异：
+>
+> | 维度 | PRD 初稿 | 实际实现 |
+> |------|---------|---------|
+> | 商品数据 | HuggingFace superlinked/external-benchmarking (10万条英文) | 自建 190 条中文商品库，94 细分类 |
+> | RAG 框架 | LlamaIndex + Qdrant | Qdrant 原生 Python 客户端（零 LlamaIndex 依赖） |
+> | LLM 主力 | DeepSeek / 豆包 / 通义 多选 | Doubao-Seed-2.0-lite（DeepSeek 保留降级） |
+> | VLM | 豆包视觉 / GPT-4o 备用 | Doubao Vision API 主力，Qwen3-VL-2B 离线降级 |
+> | LangGraph 节点 | 7 节点规划 | 10 节点（classify_intent → route → 8 分支 + generate） |
+> | Embedding | 推荐 Doubao-embedding-vision | BGE-large-zh-v1.5（1024-dim） |
+> | 项目名称 | 暂定 | 拾物 |
+> | 团队 | 产品经理（字节全栈开发比赛项目组） | 傅钧烨、唐荣炜、周芯仪 |
+> | 完成度 | M0-M10 规划中 | M0-M10 ✅ 全部完成，评分 ~90% |
+>
+> 架构细节详见 `docs/ARCHITECTURE.md`，当前状态详见 `docs/progress/开发进度控制表.md`。

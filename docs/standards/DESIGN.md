@@ -113,7 +113,7 @@ ExploreProductPostScreen(postId, onBack)
 
 | 项目 | 详情 |
 |------|------|
-| 模型 | Qwen3-VL-2B-Instruct (4GB, ModelScope) |
+| 模型 | Doubao Vision API（云端），Qwen3-VL-2B 离线降级 |
 | 端点 | POST /api/v1/upload/vision-search (SSE) |
 | 事件流 | vision_parsed → product_cards×8 → done |
 | 状态 | ✅ Nike鞋照→8双跑步鞋, 匹配度 0.53-0.60 |
@@ -123,7 +123,7 @@ ExploreProductPostScreen(postId, onBack)
 | 维度 | 变更前 | 变更后 |
 |------|:--:|:--:|
 | Qdrant 向量 | 50 | **190** |
-| 品类 | 1 (电子) | **15** |
+| 品类 | 1 (电子) | **94** |
 | MockProducts | 10条3品类 | **30条15品类** |
 | MockCategoryProducts | 5Tab | **10Tab 72条** |
 | MockCompareData | 2品类 | **7品类+默认推荐** |
@@ -183,7 +183,7 @@ ExploreProductPostScreen(postId, onBack)
 修改:
   docs/standards/DESIGN.md                    v5.4 → v5.5
   docs/progress/开发进度控制表.md              场景9/M7更新
-  apps/backend/data/qdrant/seed_products.json 50→250条
+  apps/backend/data/qdrant/seed_products.json 50→190条
   data/mock/MockProducts.kt                   10→30条 (picsum→placehold)
   data/mock/MockCategoryProducts.kt           5Tab→10Tab (picsum→placehold)
   data/mock/MockCompareData.kt                默认推荐+7品类

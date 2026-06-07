@@ -195,6 +195,19 @@ Body: `{ "session_id": "...", "address": "收货地址" }`
 
 ---
 
+## 用户接口
+
+### GET /users/me — 当前用户信息
+### PUT /users/me — 更新个人信息（昵称/头像）
+### GET /users/me/favorites — 收藏列表
+### POST /users/me/favorites — 添加收藏
+### DELETE /users/me/favorites/{product_id} — 取消收藏
+### GET /users/me/footprints — 浏览足迹
+### GET /users/me/reviews — 我的评价
+### POST /products/{id}/reviews — 提交商品评价
+
+---
+
 ## 评测接口
 
 ### POST /evaluation/run

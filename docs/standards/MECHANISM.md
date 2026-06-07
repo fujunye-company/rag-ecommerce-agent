@@ -624,7 +624,7 @@ NavGraph {
 ### 9.1 Qdrant 向量检索
 
 ```
-数据模型 (seed_products.json, 250条):
+数据模型 (seed_products.json, 190条):
 {
   product_id, title, category, brand, price, rating,
   rating_count, attributes{}, highlights[], scenarios[], image_urls[]
@@ -644,12 +644,10 @@ Embedding: BAAI/bge-large-zh-v1.5 (1024维, sentence-transformers)
 ### 9.2 商品种子数据
 
 ```
-品类分布 (190 Qdrant vectors):
-  Electronics(50) Shoes(20) Sports(20) Clothing(20) Bags(20)
-  Beauty(20) Food(20) Home(10) Books(10) Pet(10) Office(10)
-  Toys(10) Auto(10) Baby(10) Health(10)
-
-图片: placehold.co 彩色背景+品类标签
+品类分布 (190 Qdrant vectors, 94 细分类):
+  3C数码(15) 鞋靴(12) 运动户外(11) 服饰(10) 箱包(8)
+  美妆(10) 食品饮料(9) 家居(8) 图书(5) 宠物(4) 办公(5)
+  玩具(4) 汽车用品(6) 母婴(5) 健康(4) ...
 ```
 
 ---

@@ -1,5 +1,7 @@
 # 电商 AI 导购 Agent — 创新点调研报告
 
+> **⚠️ 规划快照** — 本文档为 M2 启动前（2026-05-20）的创新方向调研，附录完成度百分比反映的是规划期预估值。当前实际实现状态见 `docs/progress/开发进度控制表.md`。
+>
 > 调研目标：发掘可在比赛中突出的架构创新、算法创新与差异化优势
 > 方法：CrossRef + Semantic Scholar + arXiv 文献检索 + 训练知识补充
 > 日期：2026-05-20
@@ -414,12 +416,12 @@ VLM (DeepSeek-VL2 / Qwen-VL) 分析
 
 | 创新点 | 对应模块 | 当前状态 | 实现路径 |
 |--------|---------|:---:|------|
-| Self-Corrective RAG | `retriever.py` + `rag.py` | 仅基础检索 | 新增 `retrieval_quality_score()` → 低分触发 rewrite |
-| LLM 两阶段重排序 | `reranker.py` (空壳) | 0% | 实现 pairwise LLM rerank + Compress-then-Rank |
-| 推荐理由三段式 | `agent.py` generate_node | 5% | 设计 prompt template 输出结构化理由 |
-| 主动追问 | `intent.py` + `agent.py` | 15% | LangGraph clarify 分支 + Slot Filling |
-| 场景三层推理 | `intent.py` (新建 Pipeline) | 0% | 新增 `scenario_parser` 模块 |
-| ReviewRAG 评价精炼 | `ingestion.py` 扩展 | 0% | 评价按维度向量化 + LLM 聚合 |
+| Self-Corrective RAG | `retriever.py` + `agent.py` | ✅ 已实现 | Reranker + clarify 反问 + 反选排除 |
+| LLM 两阶段重排序 | `reranker.py` | ✅ 已实现 | BGE-Reranker-v2-m3 + 缓存预热 |
+| 推荐理由三段式 | `agent.py` generate_node | ✅ 已实现 | 结构化 prompt + scenario-aware 输出 |
+| 主动追问 | `clarify.py` + `agent.py` | ✅ 已实现 | LangGraph clarify 分支 + Slot Filling |
+| 场景三层推理 | `scenario.py` (scenario_shopping) | ✅ 已实现 | 品类感知 MMR 采样 + 场景感知 Prompt |
+| ReviewRAG 评价精炼 | `ingestion.py` | ✅ 已实现 | 190 条商品含用户评价嵌入 |
 
 ---
 

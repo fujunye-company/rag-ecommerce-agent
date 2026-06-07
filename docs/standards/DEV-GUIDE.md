@@ -26,7 +26,7 @@ Android(Kotlin/Compose) ← SSE → FastAPI ← LangGraph → Qdrant/PostgreSQL 
 | 客户端 | Android Kotlin + Jetpack Compose | 原生，不接受 Web |
 | 后端 | FastAPI + Uvicorn | |
 | Agent | LangGraph StateGraph | |
-| RAG | LlamaIndex + Qdrant | |
+| RAG | Qdrant (native Python client) | LlamaIndex 未实际使用 |
 | 数据库 | PostgreSQL + pgvector | |
 | LLM | **Doubao-Seed-2.0-lite** ✅ 已验证 | 比赛提供 Key（DeepSeek 保留降级） |
 | Embedding | BGE-large-zh-v1.5 | 比赛推荐 Doubao-embedding-vision，不强制 |

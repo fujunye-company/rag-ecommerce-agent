@@ -30,7 +30,8 @@
 | 对比决策 | ~2s | — | /compare API 不含 retrieval |
 | Agent 反问 | ~3s | — | clarify 节点轻量 |
 | 反选排除 | ~10s | ~18ms | must_not filter 无额外延迟 |
-| 拍照找货(VLM) | ~20s | — | Qwen3-VL-2B ~15s + retrieval ~5s |
+| 场景化组合 | ~12s | — | 品类感知 MMR 采样 + scenario prompt |
+| 拍照找货(VLM) | ~15s | — | Doubao Vision API ~10s + retrieval ~5s |
 | 购物车 CRUD | ~50ms | — | PostgreSQL 直接操作 |
 | 下单 | ~80ms | — | Order INSERT + 事务 |
 

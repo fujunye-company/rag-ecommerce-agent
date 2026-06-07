@@ -1045,7 +1045,7 @@ query_engine = index.as_query_engine(
 
 | 模块 | 当前状态 | 业界参考 | 差距与建议 |
 |------|---------|---------|-----------|
-| **agent.py** | 占位骨架 (StateGraph + stub generator) | 淘宝问问 pipeline / LangGraph 最佳实践 | ✅ 骨架正确，需实现5个核心节点 |
+| **agent.py** | 全功能实现 (LangGraph 10节点，2780+ 行) | 淘宝问问 pipeline / LangGraph 最佳实践 | ✅ 9/9 场景完成 |
 | **intent.py** | 规划中 | 京东意图分类体系 | 建议定义6类 intent + slot schema |
 | **retriever.py** | 规划中 | Qdrant 混合检索 + RRF 融合 | 建议 MVP 先做向量检索，后续加 BM25 |
 | **reranker.py** | 全量 M9 | BGE-Reranker-v2-m3 | MVP 可先跳过，直接取 Top-N |
@@ -1084,7 +1084,7 @@ M6-M10 (90%→100%): 全量增强
 | Reranker | BAAI/bge-reranker-v2-m3 | 中文最优，支持 cross-encoder |
 | VLM | DeepSeek-VL2 (API) / Chinese-CLIP (本地) | 与 LLM 生态统一 / 轻量 |
 | Agent 框架 | LangGraph (StateGraph) | 已采用，状态图模式最适合多步骤决策 |
-| RAG 框架 | LlamaIndex | 与 Qdrant 集成最好，检索模式丰富 |
+| RAG 框架 | Qdrant (native Python client) | 直接调用 Qdrant API，无中间层 |
 | 多轮记忆 | LangGraph Checkpointer (PostgreSQL) | 与现有 PG 统一，无需额外组件 |
 | 评测框架 | RAGAS + 自定义指标 | 业界标准 + 电商专属扩展 |
 

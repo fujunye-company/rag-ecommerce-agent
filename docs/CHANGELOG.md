@@ -1,5 +1,24 @@
 # 变更日志
 
+## [0.4.1] - 2026-06-07
+
+### Added
+- **README 最终版**：队员实名（傅钧烨/唐荣炜/周芯仪）、26 篇文档索引按 7 分类组织
+- **全项目审计清理**：移除 75+ 非必要文件（死代码 13 Kotlin、过时文档 28、一次性产物 32+）
+
+### Changed
+- **data/images/ 移入 apps/backend/data/images/**：393 张商品图片归入 backend 子树，main.py IMAGES_DIR 路径更新
+- **数据入库指引**：SETUP/ARCHITECTURE/MECHANISM 中 ingest_to_qdrant.py → startup.ensure_qdrant_data()
+- **文档数量修正**：MECHANISM/DATA-CONTRACT/DESIGN/EVALUATION/TTFT_BENCHMARK 中产品数 250/290 → 190，品类 15 → 94
+- **LlamaIndex 引用清除**：DEV-GUIDE/PRD/电商RAG案例分析中移除未实际使用的 LlamaIndex 声明
+- **VLM 架构更新**：DESIGN/PERFORMANCE 中 Qwen3-VL-2B → Doubao Vision API
+
+### Fixed
+- EVALUATION 测试用例数 226 → 286（与实测一致），章节号 2.3 重复修正
+- INNOVATION-RESEARCH 附录实现进度 0%/5% → ✅ 已实现
+- DEMO_RUNBOOK 死引用 secret_scan.py → pytest 指令
+- DEMO_SCRIPT/核心要求 DeepSeek 降级描述更新
+
 ## [0.4.0] - 2026-05-28
 
 ### Added

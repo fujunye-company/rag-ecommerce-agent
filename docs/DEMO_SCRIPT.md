@@ -104,7 +104,7 @@
 
 | 场景 | 正常 | 降级 |
 |------|------|------|
-| LLM 超时 | Doubao API | DeepSeek 降级（已就绪） |
+| LLM 超时 | Doubao API | 重试 + 降级提示 |
 | Qdrant 不可用 | 向量检索 | curl 预热 / Docker 重启 |
 | SSE 断流 | 流式输出 | 缓存命中直出 |
 | 图片识别失败 | Doubao 视觉 API | 手动输入描述词 |

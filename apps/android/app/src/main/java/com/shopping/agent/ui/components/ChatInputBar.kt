@@ -6,8 +6,11 @@ import android.media.MediaRecorder
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CameraAlt
@@ -16,14 +19,19 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -125,97 +133,41 @@ fun ChatInputBar(
         }
     }
 
-    // 本地后端 ASR 录音
+    // 语音识别
+    // 语音输入：录音 → 豆包 API 音频理解 → RAG
+    val voiceRecorder = remember { com.shopping.agent.data.local.VoiceRecorder(context) }
     var isRecording by remember { mutableStateOf(false) }
-    var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
-    var recordingFile by remember { mutableStateOf<File?>(null) }
+    var voiceVolume by remember { mutableStateOf(0f) }
+    var recordStartTime by remember { mutableLongStateOf(0L) }
+    var elapsedSeconds by remember { mutableIntStateOf(0) }
+    val voicePermLauncherRef = remember { mutableStateOf<androidx.activity.result.ActivityResultLauncher<String>?>(null) }
 
-    fun stopAndTranscribe() {
-        val activeRecorder = recorder ?: return
-        val audioFile = recordingFile ?: return
-        try {
-            activeRecorder.stop()
-            activeRecorder.release()
-        } catch (e: Exception) {
-            android.util.Log.e("ChatInputBar", "Audio recorder stop failed", e)
-            try {
-                activeRecorder.release()
-            } catch (_: Exception) {
-            }
-            android.widget.Toast.makeText(context, "录音时间太短，请重试", android.widget.Toast.LENGTH_SHORT).show()
-            recorder = null
-            recordingFile = null
-            isRecording = false
-            return
-        }
-
-        recorder = null
-        recordingFile = null
-        isRecording = false
-        android.widget.Toast.makeText(context, "正在识别语音…", android.widget.Toast.LENGTH_SHORT).show()
-        scope.launch {
-            try {
-                val text = audioClient.transcribe(audioFile)
-                if (text.isBlank()) {
-                    android.widget.Toast.makeText(context, "没有识别到语音内容", android.widget.Toast.LENGTH_SHORT).show()
-                } else {
-                    inputText = text
-                    chatViewModel.onInputChange(text)
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("ChatInputBar", "Local ASR failed", e)
-                android.widget.Toast.makeText(context, "本地语音识别失败，请检查后端服务", android.widget.Toast.LENGTH_SHORT).show()
-            } finally {
-                audioFile.delete()
+    if (isRecording) {
+        LaunchedEffect(recordStartTime) {
+            while (isRecording) {
+                elapsedSeconds = ((System.currentTimeMillis() - recordStartTime) / 1000).toInt()
+                kotlinx.coroutines.delay(500)
             }
         }
     }
 
-    fun startRecording() {
-        try {
-            val audioFile = File(context.cacheDir, "voice_${System.currentTimeMillis()}.m4a")
-            val newRecorder = MediaRecorder().apply {
-                setAudioSource(MediaRecorder.AudioSource.MIC)
-                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                setAudioSamplingRate(16000)
-                setAudioEncodingBitRate(64000)
-                setOutputFile(audioFile.absolutePath)
-                prepare()
-                start()
-            }
-            recordingFile = audioFile
-            recorder = newRecorder
-            isRecording = true
-            android.widget.Toast.makeText(context, "正在录音，再点一次结束", android.widget.Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            android.util.Log.e("ChatInputBar", "Audio recorder start failed", e)
-            android.widget.Toast.makeText(context, "录音启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
-        }
+    fun resetVoiceState() { isRecording = false; voiceVolume = 0f; elapsedSeconds = 0 }
+
+    fun launchVoice() {
+        val hasPerm = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        if (!hasPerm) { voicePermLauncherRef.value?.launch(Manifest.permission.RECORD_AUDIO); return }
+        voiceRecorder.start(object : com.shopping.agent.data.local.VoiceRecorder.RecordCallback {
+            override fun onStart() { isRecording = true; recordStartTime = System.currentTimeMillis() }
+            override fun onVolume(volume: Float) { voiceVolume = volume }
+            override fun onResult(audioFile: java.io.File) { resetVoiceState(); chatViewModel.sendVoice(audioFile) }
+            override fun onError(message: String) { resetVoiceState(); android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show() }
+        })
     }
 
-    val voicePermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            startRecording()
-        } else {
-            android.widget.Toast.makeText(context, "需要麦克风权限才能使用语音输入", android.widget.Toast.LENGTH_SHORT).show()
-        }
+    val voicePermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) launchVoice() else android.widget.Toast.makeText(context, "需要麦克风权限", android.widget.Toast.LENGTH_SHORT).show()
     }
-
-    fun onVoiceClick() {
-        if (isRecording) {
-            stopAndTranscribe()
-            return
-        }
-        val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-        if (hasPermission) {
-            startRecording()
-        } else {
-            voicePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-        }
-    }
+    SideEffect { voicePermLauncherRef.value = voicePermissionLauncher }
 
     // 同步外部状态到本地
     if (uiState.inputText.isEmpty() && inputText.isNotEmpty()) {
@@ -295,14 +247,15 @@ fun ChatInputBar(
                 // 语音输入按钮
                 if (showIcons) {
                     IconButton(
-                        onClick = { onVoiceClick() },
+                        onClick = {
+                            if (isRecording) {
+                                val f = voiceRecorder.stop(); isRecording = false
+                                if (f != null && f.length() > 0) chatViewModel.sendVoice(f) else resetVoiceState()
+                            } else { launchVoice() }
+                        },
                         modifier = Modifier.size(44.dp)
                     ) {
-                        Icon(
-                            Icons.Default.Mic,
-                            if (isRecording) "结束录音" else "语音输入",
-                            tint = if (isRecording) Primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Icon(Icons.Default.Mic, "语音输入", tint = if (isRecording) Primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 FilledIconButton(
@@ -319,6 +272,23 @@ fun ChatInputBar(
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Send, "发送", tint = OnPrimary)
+                }
+            }
+        }
+
+        // 语音状态指示条（录音时显示）
+        if (isRecording) {
+            val animatedVolume by animateFloatAsState(voiceVolume, label = "voiceVol")
+            Surface(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp), shape = RoundedCornerShape(12.dp), color = Primary.copy(alpha = 0.08f)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🔴 正在录音 ${elapsedSeconds}s / 60s", style = MaterialTheme.typography.bodyMedium, color = Primary, modifier = Modifier.weight(1f))
+                        Text("轻触麦克风停止", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Box(Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))) {
+                        Box(Modifier.fillMaxWidth(animatedVolume / 10f).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Primary))
+                    }
                 }
             }
         }

@@ -23,7 +23,7 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
         /** 数据库文件名 */
         const val DATABASE_NAME = "hermes_local.db"
         /** 当前数据库版本号，变更 schema 时递增 */
-        const val DATABASE_VERSION = 11
+        const val DATABASE_VERSION = 12
 
         /** 用户画像表 — 以 "sw" UUID 为主键，avatar 为 BLOB 列 */
         const val TABLE_USER = "user_profile"
@@ -97,6 +97,7 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
                 product_cards   TEXT DEFAULT '[]',
                 web_search_results TEXT DEFAULT '[]',
                 status          TEXT DEFAULT 'sent',
+                audio_uri       TEXT DEFAULT NULL,
                 created_at      INTEGER NOT NULL,
                 FOREIGN KEY (conversation_id) REFERENCES $TABLE_CONVERSATIONS(id)
             )
@@ -525,10 +526,11 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
             // 已有记录的 updated_at 设为 created_at
             try {
                 db.execSQL("UPDATE $TABLE_ORDER_RECORDS SET updated_at = created_at WHERE updated_at = 0")
-            } catch (_: Exception) {
-                // 忽略
-            }
+            } catch (_: Exception) {}
         }
 
+        if (oldVersion < 12) {
+            try { db.execSQL("ALTER TABLE $TABLE_MESSAGES ADD COLUMN audio_uri TEXT DEFAULT NULL") } catch (_: Exception) {}
+        }
     }
 }

@@ -1,9 +1,13 @@
 package com.shopping.agent.ui.components
 
+import android.media.MediaPlayer
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,6 +28,7 @@ fun MessageBubble(
     modifier: Modifier = Modifier,
 ) {
     val isUser = message.role == MessageRole.User
+    val hasAudio = message.audioUri != null
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -39,11 +44,15 @@ fun MessageBubble(
                 shadowElevation = if (isUser) 0.dp else 2.dp,
             ) {
                 Column(modifier = Modifier.padding(Dimens.space3)) {
-                    Text(
-                        text = message.content,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = if (isUser) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface,
-                    )
+                    if (hasAudio) {
+                        VoiceMessageContent(message = message)
+                    } else {
+                        Text(
+                            text = message.content,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (isUser) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
                     message.productCards.forEach { product ->
                         Spacer(Modifier.height(Dimens.space2))
                         ProductCardHorizontal(product = product, onTap = { onProductTap(product) })
@@ -67,6 +76,47 @@ fun MessageBubble(
 }
 
 @Composable
+private fun VoiceMessageContent(message: ChatMessage) {
+    var isPlaying by remember { mutableStateOf(false) }
+    val mediaPlayer = remember { mutableStateOf<MediaPlayer?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    DisposableEffect(Unit) { onDispose { try { mediaPlayer.value?.release() } catch (_: Exception) {} } }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        FilledIconButton(onClick = {
+            if (isPlaying) {
+                try { mediaPlayer.value?.stop() } catch (_: Exception) {}
+                try { mediaPlayer.value?.reset() } catch (_: Exception) {}
+                isPlaying = false
+            } else {
+                try { mediaPlayer.value?.release() } catch (_: Exception) {}
+                val mp = MediaPlayer().apply {
+                    try {
+                        setDataSource(message.audioUri)
+                        prepare()
+                        setOnCompletionListener { isPlaying = false; try { release() } catch (_: Exception) {} }
+                        start()
+                    } catch (e: Exception) {
+                        try { release() } catch (_: Exception) {}
+                        android.widget.Toast.makeText(context, "音频播放失败", android.widget.Toast.LENGTH_SHORT).show()
+                        return@FilledIconButton
+                    }
+                }
+                mediaPlayer.value = mp
+                isPlaying = true
+            }
+        }, modifier = Modifier.size(36.dp),
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = if (isPlaying) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Icon(if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow, contentDescription = if (isPlaying) "停止" else "播放", modifier = Modifier.size(20.dp))
+        }
+        Spacer(Modifier.width(10.dp))
+        Text(text = message.content, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+@Composable
 fun CompareDimensionsCard(dimensions: List<Map<String, Any?>>) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
@@ -81,33 +131,19 @@ fun CompareDimensionsCard(dimensions: List<Map<String, Any?>>) {
                 val winner = dim["winner"] as? String
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = name,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
+                    Text(text = name, style = MaterialTheme.typography.labelMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     if (winner != null) {
                         Spacer(Modifier.width(6.dp))
-                        Surface(
-                            shape = MaterialTheme.shapes.extraSmall,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                        ) {
-                            Text(
-                                text = "🏆 $winner",
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.tertiary,
-                            )
+                        Surface(shape = MaterialTheme.shapes.extraSmall, color = MaterialTheme.colorScheme.primaryContainer) {
+                            Text(text = "🏆 $winner", modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                         }
                     }
                 }
                 values.forEach { (productId, value) ->
-                    Text(
-                        text = "$productId: ${value ?: ""}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Text(text = "$productId: ${value ?: ""}", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (dim != dimensions.last()) {
                     Spacer(Modifier.height(6.dp))

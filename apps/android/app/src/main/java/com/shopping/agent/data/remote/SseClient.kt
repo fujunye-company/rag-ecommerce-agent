@@ -94,6 +94,36 @@ class SseClient(
         }
     }.flowOn(Dispatchers.IO)
 
+    // ── 语音对话 ──────────────────────────────────────────
+
+    fun connectVoice(
+        audioFile: File,
+        conversationId: String? = null,
+        cartSessionId: String? = null,
+        userId: String = "",
+    ): Flow<SSEEvent> = flow {
+        val mimeType = com.shopping.agent.data.local.VoiceRecorder.MIME_TYPE
+        val requestBody = MultipartBody.Builder()
+            .setType(MultipartBody.FORM)
+            .addFormDataPart("audio", audioFile.name, audioFile.asRequestBody(mimeType.toMediaType()))
+            .addFormDataPart("conversation_id", conversationId ?: "")
+            .addFormDataPart("cart_session_id", cartSessionId ?: "")
+            .addFormDataPart("user_id", userId)
+            .build()
+        val request = Request.Builder()
+            .url("$baseUrl/api/v1/voice/chat")
+            .post(requestBody)
+            .header("Accept", "text/event-stream")
+            .build()
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                emit(SSEEvent.Error("语音识别失败 (HTTP ${response.code})"))
+                return@flow
+            }
+            parseStream(response = response, convId = conversationId)
+        }
+    }.flowOn(Dispatchers.IO)
+
     // ── SSE 流解析 ────────────────────────────────────────
 
     private suspend fun FlowCollector<SSEEvent>.parseStream(

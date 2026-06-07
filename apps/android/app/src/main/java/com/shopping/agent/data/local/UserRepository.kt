@@ -220,6 +220,7 @@ class UserRepository(context: Context) {
             put("content", message.content)
             put("product_cards", gson.toJson(message.productCards))
             put("web_search_results", gson.toJson(message.webSearchResults))
+            put("compare_dimensions", gson.toJson(message.compareDimensions))
             put("audio_uri", message.audioUri ?: "")
             put("audio_duration_sec", message.audioDurationSec)
             put("status", message.status.name)
@@ -265,12 +266,25 @@ class UserRepository(context: Context) {
                 emptyList()
             }
 
+            val compareJson = cursor.getColumnIndex("compare_dimensions")
+                .takeIf { it >= 0 }
+                ?.let { cursor.getString(it) }
+                ?: "[]"
+            val compareDimensions: List<Map<String, Any?>> = try {
+                gson.fromJson(compareJson, object : TypeToken<List<Map<String, Any?>>>() {}.type)
+                    ?: emptyList()
+            } catch (e: Exception) {
+                Log.e("UserRepository", "Failed to deserialize compare dimensions", e)
+                emptyList()
+            }
+
             list.add(ChatMessage(
                 id = cursor.getString(cursor.getColumnIndexOrThrow("id")),
                 role = MessageRole.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("role"))),
                 content = cursor.getString(cursor.getColumnIndexOrThrow("content")) ?: "",
                 productCards = cards,
                 webSearchResults = webResults,
+                compareDimensions = compareDimensions,
                 status = com.shopping.agent.data.model.MessageStatus.valueOf(
                     cursor.getString(cursor.getColumnIndexOrThrow("status")) ?: "Sent"
                 ),

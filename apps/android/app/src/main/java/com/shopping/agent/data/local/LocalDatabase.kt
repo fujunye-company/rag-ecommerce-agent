@@ -23,7 +23,7 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
         /** 数据库文件名 */
         const val DATABASE_NAME = "hermes_local.db"
         /** 当前数据库版本号，变更 schema 时递增 */
-        const val DATABASE_VERSION = 12
+        const val DATABASE_VERSION = 13
 
         /** 用户画像表 — 以 "sw" UUID 为主键，avatar 为 BLOB 列 */
         const val TABLE_USER = "user_profile"
@@ -96,10 +96,10 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
                 content         TEXT DEFAULT '',
                 product_cards   TEXT DEFAULT '[]',
                 web_search_results TEXT DEFAULT '[]',
+                compare_dimensions TEXT DEFAULT '[]',
                 audio_uri      TEXT DEFAULT '',
                 audio_duration_sec INTEGER DEFAULT 0,
                 status          TEXT DEFAULT 'sent',
-                audio_uri       TEXT DEFAULT NULL,
                 created_at      INTEGER NOT NULL,
                 FOREIGN KEY (conversation_id) REFERENCES $TABLE_CONVERSATIONS(id)
             )
@@ -524,6 +524,13 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
             }
         }
 
+        if (oldVersion < 13) {
+            try {
+                db.execSQL("ALTER TABLE $TABLE_MESSAGES ADD COLUMN compare_dimensions TEXT DEFAULT '[]'")
+            } catch (_: Exception) {
+            }
+        }
+
         // v11: 订单记录表增加 backend_order_no（绑定后端订单号）和 updated_at（更新时间）列
         if (oldVersion < 11) {
             try {
@@ -540,10 +547,6 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
             try {
                 db.execSQL("UPDATE $TABLE_ORDER_RECORDS SET updated_at = created_at WHERE updated_at = 0")
             } catch (_: Exception) {}
-        }
-
-        if (oldVersion < 12) {
-            try { db.execSQL("ALTER TABLE $TABLE_MESSAGES ADD COLUMN audio_uri TEXT DEFAULT NULL") } catch (_: Exception) {}
         }
     }
 }

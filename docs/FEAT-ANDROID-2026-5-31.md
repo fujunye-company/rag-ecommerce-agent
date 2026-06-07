@@ -492,7 +492,7 @@ ProfileScreen → (点击右上角客服图标) → CustomerServiceScreen
 
 - **按钮行**: `"📦 发送订单"` 占位按钮
 - **输入行**:
-  - 语音按钮（`Icons.Default.Mic`，点击调用 `SpeechRecognizer`）
+  - 语音按钮（`Icons.Default.Mic`，点击 `VoiceRecorder` 录制 M4A/AAC 并调用豆包音频理解 API）
   - 输入框（`OutlinedTextField`，圆角 50，约占 65-70% 宽度，右侧 wink emoji 占位符，placeholder: `"请输入..."`）
   - 订单 emoji 按钮（占位符）
   - 输入为空时：`"+"` 按钮

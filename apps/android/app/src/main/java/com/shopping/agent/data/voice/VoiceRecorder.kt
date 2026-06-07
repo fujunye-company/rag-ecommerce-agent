@@ -2,6 +2,7 @@ package com.shopping.agent.data.voice
 
 import android.content.Context
 import android.media.MediaRecorder
+import android.os.Build
 import java.io.File
 
 class VoiceRecorder {
@@ -15,7 +16,12 @@ class VoiceRecorder {
     fun start(context: Context, prefix: String = "voice"): File {
         check(recorder == null) { "Recorder is already running" }
         val file = File(context.cacheDir, "${prefix}_${System.currentTimeMillis()}.m4a")
-        recorder = MediaRecorder().apply {
+        recorder = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            MediaRecorder(context)
+        } else {
+            @Suppress("DEPRECATION")
+            MediaRecorder()
+        }).apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)

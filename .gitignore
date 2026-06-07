@@ -59,7 +59,8 @@ infrastructure/env/.env.docker
 /.agents/skills
 /skills-lock.json
 /apps/android/app/debug
-/apps/android/GENERATE_ERRORS.md
+/apps/android/GENERATE_ERROR*.md
+/apps/android/LOGCAT.md
 /apps/android/CLAUDE.md
 
 # JVM crash logs

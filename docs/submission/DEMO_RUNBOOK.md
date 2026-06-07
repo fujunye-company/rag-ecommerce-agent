@@ -22,10 +22,11 @@
 
 ## 手动启动（备选）
 
-1. `docker compose -f infrastructure/docker-compose.yml up -d`
-2. 等待 `http://localhost:8080/ready` 返回 `phase: ready`
-3. 编译 Android App：`cd apps/android && ./gradlew assembleDebug`（默认连接 `http://10.0.2.2:8080`，真机需 `-PapiUrl=http://<IP>:8080`）。
-4. 访问 `http://localhost:8080/health`，状态应为 `ok`。
+1. `docker compose -f infrastructure/docker-compose.yml up -d postgres qdrant`
+2. `cd apps/backend && python -c "from app.startup import ensure_qdrant_data; import asyncio; asyncio.run(ensure_qdrant_data())"`
+3. `cd apps/backend && uvicorn app.main:app --host 0.0.0.0 --port 8080`
+4. 编译 Android App：`cd apps/android && ./gradlew assembleDebug`（模拟器默认连接 `http://10.0.2.2:8080`，真机需 `-PapiUrl=http://<IP>:8080`）。
+5. 访问 `http://localhost:8080/health`，状态应为 `ok`。
 
 ## 演示路径
 

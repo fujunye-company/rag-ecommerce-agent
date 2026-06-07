@@ -113,16 +113,14 @@ print('Both models ready')
 # 回到项目根目录
 cd ../..  # 回到 rag-ecommerce-agent/
 
-# 启动 PostgreSQL + Qdrant
-docker compose -f infrastructure/docker-compose.yml up -d
+# 仅启动 PostgreSQL + Qdrant（backend 手动启动以方便调试）
+docker compose -f infrastructure/docker-compose.yml up -d postgres qdrant
 
 # 等待容器就绪（约 10-15 秒）
 docker compose -f infrastructure/docker-compose.yml ps
 ```
 
-预期看到 3 个容器 running：`shopping-pg`、`shopping-qdrant`、`shopping-backend`。
-
-> 如果后端容器启动失败（模型未挂载），忽略即可——我们会手动启动后端。
+预期看到 2 个容器 running：`shopping-pg`、`shopping-qdrant`。
 
 验证基础设施：
 
@@ -155,12 +153,12 @@ Upserting 190 products with reviews...
 Done: 190 vectors ingested
 ```
 
-验证检索可用：
+验证入库成功：
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "降噪耳机", "top_k": 3}'
+# 直接查询 Qdrant 向量数
+curl -s http://localhost:6333/collections/products | python -c "import sys,json; d=json.load(sys.stdin); print(f'Points: {d[\"result\"][\"points_count\"]}')"
+# 预期输出：Points: 190
 ```
 
 ---
@@ -168,9 +166,7 @@ curl -X POST http://localhost:8080/api/v1/search \
 ## 八、启动后端
 
 ```bash
-cd ../..  # 回到 apps/backend/
-
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
+cd apps/backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 ```
 
 预期输出：
@@ -190,12 +186,17 @@ INFO:     Uvicorn running on http://0.0.0.0:8080
 # 1. 健康检查
 curl http://localhost:8080/health
 
-# 2. 发送第一条对话
+# 2. 检索验证
+curl -X POST http://localhost:8080/api/v1/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "降噪耳机", "top_k": 3}'
+
+# 3. 发送第一条对话
 curl -X POST http://localhost:8080/api/v1/chat \
   -H "Content-Type: application/json" \
   -d '{"message": "推荐一款降噪耳机", "conversation_id": "test-001"}'
 
-# 3. 查看 API 文档
+# 4. 查看 API 文档
 # 浏览器打开 http://localhost:8080/docs
 ```
 

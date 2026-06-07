@@ -69,7 +69,7 @@ M0 ✅  M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ✅  M6 ✅  M7 ✅  M8 ✅  M9 ✅  
 
 ```bash
 # 已配置好环境？三步跑起来：
-docker compose -f infrastructure/docker-compose.yml up -d   # 启动基础设施
+docker compose -f infrastructure/docker-compose.yml up -d postgres qdrant   # 启动基础设施
 cd apps/backend && python -c "from app.startup import ensure_qdrant_data; import asyncio; asyncio.run(ensure_qdrant_data())"  # 数据入库
 cd apps/backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8080  # 启动后端
 ```

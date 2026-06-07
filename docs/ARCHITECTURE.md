@@ -229,7 +229,7 @@ docs/                        # 技术文档
 
 ```bash
 # 1. 基础设施
-docker compose -f infrastructure/docker-compose.yml up -d
+docker compose -f infrastructure/docker-compose.yml up -d postgres qdrant
 
 # 2. 数据导入
 cd apps/backend && python -c "from app.startup import ensure_qdrant_data; import asyncio; asyncio.run(ensure_qdrant_data())"

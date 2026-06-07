@@ -1,5 +1,6 @@
 from app.services.agent import (
     _build_rewrite_base,
+    _infer_category_from_query,
     _previous_slots_from_state,
     _prune_previous_slots_for_category_change,
 )
@@ -69,3 +70,18 @@ def test_equivalent_category_keeps_preferences():
     kept = _prune_previous_slots_for_category_change(prev, {"category": "智能手表"})
 
     assert kept == prev
+
+
+def test_food_followup_infers_snack_category_without_inheriting_phone():
+    assert _infer_category_from_query("好吃又便宜的") == "零食"
+
+    prev = {"category": "手机", "exclude_brands": ["Apple"], "brand_preference": "iQOO"}
+    pruned = _prune_previous_slots_for_category_change(prev, {"category": "零食"})
+
+    assert "category" not in pruned
+    assert "exclude_brands" not in pruned
+    assert "brand_preference" not in pruned
+
+
+def test_food_words_do_not_override_explicit_digital_category():
+    assert _infer_category_from_query("好吃又便宜的华为手表") is None

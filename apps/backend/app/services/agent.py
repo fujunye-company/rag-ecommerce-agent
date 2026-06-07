@@ -84,6 +84,7 @@ async def node_classify_intent(state: AgentState) -> AgentState:
     # 非闲聊意图才提取槽位（用原始查询，关键词堆会污染 LLM 槽位提取）
     if state["intent"] != "chitchat":
         slots = await extract_slots(query, state["intent"])
+        _apply_query_category_hint(slots, query)
 
         # 合并历史上下文：保留上一轮的排除条件，本轮的偏好覆盖历史
         prev_slots = _previous_slots_from_state(state)
@@ -666,6 +667,34 @@ _DIGITAL_CATEGORIES = {
     "电脑", "笔记本", "相机", "音箱", "键盘", "鼠标",
 }
 _FOOD_ONLY_TERMS = {"好吃", "美味", "口味", "味道", "香", "不难吃", "难吃", "甜", "辣", "咸"}
+_FOOD_CATEGORY_TERMS = _FOOD_ONLY_TERMS | {
+    "零食", "食品", "吃的", "小吃", "便宜好吃", "好吃便宜", "下饭", "饱腹", "健康",
+    "坚果", "肉脯", "肉干", "饼干", "薯片", "糖果", "辣条", "果干", "泡面", "面包",
+}
+_DIGITAL_QUERY_TERMS = _DIGITAL_CATEGORIES | {
+    "华为", "苹果", "小米", "荣耀", "oppo", "vivo", "oneplus", "iphone", "ipad",
+    "拍照", "续航", "屏幕", "充电", "降噪", "蓝牙", "运动", "通话", "5g", "cpu",
+}
+
+
+def _apply_query_category_hint(slots: dict, query: str) -> None:
+    if not isinstance(slots, dict) or slots.get("category"):
+        return
+
+    inferred = _infer_category_from_query(query)
+    if inferred:
+        slots["category"] = inferred
+
+
+def _infer_category_from_query(query: str) -> str | None:
+    normalized = re.sub(r"\s+", "", (query or "").lower())
+    if not normalized:
+        return None
+    if any(term in normalized for term in _FOOD_CATEGORY_TERMS) and not any(
+        term in normalized for term in _DIGITAL_QUERY_TERMS
+    ):
+        return "零食"
+    return None
 
 
 def _strip_cross_category_noise(text: str, slots: dict) -> str:
@@ -1321,6 +1350,18 @@ def _find_products_for_multi_cart(query: str, state: "AgentState") -> list[dict]
         return []
 
     normalized = re.sub(r"\s+", "", query)
+    indices, _indices_error = _extract_cart_item_indices(query, len(product_cards))
+    if len(indices) >= 2:
+        selected: list[dict] = []
+        seen: set[str] = set()
+        for idx in indices:
+            card = product_cards[idx]
+            product = _product_from_card(card)
+            if product["id"] and product["id"] not in seen:
+                seen.add(product["id"])
+                selected.append(product)
+        return selected
+
     multi_markers = ("都", "全部", "全都", "一起", "这两款", "这两个", "两款", "两个", "前两", "前三")
     if not any(marker in normalized for marker in multi_markers):
         return []

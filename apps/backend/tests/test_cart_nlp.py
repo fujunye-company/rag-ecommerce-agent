@@ -209,6 +209,26 @@ def test_cart_multi_backref_adds_two_current_cards():
     ]
 
 
+def test_cart_multi_backref_adds_explicit_ordinal_cards():
+    state = {
+        "product_cards": [
+            {"product_id": "JD2113676", "title": "第一款手机", "price": 1999.0},
+            {"product_id": "JD2102664", "title": "第二款手机", "price": 2499.0},
+            {"product_id": "JD2126492", "title": "第三款手机", "price": 2999.0},
+        ],
+        "slots": {},
+    }
+
+    assert _find_products_for_multi_cart("第一第二个加入购物车", state) == [
+        {"id": "JD2113676", "title": "第一款手机", "price": 1999.0},
+        {"id": "JD2102664", "title": "第二款手机", "price": 2499.0},
+    ]
+    assert _find_products_for_multi_cart("第二个，第三个加入购物车", state) == [
+        {"id": "JD2102664", "title": "第二款手机", "price": 2499.0},
+        {"id": "JD2126492", "title": "第三款手机", "price": 2999.0},
+    ]
+
+
 @pytest.mark.asyncio
 async def test_cart_qdrant_fallback_accepts_sku_product_id(monkeypatch):
     from app.services import rag

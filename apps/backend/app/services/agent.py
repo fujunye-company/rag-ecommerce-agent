@@ -87,6 +87,7 @@ async def node_classify_intent(state: AgentState) -> AgentState:
 
         # 合并历史上下文：保留上一轮的排除条件，本轮的偏好覆盖历史
         prev_slots = _previous_slots_from_state(state)
+        prev_slots = _prune_previous_slots_for_category_change(prev_slots, slots)
         merged = {}
         # 排除类字段：累积（不丢失上一轮的排除条件）
         for key in ("exclude_brands", "exclude_categories", "exclude_attributes"):
@@ -476,12 +477,7 @@ async def node_retrieve(state: AgentState) -> AgentState:
             exclude_brands=_scoped_exclude_brands(slots),
             exclude_categories=slots.get("exclude_categories"),
             exclude_attributes=slots.get("exclude_attributes"),
-            strict_category=bool(slots.get("category") and (
-                _scoped_exclude_brands(slots)
-                or slots.get("exclude_categories")
-                or slots.get("exclude_attributes")
-                or state.get("history")
-            )),
+            strict_category=bool(slots.get("category")),
         )
 
         state["retrieved_chunks"] = result["chunks"]
@@ -698,6 +694,40 @@ def _sanitize_slots_for_category(slots: dict) -> None:
         terms = slots.get(key)
         if isinstance(terms, list):
             slots[key] = [term for term in terms if not any(food in str(term) for food in _FOOD_ONLY_TERMS)]
+
+
+def _categories_equivalent(left: str | None, right: str | None) -> bool:
+    left = (left or "").strip()
+    right = (right or "").strip()
+    if not left or not right:
+        return False
+    return left == right or _category_matches_request(left, right) or _category_matches_request(right, left)
+
+
+def _prune_previous_slots_for_category_change(prev_slots: dict, new_slots: dict) -> dict:
+    """Drop category-specific history when the user switches to a different product category."""
+    if not prev_slots:
+        return {}
+
+    prev_category = prev_slots.get("category")
+    new_category = (new_slots or {}).get("category")
+    if not prev_category or not new_category or _categories_equivalent(prev_category, new_category):
+        return dict(prev_slots)
+
+    pruned = dict(prev_slots)
+    for key in (
+        "category",
+        "brand_preference",
+        "attributes",
+        "scenario",
+        "missing_slots",
+        "exclude_brands",
+        "exclude_attributes",
+        "exclude_text_terms",
+    ):
+        pruned.pop(key, None)
+    logger.info("Category changed %s → %s, pruned category-scoped preferences", prev_category, new_category)
+    return pruned
 
 
 def _previous_slots_from_state(state: dict) -> dict:

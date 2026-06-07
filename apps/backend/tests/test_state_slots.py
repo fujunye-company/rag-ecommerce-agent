@@ -1,4 +1,8 @@
-from app.services.agent import _build_rewrite_base, _previous_slots_from_state
+from app.services.agent import (
+    _build_rewrite_base,
+    _previous_slots_from_state,
+    _prune_previous_slots_for_category_change,
+)
 
 
 def test_previous_slots_reads_nested_state():
@@ -33,3 +37,35 @@ def test_negation_rewrite_base_uses_inherited_category():
     )
 
     assert base == "平板 热门推荐 同类商品"
+
+
+def test_category_change_prunes_category_specific_preferences():
+    prev = {
+        "category": "手机",
+        "brand_preference": "Apple",
+        "attributes": {"性能": "强"},
+        "scenario": "拍照",
+        "price_max": 3000,
+        "exclude_brands": ["Huawei"],
+        "exclude_attributes": {"颜色": "黑色"},
+        "exclude_text_terms": ["苹果"],
+        "exclude_by_category": {"手机": ["Apple"]},
+    }
+
+    pruned = _prune_previous_slots_for_category_change(prev, {"category": "手表"})
+
+    assert pruned["price_max"] == 3000
+    assert pruned["exclude_by_category"] == {"手机": ["Apple"]}
+    assert "category" not in pruned
+    assert "brand_preference" not in pruned
+    assert "attributes" not in pruned
+    assert "exclude_brands" not in pruned
+    assert "exclude_text_terms" not in pruned
+
+
+def test_equivalent_category_keeps_preferences():
+    prev = {"category": "手表", "brand_preference": "Huawei", "attributes": {"续航": "长"}}
+
+    kept = _prune_previous_slots_for_category_change(prev, {"category": "智能手表"})
+
+    assert kept == prev

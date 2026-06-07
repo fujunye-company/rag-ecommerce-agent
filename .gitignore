@@ -90,3 +90,6 @@ apps/backend/data/test_cases/eval_quick_results.json
 apps/backend/data/test_cases/eval_results_*.json
 apps/backend/data/test_cases/p3_results.json
 docs/optimization/ttft_benchmark_*.json
+
+# Reference papers (cite by DOI, not stored as binary in repo)
+docs/background/papers/*.pdf

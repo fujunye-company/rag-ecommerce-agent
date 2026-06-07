@@ -270,72 +270,160 @@ async def node_clarify(state: AgentState) -> AgentState:
     return state
 
 
-# ── 常见场景 → 子品类映射（用于 LLM 失败时规则回退）──
+# ── 可用品类列表（启动时从 Qdrant / 种子数据加载，场景映射用）──
+_AVAILABLE_CATEGORIES: list[str] = []
+
+# ── 场景关键词 → 品类映射回退表（LLM 失败时使用，确保所有关键词指向已存在品类）──
 _SCENARIO_FALLBACK_MAP = {
-    "度假": ["防晒霜", "沙滩鞋", "墨镜", "泳衣", "遮阳帽"],
-    "旅行": ["双肩包", "行李箱", "旅行枕", "防晒霜"],
-    "三亚": ["防晒霜", "沙滩裙", "墨镜", "泳衣", "遮阳帽"],
-    "通勤": ["双肩包", "衬衫", "皮鞋", "外套"],
-    "露营": ["帐篷", "睡袋", "户外鞋", "头灯", "野餐垫"],
-    "户外": ["冲锋衣", "登山鞋", "双肩包", "水壶"],
-    "穿搭": ["T恤", "外套", "裤装", "运动鞋"],
-    "送礼": ["蓝牙耳机", "手表", "香薰", "巧克力"],
-    "办公": ["键盘", "台灯", "办公椅", "笔记本支架"],
-    "健身": ["瑜伽垫", "跑鞋", "运动服", "水壶"],
-    "出差": ["行李箱", "衬衫", "充电宝", "降噪耳机"],
+    "度假": ["防晒", "T恤", "裙装", "跑鞋", "双肩包"],
+    "旅行": ["双肩包", "T恤", "跑鞋", "防晒"],
+    "三亚": ["防晒", "裙装", "T恤", "跑鞋", "双肩包"],
+    "通勤": ["双肩包", "衬衫", "休闲鞋", "外套", "耳机"],
+    "露营": ["跑鞋", "外套", "双肩包", "T恤", "手机"],
+    "户外": ["外套", "跑鞋", "双肩包", "T恤", "手机"],
+    "穿搭": ["T恤", "外套", "裤装", "裙装", "跑鞋"],
+    "送礼": ["耳机", "手表", "音箱", "口红", "双肩包"],
+    "办公": ["键盘", "办公椅", "双肩包", "平板", "耳机"],
+    "健身": ["瑜伽用品", "跑鞋", "T恤", "运动服", "双肩包"],
+    "出差": ["双肩包", "衬衫", "外套", "耳机", "平板"],
 }
 
 
-async def _decompose_scenario(query: str, scenario: str) -> list[str]:
-    """将场景化需求分解为 2-3 个商品子类别。"""
-    prompt = f"""用户描述了这样一个场景：「{query}」。
-请将这个场景拆解为 2-3 个具体的商品搜索关键词，每行一个。
-只输出关键词，不要编号、不要解释。每个关键词应该是具体的商品品类。
-例如：
-输入"三亚度假穿搭"
-输出：
-防晒霜
-沙滩凉鞋
-墨镜"""
+def _get_available_categories() -> list[str]:
+    """Return the current available category list, with a lazy-load fallback."""
+    if _AVAILABLE_CATEGORIES:
+        return _AVAILABLE_CATEGORIES
+    # Fallback: return all keys from the fallback map values (deduplicated)
+    cats: list[str] = []
+    seen: set[str] = set()
+    for v in _SCENARIO_FALLBACK_MAP.values():
+        for c in v:
+            if c not in seen:
+                seen.add(c)
+                cats.append(c)
+    return cats
+
+
+async def _map_scenario_to_categories(query: str, scenario: str) -> list[str]:
+    """将场景化需求映射到商品数据库中 *实际存在* 的品类。
+
+    优先使用 LLM 从可用品类列表中筛选 3-5 个最相关品类；
+    LLM 失败时回退到关键词匹配 _SCENARIO_FALLBACK_MAP。
+    确保返回的品类名都是实际可检索的品类。
+    """
+    categories = _AVAILABLE_CATEGORIES or _get_available_categories()
+
+    prompt = f"""用户描述了一个购物场景：「{query}」。
+请从以下可用品类列表中选择 3-5 个与该场景最相关的品类，用于商品检索。
+
+可用品类（{len(categories)}个）：{', '.join(sorted(categories))}
+
+规则：
+1. 只输出上面列表中的品类名，严禁编造不存在的品类
+2. 优先选择与场景直接相关的品类
+3. 如果没有完美匹配的，选择语义/功能最接近的品类（如没有"沙滩鞋"则选"跑鞋"或"凉鞋"）
+4. 每行一个品类名，最多 5 行，不要编号和额外文字"""
+
     try:
         from app.services.llm_client import fast_chat_completion
         raw = await fast_chat_completion(
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=80,
+            temperature=0.2,
+            max_tokens=100,
         )
         lines = [l.strip() for l in raw.strip().split("\n") if l.strip()]
-        # Filter out numbered/bullet prefixes and markdown artifacts
+        # Filter out numbered/bullet prefixes
         import re
         lines = [re.sub(r'^[\d]+[\.\)、\s]+', '', l).strip() for l in lines]
         lines = [re.sub(r'^[-•\*●]\s*', '', l).strip() for l in lines]
-        lines = [l for l in lines if len(l) >= 1 and len(l) <= 30]
-        logger.info("Scenario decomposed: %s → %s", query, lines[:3])
+        lines = [l for l in lines if 1 <= len(l) <= 80]
+        # Only keep lines that match an available category
+        cat_set = set(categories)
+        valid = [l for l in lines if l in cat_set]
+        if valid:
+            logger.info("Scenario→Category mapped: %s → %s", scenario, valid[:5])
+            return valid[:5]
+        # LLM returned non-matching: try fuzzy match
         if lines:
-            return lines[:3]
+            fuzzy = _fuzzy_match_categories(lines, categories)
+            if fuzzy:
+                return fuzzy[:5]
     except Exception as e:
-        logger.warning("Scenario decomposition LLM failed: %s", e)
+        logger.warning("Scenario→Category LLM mapping failed: %s", e)
 
-    # Rule-based fallback: scan query for known scenarios
+    # Keyword fallback: scan query for scenario keywords → map to available categories
     q_lower = query.lower()
-    merged = []
-    for keyword, categories in _SCENARIO_FALLBACK_MAP.items():
+    matched_cats: list[str] = []
+    seen: set[str] = set()
+    # Longest keyword first for most specific match
+    for keyword in sorted(_SCENARIO_FALLBACK_MAP.keys(), key=len, reverse=True):
         if keyword in q_lower:
-            merged.extend(categories)
-    if merged:
-        # Deduplicate preserving order, take first 3
-        seen = set()
-        result = []
-        for c in merged:
-            if c not in seen:
-                seen.add(c)
-                result.append(c)
-                if len(result) >= 3:
-                    break
-        logger.info("Scenario fallback decomposition: %s → %s", query, result)
-        return result
+            for c in _SCENARIO_FALLBACK_MAP[keyword]:
+                if c not in seen:
+                    seen.add(c)
+                    matched_cats.append(c)
 
+    if matched_cats:
+        logger.info("Scenario→Category fallback (keyword): %s → %s", scenario, matched_cats[:5])
+        return matched_cats[:5]
+
+    # Ultimate fallback: return the query itself for semantic search
+    logger.info("Scenario→Category: no mapping found, using raw query")
     return [query]
+
+
+def _fuzzy_match_categories(candidate_names: list[str], valid_categories: list[str]) -> list[str]:
+    """Fuzzy-match LLM-output category names against the valid category list."""
+    result: list[str] = []
+    seen: set[str] = set()
+    for name in candidate_names:
+        if name in seen:
+            continue
+        # Exact match first
+        if name in valid_categories:
+            result.append(name)
+            seen.add(name)
+            continue
+        # Substring match: if candidate contains a valid category or vice versa
+        for cat in valid_categories:
+            if cat in name or name in cat:
+                if cat not in seen:
+                    result.append(cat)
+                    seen.add(cat)
+                break
+    return result
+
+
+def _pre_diversify_by_category(chunks: list, max_per_category: int = 3) -> list:
+    """按品类分组，每组取 top-N（按 semantic score），交替采样合并。
+
+    用于场景化购物在 reranker 全局排序之前保持品类多样性。
+    每个品类保留 max_per_category 个最优候选，然后跨品类交替拼接。
+    """
+    if not chunks:
+        return []
+    from collections import defaultdict
+    groups: dict[str, list] = defaultdict(list)
+    for c in chunks:
+        cat = (c.get("payload", {}) or {}).get("category", "") or "其他"
+        groups[cat].append(c)
+
+    # 每组按 score 降序，取前 max_per_category
+    for cat in groups:
+        groups[cat] = sorted(groups[cat],
+                            key=lambda x: x.get("score", 0), reverse=True)[:max_per_category]
+
+    # 交替采样：轮询各品类取第1个，再取第2个...
+    result: list = []
+    max_rounds = max(len(v) for v in groups.values())
+    for rnd in range(max_rounds):
+        for cat in sorted(groups.keys()):
+            if rnd < len(groups[cat]):
+                result.append(groups[cat][rnd])
+
+    logger.info("Pre-diversify: %d chunks → %d (across %d categories)",
+                len(chunks), len(result), len(groups))
+    return result
 
 
 async def node_retrieve(state: AgentState) -> AgentState:
@@ -347,11 +435,12 @@ async def node_retrieve(state: AgentState) -> AgentState:
     query = state.get("rewritten_query") or state["query"]
     slots = state.get("slots", {})
 
-    # 场景化购物：分解为多类目分别检索后合并
+    # 场景化购物：映射为已存在品类 → 分别检索 → 品类感知预采样 → 合并
     if state.get("intent") == "scenario_shopping":
         scenario = slots.get("scenario", query)
-        sub_queries = await _decompose_scenario(query, scenario)
+        sub_queries = await _map_scenario_to_categories(query, scenario)
         logger.info("Scenario shopping: sub_queries=%s", sub_queries)
+        state["_scenario_sub_queries"] = sub_queries  # 暂存供 generate_response 用
 
         all_chunks = []
         seen_ids = set()
@@ -359,8 +448,8 @@ async def node_retrieve(state: AgentState) -> AgentState:
         for sq in sub_queries:
             result = await rag_retrieve(
                 query=sq,
-                top_k=5,
-                category=None,  # 让各子查询跨类目检索
+                top_k=10,  # 扩容候选池供品类多样性采样
+                category=None,
                 price_min=slots.get("price_min"),
                 price_max=slots.get("price_max"),
             )
@@ -371,6 +460,9 @@ async def node_retrieve(state: AgentState) -> AgentState:
                     seen_ids.add(pid)
                     all_chunks.append(chunk)
 
+        # 品类感知预采样：按品类分组取 top-3，交替合并（先于 reranker 全局排序）
+        if all_chunks:
+            all_chunks = _pre_diversify_by_category(all_chunks, max_per_category=3)
         state["retrieved_chunks"] = all_chunks
         state["latency_ms"] = total_latency
     else:
@@ -437,7 +529,9 @@ async def node_retrieve(state: AgentState) -> AgentState:
                     len(categories_seen))
 
     # ── Reranker 精排（lifespan 已预加载模型，不再阻塞首请求） ──
-    if state["retrieved_chunks"] and state.get("intent") != "chitchat":
+    # 场景化购物已通过 _pre_diversify_by_category 做品类感知预采样，跳过全局 rerank 避免
+    # 语义强势品类垄断 top 位，保持跨品类多样性。
+    if state["retrieved_chunks"] and state.get("intent") != "chitchat" and state.get("intent") != "scenario_shopping":
         try:
             query_text = state.get("rewritten_query") or state["query"]
             n_before = len(state["retrieved_chunks"])
@@ -789,6 +883,7 @@ def _assemble_cards(valid_ranked: list) -> list[dict]:
             "highlights": r.get("highlights", []),
             "match_score": r.get("match_score", 0.5),
             "rank_reason": r.get("rank_reason", ""),
+            "scenarios": r.get("scenarios", []),
         })
     return cards
 
@@ -801,10 +896,17 @@ def _build_generation_prompt(message: str, slots: dict, valid_ranked: list, is_r
 
     scenario_hint = ""
     if intent == "scenario_shopping":
+        scene = slots.get("scenario", "") or "购物场景"
+        # 从排序结果中提取实际品类名用于动态示例
+        scene_categories = list(dict.fromkeys(
+            r.get("category", "") for r in valid_ranked if r.get("category")
+        ))
+        cat_example = "+".join(scene_categories[:4]) if len(scene_categories) >= 2 else "品类1+品类2"
         scenario_hint = (
-            "场景化推荐模式：当前用户描述了一个完整场景，商品已按品类多样化筛选。\n"
-            "请按品类分组推荐（每个品类介绍 1 款最优商品），说明各商品在场景中的角色与搭配逻辑。\n"
-            "开头用一句话概述搭配方案（如'为您搭配三亚度假三件套：防晒+穿搭+护目'），再逐品展开。\n"
+            f"场景化推荐模式：用户场景为「{scene}」，商品已按品类多样化筛选。\n"
+            "请按品类分组推荐（每个品类介绍 1 款最优商品），说明每件商品在该场景中的角色与搭配逻辑。\n"
+            f"开头用一句话概述搭配方案（如'为您搭配{scene}方案：{cat_example}'），再逐品展开。\n"
+            "严禁编造不存在的品类组合 — 只能基于下方检索到的实际商品及其品类。\n"
         )
 
     # 多轮对话历史
@@ -821,33 +923,34 @@ def _build_generation_prompt(message: str, slots: dict, valid_ranked: list, is_r
         match_pct = round(r.get("match_score", 0) * 100)
         context_parts.append(
             f"[{i+1}] {r.get('title')} | ¥{r.get('price')} | ★{r.get('rating')} | "
-            f"匹配度{match_pct}% | {' '.join(r.get('highlights', [])[:2])} | {r.get('rank_reason', '')}"
+            f"品类:{r.get('category','?')} | 匹配度{match_pct}% | {' '.join(r.get('highlights', [])[:2])} | {r.get('rank_reason', '')}"
         )
     context = "\n".join(context_parts)
     n = len(valid_ranked)
 
-    return f"""你是一个电商导购助手。基于检索到的商品信息，为用户生成推荐回答。
-{reliability_hint}
-{scenario_hint}{history_text}⚠️ 严禁事项（违反将导致推荐无效）:
-1. 不得编造任何商品名称、型号、价格 — 只能引用上方[1][2]...标记的商品
-2. 不得编造优惠券、满减、折扣、赠品、限时活动
-3. 不得编造不存在的功能参数、认证标识
-4. 不得编造用户评价、销量排名、市场占有率、对比结论
+    # 场景模式使用独立的输出格式指令
+    if intent == "scenario_shopping":
+        format_section = f"""输出格式要求（场景推荐专用，严格遵守）：
 
-校验规则:
-- 你提到的每个价格数字，必须在检索数据中出现过
-- 你提到的每个品牌名、产品名，必须在检索数据中出现过
-- 如果所有商品与用户需求的匹配度均低于60%，应诚实告知"当前没有很匹配的商品，建议调整条件"
-- 违反以上任一条，不要输出该推荐
+第一步：开头用一句话概述搭配方案（用检索到的品类名替换），以句号结尾。
+第二步：按品类分组推荐，每组用「品类名·商品N」独占一行作为标题。
+第三步：以「结语」收尾，简短追问用户偏好（1句话，不超过20字）。
 
-用户需求：{message}
-用户预算：{slots.get('price_min', '不限')}-{slots.get('price_max', '不限')}
-用户品类偏好：{slots.get('category', '未指定')}
-{_build_exclusion_hint(slots)}
-检索到的商品（共{n}款，必须全部推荐，不可遗漏）：
-{context}
+每款商品的展开格式：
+「品类名·商品N」
+商品全名 | 综合匹配度 XX%（使用检索数据中的匹配度数值，如实输出）
+① 搭配角色：该商品在场景中的作用与价值
+② 品质亮点：核心卖点与关键参数
+③ 适用场景：在场景中的具体使用时机
 
-输出格式要求（严格遵守，违反将导致推荐无效）：
+要求：
+- 必须逐一推荐以上全部 {n} 款商品，不可跳过任何一款
+- 每款商品必须独占一行使用「品类名·商品N」标记
+- 品类名从检索数据中提取，不得编造
+- 总字数控制在400字以内
+- 禁止使用"非常好""很不错"等模糊词，必须引用具体数字"""
+    else:
+        format_section = f"""输出格式要求（严格遵守，违反将导致推荐无效）：
 
 第一步：开头用一句话总结，列出全部商品名称（用顿号分隔），以句号结尾。
 第二步：紧接着依次用「商品1」「商品2」「商品3」分别展开每款商品，每款商品用「商品N」独占一行作为标题。
@@ -888,6 +991,29 @@ AirPods Pro | 综合匹配度 85%
 - 每款商品必须独占一行使用「商品N」标记
 - 总字数控制在300字以内
 - 禁止使用"非常好""很不错"等模糊词，必须引用具体数字"""
+
+    return f"""你是一个电商导购助手。基于检索到的商品信息，为用户生成推荐回答。
+{reliability_hint}
+{scenario_hint}{history_text}⚠️ 严禁事项（违反将导致推荐无效）:
+1. 不得编造任何商品名称、型号、价格 — 只能引用上方[1][2]...标记的商品
+2. 不得编造优惠券、满减、折扣、赠品、限时活动
+3. 不得编造不存在的功能参数、认证标识
+4. 不得编造用户评价、销量排名、市场占有率、对比结论
+
+校验规则:
+- 你提到的每个价格数字，必须在检索数据中出现过
+- 你提到的每个品牌名、产品名，必须在检索数据中出现过
+- 如果所有商品与用户需求的匹配度均低于60%，应诚实告知"当前没有很匹配的商品，建议调整条件"
+- 违反以上任一条，不要输出该推荐
+
+用户需求：{message}
+用户预算：{slots.get('price_min', '不限')}-{slots.get('price_max', '不限')}
+用户品类偏好：{slots.get('category', '未指定')}
+{_build_exclusion_hint(slots)}
+检索到的商品（共{n}款，必须全部推荐，不可遗漏）：
+{context}
+
+{format_section}"""
 
 
 async def node_generate(state: AgentState) -> AgentState:
@@ -2456,6 +2582,24 @@ async def generate_response(
             yield {"event": "text_delta", "data": TextDeltaEvent(content=text).model_dump_json()}
             yield {"event": "done", "data": DoneEvent().model_dump_json()}
             return
+
+        # ── 场景推荐：发送场景元数据事件 ──
+        if intent == "scenario_shopping":
+            scenario_name = slots.get("scenario", "")
+            sub_queries = after_retrieve.get("_scenario_sub_queries", [])
+            category_groups = list(dict.fromkeys(
+                r.get("category", "") for r in valid_ranked if r.get("category")
+            ))
+            from app.schemas.sse_events import ScenarioEvent
+            yield {
+                "event": "scenario",
+                "data": ScenarioEvent(
+                    scenario=scenario_name,
+                    sub_queries=sub_queries,
+                    category_groups=category_groups,
+                    total_products=len(valid_ranked),
+                ).model_dump_json(),
+            }
 
         yield {"event": "progress", "data": ProgressEvent(message="📊 正在生成推荐...").model_dump_json()}
 

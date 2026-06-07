@@ -445,6 +445,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                             is SSEEvent.Compare -> {
                                 accCompareDims = event.dimensions
                             }
+                            is SSEEvent.Scenario -> Unit  // 场景元数据 — UI 按 category 字段分组渲染
                             is SSEEvent.Clarify -> {
                                 _uiState.update {
                                     it.copy(
@@ -837,6 +838,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                         is SSEEvent.Compare -> {
                             accCompareDims = event.dimensions
                         }
+                        is SSEEvent.Scenario -> Unit  // 场景元数据
                         is SSEEvent.Clarify -> {
                             _uiState.update {
                                 it.copy(
@@ -1006,6 +1008,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                 accCards.add(product)
                                 _uiState.update { it.copy(streamingCards = accCards.toList()) }
                             }
+                            is SSEEvent.Scenario -> Unit  // 场景元数据
                             is SSEEvent.Done -> {
                                 val finalText = accText.toString().ifBlank {
                                     "根据图片找到 ${event.totalCards} 件相似商品"

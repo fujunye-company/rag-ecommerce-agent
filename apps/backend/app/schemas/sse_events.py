@@ -75,6 +75,15 @@ class CompareEvent(BaseModel, SSEMixin):
     dimensions: list[dict] = []
 
 
+class ScenarioEvent(BaseModel, SSEMixin):
+    """场景推荐元数据 — 告知前端场景名、子查询、品类分组"""
+    type: str = "scenario"
+    scenario: str = ""
+    sub_queries: list[str] = []
+    category_groups: list[str] = []
+    total_products: int = 0
+
+
 class ClarifyEvent(BaseModel, SSEMixin):
     """Agent 主动反问 — 信息不足时引导细化需求"""
     type: str = "clarify"
@@ -94,4 +103,4 @@ class WebSearchResultEvent(BaseModel, SSEMixin):
 
 
 # ── 联合类型 ──
-SSEEvent = TextDeltaEvent | ProductCardEvent | DoneEvent | ErrorEvent | ProgressEvent | ClarifyEvent | WebSearchResultEvent | CompareEvent
+SSEEvent = TextDeltaEvent | ProductCardEvent | DoneEvent | ErrorEvent | ProgressEvent | ClarifyEvent | WebSearchResultEvent | CompareEvent | ScenarioEvent

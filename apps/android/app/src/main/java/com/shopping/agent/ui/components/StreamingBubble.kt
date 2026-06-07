@@ -69,17 +69,39 @@ fun StreamingBubble(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
 
-                productCards.forEachIndexed { index, product ->
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn(tween(300, delayMillis = index * 100))
-                                + slideInVertically { it / 2 },
-                    ) {
-                        ProductCardHorizontal(
-                            product = product,
-                            onTap = { onProductTap(product) },
+                val groupedCards = productCards.groupBy { it.category }
+                var globalIndex = 0
+                groupedCards.forEach { (category, products) ->
+                    if (groupedCards.size > 1 && category.isNotBlank()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(top = Dimens.space2),
+                        ) {
+                            Text(
+                                text = "▎$category",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Primary,
+                            )
+                        }
+                        HorizontalDivider(
+                            color = Primary.copy(alpha = 0.2f),
+                            modifier = Modifier.padding(top = 2.dp, bottom = 2.dp),
                         )
+                    }
+                    products.forEach { product ->
+                        val index = globalIndex++
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = fadeIn(tween(300, delayMillis = index * 100))
+                                    + slideInVertically { it / 2 },
+                        ) {
+                            ProductCardHorizontal(
+                                product = product,
+                                onTap = { onProductTap(product) },
+                                modifier = Modifier.padding(top = Dimens.space2),
+                            )
+                        }
                     }
                 }
             }

@@ -111,7 +111,13 @@ bold "=== 场景7: 场景化组合推荐 ==="
 RESP=$(curl -s -N "$BASE/chat" \
     -H "Content-Type: application/json" \
     -d '{"message":"下周三亚度假，防晒到穿搭方案"}' 2>/dev/null || true)
-check "场景组合推荐有返回" echo "$RESP" | grep -qE '"text_delta"|"product_cards"'
+check "7.1-有文本返回" echo "$RESP" | grep -q '"text_delta"'
+CAT_COUNT=$(echo "$RESP" | grep -o '"category":"[^"]*"' | sort -u | wc -l)
+check "7.2-多品类覆盖(≥2)" [ "$CAT_COUNT" -ge 2 ]
+check "7.3-场景元数据" echo "$RESP" | grep -q '"event":"scenario"'
+CARD_COUNT=$(echo "$RESP" | grep -o '"event":"product_cards"' | wc -l)
+check "7.4-产品数量(≥3)" [ "$CARD_COUNT" -ge 3 ]
+check "7.5-场景关键词" echo "$RESP" | grep -qE '防晒|穿搭|度假|墨镜|遮阳|搭配'
 
 # ── 8. 场景8: 购物车 CRUD ─────────────────────────────────
 bold "=== 场景8: 购物车与下单 ==="

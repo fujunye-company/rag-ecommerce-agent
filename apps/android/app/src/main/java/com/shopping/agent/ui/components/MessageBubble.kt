@@ -101,9 +101,27 @@ fun MessageBubble(
                             color = if (isUser) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface,
                         )
                     }
-                    message.productCards.forEach { product ->
-                        Spacer(Modifier.height(Dimens.space2))
-                        ProductCardHorizontal(product = product, onTap = { onProductTap(product) })
+                    val groupedCards = message.productCards.groupBy { it.category }
+                    groupedCards.forEach { (category, products) ->
+                        if (groupedCards.size > 1 && category.isNotBlank()) {
+                            Spacer(Modifier.height(Dimens.space2))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "▎$category",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    color = Primary,
+                                )
+                            }
+                            HorizontalDivider(
+                                color = Primary.copy(alpha = 0.2f),
+                                modifier = Modifier.padding(top = 2.dp, bottom = 2.dp),
+                            )
+                        }
+                        products.forEach { product ->
+                            Spacer(Modifier.height(Dimens.space2))
+                            ProductCardHorizontal(product = product, onTap = { onProductTap(product) })
+                        }
                     }
                     message.webSearchResults.forEach { item ->
                         Spacer(Modifier.height(Dimens.space2))

@@ -270,6 +270,15 @@ class SseClient(
                     } else emptyList()
                     SSEEvent.Compare(dimensions = dimList)
                 }
+                "scenario" -> {
+                    val d = gson.fromJson(json, ScenarioPayload::class.java)
+                    SSEEvent.Scenario(
+                        scenario = d.scenario,
+                        subQueries = d.sub_queries ?: emptyList(),
+                        categoryGroups = d.category_groups ?: emptyList(),
+                        totalProducts = d.total_products
+                    )
+                }
                 "error" -> {
                     val d = gson.fromJson(json, ErrorPayload::class.java)
                     SSEEvent.Error(d.message)

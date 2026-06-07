@@ -57,6 +57,13 @@ sealed class SSEEvent {
     data class Compare(
         val dimensions: List<Map<String, Any?>>
     ) : SSEEvent()
+
+    data class Scenario(
+        val scenario: String,
+        val subQueries: List<String>,
+        val categoryGroups: List<String>,
+        val totalProducts: Int
+    ) : SSEEvent()
 }
 
 // ── JSON payload 映射（仅 SseClient 内部解析用） ──
@@ -101,4 +108,11 @@ data class WebSearchResultPayload(
     val snippet: String,
     val index: Int,
     val total: Int
+)
+
+data class ScenarioPayload(
+    val scenario: String,
+    val sub_queries: List<String>?,
+    val category_groups: List<String>?,
+    val total_products: Int
 )

@@ -36,9 +36,8 @@ rag-ecommerce-agent/
 ├── apps/
 │   ├── backend/          FastAPI 后端 (62 .py, 29 modules)
 │   └── android/          Kotlin Compose Android (72 .kt)
-├── docs/                 项目文档
+├── docs/                 项目文档 (26 .md)
 ├── infrastructure/       docker-compose + env
-├── scripts/              工具脚本
 └── README.md
 ```
 
@@ -77,14 +76,49 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8080  # 启动后端
 
 ## 相关文档
 
-- [竞赛核心需求](docs/background/REQS-竞赛核心需求.md)
+### 竞赛核心
+
+- [竞赛核心需求](docs/background/REQS-竞赛核心需求.md) — 最高优先级，评分权重与交付标准
+- [比赛题目要求](docs/background/核心要求-比赛题目.md)
+- [PRD 产品需求文档](docs/background/PRD-电商AI导购Agent-V1.0.md)
+- [课题说明会纪要](docs/standards/requirements-based-rag-multimodal-ecommerce-ai-agent.md)
+
+### 架构与设计
+
+- [系统架构](docs/ARCHITECTURE.md)
+- [API 文档](docs/API.md)
+- [项目结构说明](docs/architecture/项目结构说明.md)
+- [核心机制](docs/standards/MECHANISM.md)
+- [数据契约](docs/standards/DATA-CONTRACT.md)
+- [UI 设计规范](docs/standards/DESIGN.md)
+
+### 开发与部署
+
 - [从零搭建指南](docs/standards/SETUP.md)
 - [开发总纲](docs/standards/DEV-GUIDE.md)
-- [数据契约](docs/standards/DATA-CONTRACT.md)
-- [系统架构](docs/ARCHITECTURE.md)
+- [开发规约](docs/standards/开发规约-v2.md)
+
+### 评测与性能
+
 - [评测报告](docs/EVALUATION.md)
-- [演示脚本](docs/DEMO_SCRIPT.md)
 - [性能基准](docs/notes/PERFORMANCE.md)
+- [TTFT 延迟基准](docs/optimization/TTFT_BENCHMARK.md)
+
+### 答辩与演示
+
+- [演示脚本](docs/DEMO_SCRIPT.md)
+- [提交演示手册](docs/submission/DEMO_RUNBOOK.md)
 - [答辩 PPT 大纲](docs/notes/PPT-OUTLINE.md)
+
+### 调研与加分项
+
+- [Agent 框架架构分析](docs/background/Agent框架架构分析.md)
+- [竞品案例分析](docs/background/电商RAG导购Agent案例分析.md)
+- [学术文献补充](docs/background/PRD-背景资料-学术文献补充.md)
+- [创新研究](docs/optimization/INNOVATION-RESEARCH.md)
+
+### 项目管理
+
 - [M0-M10 全项目规划](docs/progress/M0-M10-全项目规划.md)
 - [开发进度控制表](docs/progress/开发进度控制表.md)
+- [变更日志](docs/CHANGELOG.md)

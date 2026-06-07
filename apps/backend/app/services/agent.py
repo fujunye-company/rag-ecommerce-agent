@@ -714,12 +714,28 @@ def _category_matches_request(product_category: str, requested_category: str) ->
     aliases = {
         "平板": {"平板", "平板电脑"},
         "平板电脑": {"平板", "平板电脑"},
+        "鞋子": {"鞋子", "运动鞋", "休闲鞋", "跑鞋", "篮球鞋", "帆布鞋", "板鞋", "皮鞋", "老爹鞋"},
+        "耳机": {"耳机", "蓝牙耳机", "降噪耳机", "无线耳机", "头戴式耳机", "入耳式耳机", "运动耳机"},
+        "蓝牙耳机": {"蓝牙耳机", "耳机", "无线耳机", "入耳式耳机", "运动耳机"},
+        "图书": {"图书", "书籍", "教材", "小说", "童书", "绘本", "阅读"},
+        "书": {"图书", "书籍", "教材", "小说", "童书", "绘本", "阅读"},
+        "书籍": {"图书", "书籍", "教材", "小说", "童书", "绘本", "阅读"},
+        "零食": {"零食", "食品", "休闲零食", "肉干肉脯", "坚果炒货", "饼干糕点", "糖果巧克力"},
+        "食品": {"食品", "零食", "休闲零食", "肉干肉脯", "坚果炒货", "饼干糕点", "糖果巧克力"},
+        "手机": {"手机", "智能手机"},
     }
     return product_category in aliases.get(requested_category, {requested_category})
 
 
 def _needs_strict_category_guard(requested_category: str) -> bool:
-    return (requested_category or "").strip() in {"平板", "平板电脑"}
+    return (requested_category or "").strip() in {
+        "平板", "平板电脑",
+        "鞋子",
+        "耳机", "蓝牙耳机",
+        "图书", "书", "书籍",
+        "零食", "食品",
+        "手机",
+    }
 
 
 def _filter_chunks_by_requested_category(chunks: list[dict], requested_category: str) -> list[dict]:
@@ -1212,6 +1228,48 @@ def _resolve_remaining_product_card(query: str, product_cards: list[dict]) -> di
     return remaining[0] if len(remaining) == 1 else None
 
 
+def _product_from_card(card: dict) -> dict:
+    return {
+        "id": str(card.get("product_id") or card.get("id", "")).strip(),
+        "title": card.get("title", ""),
+        "price": card.get("price", 0),
+    }
+
+
+def _get_cart_backref_cards(state: "AgentState") -> list[dict]:
+    product_cards = state.get("product_cards", []) or []
+    slots = state.get("slots", {}) or {}
+    prev_cards = slots.get("product_cards", []) or []
+    return product_cards or prev_cards or []
+
+
+def _find_products_for_multi_cart(query: str, state: "AgentState") -> list[dict]:
+    """Resolve multi-item cart commands such as "这两款都加入购物车" from current cards."""
+    product_cards = _get_cart_backref_cards(state)
+    if not product_cards:
+        return []
+
+    normalized = re.sub(r"\s+", "", query)
+    multi_markers = ("都", "全部", "全都", "一起", "这两款", "这两个", "两款", "两个", "前两", "前三")
+    if not any(marker in normalized for marker in multi_markers):
+        return []
+
+    limit = len(product_cards)
+    if any(marker in normalized for marker in ("这两款", "这两个", "两款", "两个", "前两")):
+        limit = min(2, len(product_cards))
+    elif "前三" in normalized:
+        limit = min(3, len(product_cards))
+
+    selected: list[dict] = []
+    seen: set[str] = set()
+    for card in product_cards[:limit]:
+        product = _product_from_card(card)
+        if product["id"] and product["id"] not in seen:
+            seen.add(product["id"])
+            selected.append(product)
+    return selected
+
+
 def _cart_item_matches_query(item, query: str) -> bool:
     normalized_query = re.sub(r"\s+", "", query.lower())
     normalized_title = re.sub(r"\s+", "", (item.title or "").lower())
@@ -1265,20 +1323,11 @@ async def _find_product_for_cart(query: str, state: "AgentState") -> dict | None
     """从查询中识别用户要加购的商品。
     优先级：1. 序号匹配 product_cards  2. 商品名匹配 product_cards  3. Qdrant 搜索
     """
-    # 获取可用的 product_cards
-    product_cards = state.get("product_cards", []) or []
-    slots = state.get("slots", {})
-    prev_cards = slots.get("product_cards", [])
-    if not product_cards and prev_cards:
-        product_cards = prev_cards
+    product_cards = _get_cart_backref_cards(state)
 
     remaining_card = _resolve_remaining_product_card(query, product_cards)
     if remaining_card:
-        return {
-            "id": remaining_card.get("product_id") or remaining_card.get("id", ""),
-            "title": remaining_card.get("title", ""),
-            "price": remaining_card.get("price", 0),
-        }
+        return _product_from_card(remaining_card)
 
     # 1. 序号匹配: "第一个"、"第二个"、"第1个"
     ordinal_map = {
@@ -1290,22 +1339,14 @@ async def _find_product_for_cart(query: str, state: "AgentState") -> dict | None
             idx = ordinal_map[word]
             if product_cards and idx <= len(product_cards):
                 card = product_cards[idx - 1]
-                return {
-                    "id": card.get("product_id") or card.get("id", ""),
-                    "title": card.get("title", ""),
-                    "price": card.get("price", 0),
-                }
+                return _product_from_card(card)
 
     # 2. 按商品名匹配 product_cards（标题前几个字出现在 query 中）
     if product_cards:
         for card in product_cards:
             title = card.get("title", "")
             if title and len(title) >= 3 and title[:4] in query:
-                return {
-                    "id": card.get("product_id") or card.get("id", ""),
-                    "title": title,
-                    "price": card.get("price", 0),
-                }
+                return _product_from_card(card)
 
     # 3. Qdrant 搜索：从 "加入购物车" 前的文本提取搜索词
     for marker in ["加入购物车", "加到购物车", "加购", "添加到购物车"]:
@@ -1323,18 +1364,12 @@ async def _find_product_for_cart(query: str, state: "AgentState") -> dict | None
                     if chunks:
                         p = chunks[0].get("payload", {})
                         pid = str(p.get("product_id", "")).strip()
-                        # 验证 product_id 是合法 UUID
-                        try:
-                            import uuid as _uuid
-                            _uuid.UUID(pid)
+                        if pid:
                             return {
                                 "id": pid,
                                 "title": p.get("title", ""),
                                 "price": p.get("price", 0),
                             }
-                        except (ValueError, AttributeError):
-                            logger.warning("Cart Qdrant fallback: invalid product_id '%s'", pid[:20])
-                            pass
                 except Exception as e:
                     logger.warning("Cart Qdrant fallback lookup failed: %s", e)
             break
@@ -1448,8 +1483,30 @@ async def node_cart(state: "AgentState") -> "AgentState":
                 state["product_cards"] = []
 
             elif cart_action == "add":
-                product = await _find_product_for_cart(query, state)
-                if product and product.get("id") and len(product.get("id","")) > 10:
+                products = _find_products_for_multi_cart(query, state)
+                product = None if products else await _find_product_for_cart(query, state)
+                if products:
+                    requested_quantity = _parse_quantity(query) or 1
+                    for product_item in products:
+                        await cart_service.add_to_cart(
+                            db, session_id,
+                            product_item["id"], product_item["title"], product_item["price"],
+                            user_id=user_id,
+                        )
+                        if requested_quantity > 1:
+                            await cart_service.update_quantity(
+                                db, session_id, product_item["id"], requested_quantity, user_id=user_id
+                            )
+                    items = await cart_service.get_cart(db, session_id, user_id=user_id)
+                    total = await cart_service.get_cart_total(db, session_id, user_id=user_id)
+                    names = "、".join(f"「{item['title']}」" for item in products[:3])
+                    suffix = "等" if len(products) > 3 else ""
+                    state["response"] = (
+                        f"✅ 已将{names}{suffix}共 {len(products)} 款商品加入购物车。\n"
+                        f"当前购物车共 {len(items)} 件，合计 ¥{total:.0f}。"
+                    )
+                    await db.commit()
+                elif product and product.get("id"):
                     requested_quantity = _parse_quantity(query) or 1
                     await cart_service.add_to_cart(
                         db, session_id,
@@ -2511,9 +2568,8 @@ async def generate_response(
                 logger.info("No precise results for '%s', expanding within category=%s", message[:40], slots.get("category"))
                 chunks = await _retrieve_same_category_supplements(message, slots, chunks)
 
-        if not chunks:
+        if not chunks and not slots.get("category"):
             # 兜底策略：清除品类 + 排除条件，纯语义检索
-            # —— 品类名可能不匹配（如 LLM 提取"降噪耳机"但 DB 中为"耳机"）
             logger.info("No results for '%s', trying hot fallback (no category/exclusion filters)...", message[:40])
             fallback_slots = {
                 k: v for k, v in slots.items()
@@ -2525,21 +2581,22 @@ async def generate_response(
             after_fallback = await node_retrieve(fallback_state)
             chunks = after_fallback.get("retrieved_chunks", [])
             slots = after_fallback.get("slots", fallback_slots)
-            if not chunks:
-                # 最终兜底：联网搜索
-                yield {"event": "progress", "data": ProgressEvent(message="本地商品库未匹配，正在联网搜索...").model_dump_json()}
-                after_ws = await node_web_search(after_intent)
-                ws_response = after_ws.get("response", "")
-                web_results = after_ws.get("_web_results", [])
-                yield {"event": "text_delta", "data": TextDeltaEvent(content=ws_response).model_dump_json()}
-                for i, wr in enumerate(web_results):
-                    yield {"event": "web_search_result", "data": WebSearchResultEvent(
-                        title=wr.get("title", ""), url=wr.get("url", ""),
-                        snippet=wr.get("snippet", ""), index=i + 1, total=len(web_results),
-                    ).model_dump_json()}
-                yield {"event": "done", "data": DoneEvent().model_dump_json()}
-                return
             yield {"event": "progress", "data": ProgressEvent(message="未精确匹配，为您推荐热销商品...").model_dump_json()}
+
+        if not chunks:
+            # 最终兜底：联网搜索。已有明确品类时，不再清空品类去混推其他商品。
+            yield {"event": "progress", "data": ProgressEvent(message="本地商品库未匹配，正在联网搜索...").model_dump_json()}
+            after_ws = await node_web_search(after_intent)
+            ws_response = after_ws.get("response", "")
+            web_results = after_ws.get("_web_results", [])
+            yield {"event": "text_delta", "data": TextDeltaEvent(content=ws_response).model_dump_json()}
+            for i, wr in enumerate(web_results):
+                yield {"event": "web_search_result", "data": WebSearchResultEvent(
+                    title=wr.get("title", ""), url=wr.get("url", ""),
+                    snippet=wr.get("snippet", ""), index=i + 1, total=len(web_results),
+                ).model_dump_json()}
+            yield {"event": "done", "data": DoneEvent().model_dump_json()}
+            return
 
         # ── Progress 3: 检索完成，告知命中数量 ──
         yield {"event": "progress", "data": ProgressEvent(message=f"📦 已匹配 {len(chunks)} 件商品，正在为您筛选...").model_dump_json()}

@@ -91,16 +91,18 @@ fun StreamingBubble(
                     }
                     products.forEach { product ->
                         val index = globalIndex++
-                        AnimatedVisibility(
-                            visible = true,
-                            enter = fadeIn(tween(300, delayMillis = index * 100))
-                                    + slideInVertically { it / 2 },
-                        ) {
-                            ProductCardHorizontal(
-                                product = product,
-                                onTap = { onProductTap(product) },
-                                modifier = Modifier.padding(top = Dimens.space2),
-                            )
+                        key(product.productId) {
+                            AnimatedVisibility(
+                                visible = true,
+                                enter = fadeIn(tween(300, delayMillis = index * 100))
+                                        + slideInVertically { it / 2 },
+                            ) {
+                                ProductCardHorizontal(
+                                    product = product,
+                                    onTap = { onProductTap(product) },
+                                    modifier = Modifier.padding(top = Dimens.space2),
+                                )
+                            }
                         }
                     }
                 }

@@ -9,6 +9,7 @@ from app.services.agent import (
     _extract_cart_item_index,
     _extract_cart_action,
     _find_product_for_cart,
+    _find_products_for_multi_cart,
     _parse_quantity,
     _parse_quantity_delta,
 )
@@ -178,3 +179,46 @@ async def test_cart_backref_can_add_remaining_card_after_exclusions():
         "title": "候选三",
         "price": 30.0,
     }
+
+
+def test_cart_multi_backref_adds_two_current_cards():
+    products = _find_products_for_multi_cart(
+        "这两款都加入购物车吧",
+        {
+            "product_cards": [
+                {"product_id": "JD2113676", "title": "第一款手机", "price": 1999.0},
+                {"product_id": "JD2102664", "title": "第二款手机", "price": 2499.0},
+                {"product_id": "JD2126492", "title": "第三款手机", "price": 2999.0},
+            ],
+            "slots": {},
+        },
+    )
+
+    assert products == [
+        {"id": "JD2113676", "title": "第一款手机", "price": 1999.0},
+        {"id": "JD2102664", "title": "第二款手机", "price": 2499.0},
+    ]
+
+
+@pytest.mark.asyncio
+async def test_cart_qdrant_fallback_accepts_sku_product_id(monkeypatch):
+    from app.services import rag
+
+    async def fake_retrieve(**_kwargs):
+        return {
+            "chunks": [
+                {
+                    "payload": {
+                        "product_id": "JD2718819",
+                        "title": "SKU 型商品",
+                        "price": 699.0,
+                    }
+                }
+            ]
+        }
+
+    monkeypatch.setattr(rag, "retrieve", fake_retrieve)
+
+    product = await _find_product_for_cart("把SKU 型商品加入购物车", {"product_cards": [], "slots": {}})
+
+    assert product == {"id": "JD2718819", "title": "SKU 型商品", "price": 699.0}

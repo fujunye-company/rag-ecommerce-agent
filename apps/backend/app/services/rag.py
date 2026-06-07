@@ -54,19 +54,18 @@ async def retrieve(
             )
 
     if not chunks and category:
-        # 策略B: 品类名可能不匹配，回退到纯语义+价格（丢弃品类过滤）
-        # —— 即使 strict_category=True，0 结果也意味着类别名可能不匹配，仍应回退
+        # 策略B: 非严格模式才允许丢弃品类过滤；严格模式避免跨品类乱推荐。
         if strict_category:
-            logger.warning("RAG: category='%s' returned 0 with strict_category=True, forcing retry without category", category)
+            logger.warning("RAG: category='%s' returned 0 with strict_category=True, keep empty result", category)
         else:
             logger.info("RAG: category='%s' returned 0, retry without category (strict_category=False)", category)
-        chunks, search_ms = await hybrid_search(
-            query_vector=vector, query_text=query,
-            category=None,
-            price_min=price_min, price_max=price_max,
-            exclude_brands=exclude_brands, exclude_categories=exclude_categories,
-            exclude_attributes=exclude_attributes, top_k=top_k,
-        )
+            chunks, search_ms = await hybrid_search(
+                query_vector=vector, query_text=query,
+                category=None,
+                price_min=price_min, price_max=price_max,
+                exclude_brands=exclude_brands, exclude_categories=exclude_categories,
+                exclude_attributes=exclude_attributes, top_k=top_k,
+            )
 
     total_ms = (time.monotonic() - t0) * 1000
     logger.info(

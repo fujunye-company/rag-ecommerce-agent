@@ -12,6 +12,33 @@ logger = logging.getLogger("retriever")
 _qdrant = None
 
 
+_CATEGORY_ALIASES: dict[str, list[str]] = {
+    "鞋子": ["鞋子", "运动鞋", "休闲鞋", "跑鞋", "篮球鞋", "帆布鞋", "板鞋", "皮鞋", "老爹鞋"],
+    "耳机": ["耳机", "蓝牙耳机", "降噪耳机", "无线耳机", "头戴式耳机", "入耳式耳机", "运动耳机"],
+    "蓝牙耳机": ["蓝牙耳机", "耳机", "无线耳机", "入耳式耳机", "运动耳机"],
+    "图书": ["图书", "书籍", "教材", "小说", "童书", "绘本", "阅读"],
+    "书": ["图书", "书籍", "教材", "小说", "童书", "绘本", "阅读"],
+    "书籍": ["图书", "书籍", "教材", "小说", "童书", "绘本", "阅读"],
+    "零食": ["零食", "食品", "休闲零食", "肉干肉脯", "坚果炒货", "饼干糕点", "糖果巧克力"],
+    "食品": ["食品", "零食", "休闲零食", "肉干肉脯", "坚果炒货", "饼干糕点", "糖果巧克力"],
+    "手机": ["手机", "智能手机"],
+}
+
+
+def _category_match_values(category: str | None) -> list[str]:
+    if not category:
+        return []
+    cleaned = category.strip()
+    values = _CATEGORY_ALIASES.get(cleaned, [cleaned])
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        if value and value not in seen:
+            seen.add(value)
+            deduped.append(value)
+    return deduped
+
+
 def _get_qdrant():
     """懒加载 Qdrant 客户端（避免模块导入时崩溃）"""
     global _qdrant
@@ -44,8 +71,12 @@ async def hybrid_search(
     must_not_filters = []
 
     if category:
+        category_values = _category_match_values(category)
         must_filters.append(
-            FieldCondition(key="category", match=MatchValue(value=category))
+            FieldCondition(
+                key="category",
+                match=MatchAny(any=category_values) if len(category_values) > 1 else MatchValue(value=category),
+            )
         )
     if price_min is not None or price_max is not None:
         price_range = {}

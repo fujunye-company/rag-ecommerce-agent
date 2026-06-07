@@ -52,3 +52,57 @@ def test_merge_chunks_with_duplicates():
             seen.add(c["chunk_id"])
             merged.append(c)
     assert len(merged) == 2
+
+
+def test_category_aliases_expand_common_user_terms():
+    from app.services.retriever import _category_match_values
+
+    assert "运动鞋" in _category_match_values("鞋子")
+    assert "蓝牙耳机" in _category_match_values("耳机")
+    assert "肉干肉脯" in _category_match_values("零食")
+
+
+@pytest.mark.asyncio
+async def test_strict_category_does_not_fallback_without_category(monkeypatch):
+    from app.services import rag
+
+    calls = []
+
+    async def fake_embed(_query):
+        return [0.1, 0.2]
+
+    async def fake_search(**kwargs):
+        calls.append(kwargs.get("category"))
+        return [], 1.0
+
+    monkeypatch.setattr(rag, "embed_text", fake_embed)
+    monkeypatch.setattr(rag, "hybrid_search", fake_search)
+
+    result = await rag.retrieve("推荐鞋子", category="鞋子", strict_category=True)
+
+    assert result["chunks"] == []
+    assert calls == ["鞋子"]
+
+
+@pytest.mark.asyncio
+async def test_non_strict_category_can_fallback_without_category(monkeypatch):
+    from app.services import rag
+
+    calls = []
+
+    async def fake_embed(_query):
+        return [0.1, 0.2]
+
+    async def fake_search(**kwargs):
+        calls.append(kwargs.get("category"))
+        if kwargs.get("category") is None:
+            return [{"payload": {"product_id": "p1"}}], 1.0
+        return [], 1.0
+
+    monkeypatch.setattr(rag, "embed_text", fake_embed)
+    monkeypatch.setattr(rag, "hybrid_search", fake_search)
+
+    result = await rag.retrieve("随便推荐", category="未知品类", strict_category=False)
+
+    assert len(result["chunks"]) == 1
+    assert calls == ["未知品类", None]

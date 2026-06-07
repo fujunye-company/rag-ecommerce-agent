@@ -119,8 +119,10 @@ fun MessageBubble(
                             )
                         }
                         products.forEach { product ->
-                            Spacer(Modifier.height(Dimens.space2))
-                            ProductCardHorizontal(product = product, onTap = { onProductTap(product) })
+                            key(product.productId) {
+                                Spacer(Modifier.height(Dimens.space2))
+                                ProductCardHorizontal(product = product, onTap = { onProductTap(product) })
+                            }
                         }
                     }
                     message.webSearchResults.forEach { item ->

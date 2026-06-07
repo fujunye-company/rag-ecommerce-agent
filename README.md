@@ -32,7 +32,7 @@
 ## 项目结构
 
 ```
-04-rag-ecommerce/
+rag-ecommerce/
 ├── apps/
 │   ├── backend/          FastAPI 后端 (62 .py, 29 modules)
 │   └── android/          Kotlin Compose Android (72 .kt)

@@ -37,6 +37,7 @@ class AgentState(TypedDict, total=False):
     intent: str
     confidence: float
     slots: dict
+    category_context: dict
     negation_slots: dict  # 否定条件：exclude_brands, exclude_categories, exclude_attributes
     rewritten_query: str
     retrieved_chunks: list
@@ -85,9 +86,11 @@ async def node_classify_intent(state: AgentState) -> AgentState:
     if state["intent"] != "chitchat":
         slots = await extract_slots(query, state["intent"])
         _apply_query_category_hint(slots, query)
+        _apply_history_category_hint(slots, state.get("history", []))
 
         # 合并历史上下文：保留上一轮的排除条件，本轮的偏好覆盖历史
         prev_slots = _previous_slots_from_state(state)
+        category_changed = _has_category_change(prev_slots, slots)
         prev_slots = _prune_previous_slots_for_category_change(prev_slots, slots)
         merged = {}
         # 排除类字段：累积（不丢失上一轮的排除条件）
@@ -110,6 +113,8 @@ async def node_classify_intent(state: AgentState) -> AgentState:
                 merged[key] = prev_slots[key]
 
         state["slots"] = merged
+        state["_category_changed"] = category_changed
+        state["category_context"] = _update_category_context(state.get("category_context", {}), merged)
 
         # 否定语义：任何含否定关键词的查询都提取排除条件（不只 anti_selection）
         neg_keywords = ["不要", "除了", "非", "不含", "排除", "拒绝", "去掉", "避开", "别", "讨厌", "不喜欢", "反感"]
@@ -666,6 +671,7 @@ _DIGITAL_CATEGORIES = {
     "手机", "智能手机", "手表", "智能手表", "耳机", "蓝牙耳机", "平板", "平板电脑",
     "电脑", "笔记本", "相机", "音箱", "键盘", "鼠标",
 }
+_CATEGORY_PREF_KEYS = ("price_min", "price_max", "brand_preference", "attributes", "scenario")
 _FOOD_ONLY_TERMS = {"好吃", "美味", "口味", "味道", "香", "不难吃", "难吃", "甜", "辣", "咸"}
 _FOOD_CATEGORY_TERMS = _FOOD_ONLY_TERMS | {
     "零食", "食品", "吃的", "小吃", "便宜好吃", "好吃便宜", "下饭", "饱腹", "健康",
@@ -675,15 +681,79 @@ _DIGITAL_QUERY_TERMS = _DIGITAL_CATEGORIES | {
     "华为", "苹果", "小米", "荣耀", "oppo", "vivo", "oneplus", "iphone", "ipad",
     "拍照", "续航", "屏幕", "充电", "降噪", "蓝牙", "运动", "通话", "5g", "cpu",
 }
+_EXPLICIT_CATEGORY_HINTS = (
+    ("智能手表", "手表"),
+    ("蓝牙耳机", "耳机"),
+    ("智能手机", "手机"),
+    ("运动鞋", "鞋"),
+    ("休闲鞋", "鞋"),
+    ("篮球鞋", "鞋"),
+    ("帆布鞋", "鞋"),
+    ("老爹鞋", "鞋"),
+    ("跑鞋", "鞋"),
+    ("皮鞋", "鞋"),
+    ("板鞋", "鞋"),
+    ("鞋子", "鞋"),
+    ("衣服", "衣服"),
+    ("服装", "衣服"),
+    ("衣物", "衣服"),
+    ("女装", "衣服"),
+    ("男装", "衣服"),
+    ("夏装", "衣服"),
+    ("T恤", "衣服"),
+    ("t恤", "衣服"),
+    ("衬衫", "衣服"),
+    ("卫衣", "衣服"),
+    ("外套", "衣服"),
+    ("夹克", "衣服"),
+    ("羽绒服", "衣服"),
+    ("连衣裙", "衣服"),
+    ("裙子", "衣服"),
+    ("裤子", "衣服"),
+    ("零食", "零食"),
+    ("食品", "零食"),
+    ("小吃", "零食"),
+    ("耳机", "耳机"),
+    ("手表", "手表"),
+    ("手机", "手机"),
+    ("平板", "平板"),
+    ("图书", "图书"),
+    ("书籍", "图书"),
+    ("鞋", "鞋"),
+)
 
 
 def _apply_query_category_hint(slots: dict, query: str) -> None:
     if not isinstance(slots, dict) or slots.get("category"):
         return
 
-    inferred = _infer_category_from_query(query)
+    inferred = _infer_explicit_category_from_text(query) or _infer_category_from_query(query)
     if inferred:
         slots["category"] = inferred
+
+
+def _apply_history_category_hint(slots: dict, history: list[dict] | None) -> None:
+    if not isinstance(slots, dict) or slots.get("category"):
+        return
+
+    for message in reversed(history or []):
+        if message.get("role") != "user":
+            continue
+        content = message.get("content") or ""
+        inferred = _infer_explicit_category_from_text(content) or _infer_category_from_query(content)
+        if inferred:
+            slots["category"] = inferred
+            return
+
+
+def _infer_explicit_category_from_text(text: str) -> str | None:
+    normalized = re.sub(r"\s+", "", (text or "").lower())
+    if not normalized:
+        return None
+    for term, category in _EXPLICIT_CATEGORY_HINTS:
+        if term.lower() in normalized:
+            return category
+    return None
 
 
 def _infer_category_from_query(query: str) -> str | None:
@@ -733,6 +803,12 @@ def _categories_equivalent(left: str | None, right: str | None) -> bool:
     return left == right or _category_matches_request(left, right) or _category_matches_request(right, left)
 
 
+def _has_category_change(prev_slots: dict, new_slots: dict) -> bool:
+    prev_category = (prev_slots or {}).get("category")
+    new_category = (new_slots or {}).get("category")
+    return bool(prev_category and new_category and not _categories_equivalent(prev_category, new_category))
+
+
 def _prune_previous_slots_for_category_change(prev_slots: dict, new_slots: dict) -> dict:
     """Drop category-specific history when the user switches to a different product category."""
     if not prev_slots:
@@ -759,6 +835,33 @@ def _prune_previous_slots_for_category_change(prev_slots: dict, new_slots: dict)
     return pruned
 
 
+def _current_category_from_context(context: dict | None) -> str | None:
+    if not isinstance(context, dict):
+        return None
+    category = context.get("current_category") or context.get("category")
+    category = str(category or "").strip()
+    return category or None
+
+
+def _update_category_context(context: dict | None, slots: dict | None) -> dict:
+    """Maintain a per-conversation category preference map independent of result hits."""
+    updated = dict(context or {})
+    category = str((slots or {}).get("category") or "").strip()
+    if not category:
+        return updated
+
+    updated["current_category"] = category
+    pref_map = dict(updated.get("category_preferences") or {})
+    category_pref = dict(pref_map.get(category) or {})
+    for key in _CATEGORY_PREF_KEYS:
+        value = (slots or {}).get(key)
+        if value not in (None, {}, []):
+            category_pref[key] = value
+    pref_map[category] = category_pref
+    updated["category_preferences"] = pref_map
+    return updated
+
+
 def _previous_slots_from_state(state: dict) -> dict:
     """Read slots from current nested state and legacy top-level session fields.
 
@@ -779,6 +882,9 @@ def _previous_slots_from_state(state: dict) -> dict:
     for key in _SLOT_KEYS:
         if key not in prev and state.get(key) is not None:
             prev[key] = state[key]
+    context_category = _current_category_from_context(state.get("category_context"))
+    if context_category:
+        prev["category"] = context_category
     return prev
 
 
@@ -809,7 +915,11 @@ def _category_matches_request(product_category: str, requested_category: str) ->
     aliases = {
         "平板": {"平板", "平板电脑"},
         "平板电脑": {"平板", "平板电脑"},
+        "鞋": {"鞋", "鞋子", "运动鞋", "休闲鞋", "跑鞋", "篮球鞋", "帆布鞋", "板鞋", "皮鞋", "老爹鞋"},
         "鞋子": {"鞋子", "运动鞋", "休闲鞋", "跑鞋", "篮球鞋", "帆布鞋", "板鞋", "皮鞋", "老爹鞋"},
+        "衣服": {"衣服", "服装", "T恤", "衬衫", "卫衣", "外套", "夹克", "羽绒服", "连衣裙", "裙装", "裤装", "牛仔裤", "运动服", "户外"},
+        "服装": {"服装", "衣服", "T恤", "衬衫", "卫衣", "外套", "夹克", "羽绒服", "连衣裙", "裙装", "裤装", "牛仔裤", "运动服", "户外"},
+        "衣物": {"衣物", "衣服", "服装", "T恤", "衬衫", "卫衣", "外套", "夹克", "羽绒服", "连衣裙", "裙装", "裤装", "牛仔裤", "运动服", "户外"},
         "耳机": {"耳机", "蓝牙耳机", "降噪耳机", "无线耳机", "头戴式耳机", "入耳式耳机", "运动耳机"},
         "蓝牙耳机": {"蓝牙耳机", "耳机", "无线耳机", "入耳式耳机", "运动耳机"},
         "图书": {"图书", "书籍", "教材", "小说", "童书", "绘本", "阅读"},
@@ -827,7 +937,8 @@ def _category_matches_request(product_category: str, requested_category: str) ->
 def _needs_strict_category_guard(requested_category: str) -> bool:
     return (requested_category or "").strip() in {
         "平板", "平板电脑",
-        "鞋子",
+        "鞋", "鞋子",
+        "衣服", "服装", "衣物",
         "耳机", "蓝牙耳机",
         "图书", "书", "书籍",
         "零食", "食品",
@@ -2459,6 +2570,36 @@ def _build_cache_key(message: str, conversation_id: str | None, history: list[di
     )
 
 
+async def _persist_dialog_context(
+    conversation_id: str | None,
+    state: dict,
+    *,
+    product_cards: list | None = None,
+    intent: str | None = None,
+) -> None:
+    if not conversation_id:
+        return
+
+    slots = state.get("slots", {}) or {}
+    category_context = _update_category_context(state.get("category_context", {}), slots)
+    state["category_context"] = category_context
+
+    update_kwargs = {
+        "slots": slots,
+        "category_context": category_context,
+        "intent": intent or state.get("intent", ""),
+    }
+    if product_cards is not None:
+        update_kwargs["product_cards"] = product_cards
+    elif state.get("_category_changed"):
+        update_kwargs["product_cards"] = []
+
+    try:
+        await sm.update_state(conversation_id, **update_kwargs)
+    except Exception as e:
+        logger.warning("State update failed for conversation '%s': %s", conversation_id, e)
+
+
 def _shorten_product_name(title: str, max_len: int = 28) -> str:
     """截短产品名称以提高对比文本可读性"""
     if len(title) <= max_len:
@@ -2532,11 +2673,14 @@ async def generate_response(
             "cart_session_id": (state or {}).get("cart_session_id", "") if isinstance(state, dict) else "",
             "user_id": (state or {}).get("user_id", "") if isinstance(state, dict) else "",
             "slots": (state or {}).get("slots", {}) if isinstance(state, dict) else {},
+            "category_context": (state or {}).get("category_context", {}) if isinstance(state, dict) else {},
             "product_cards": (state or {}).get("product_cards", []) if isinstance(state, dict) else [],
             "history": conversation_history,
         }
 
         after_intent = await node_classify_intent(initial_state)
+        if after_intent.get("intent") != "chitchat":
+            await _persist_dialog_context(conversation_id, after_intent)
 
         cart_keywords = [
             "购物车", "加购", "加入购物车", "加到购物车", "添加到购物车",
@@ -2702,7 +2846,7 @@ async def generate_response(
         # ── clarify 反问：由 route_after_intent 统一决策（含历史上下文 + 多场景触发）──
         route = route_after_intent(after_intent)
         if route == "clarify":
-            await sm.update_state(conversation_id or "", slots=after_intent.get("slots", {}))
+            await _persist_dialog_context(conversation_id, after_intent)
             yield {"event": "progress", "data": ProgressEvent(message="正在分析您的需求细节...").model_dump_json()}
             final_state = await agent_graph.ainvoke(after_intent)
             clarify_text = final_state.get("response", "")
@@ -2860,15 +3004,12 @@ async def generate_response(
 
         await cache.set(message, response_text, cards, cache_key=cache_key)
 
-        try:
-            await sm.update_state(
-                conversation_id or "",
-                slots=slots,
-                product_cards=cards,
-                intent=after_retrieve.get("intent", ""),
-            )
-        except Exception as e:
-            logger.warning("State update failed for conversation '%s': %s", conversation_id, e)
+        await _persist_dialog_context(
+            conversation_id,
+            after_retrieve,
+            product_cards=cards,
+            intent=after_retrieve.get("intent", ""),
+        )
 
         total_ms = int((time.monotonic() - t_start) * 1000)
         # 仅暴露前端需要的状态字段，不泄露内部标记

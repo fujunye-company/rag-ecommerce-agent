@@ -57,7 +57,9 @@ def test_merge_chunks_with_duplicates():
 def test_category_aliases_expand_common_user_terms():
     from app.services.retriever import _category_match_values
 
+    assert "运动鞋" in _category_match_values("鞋")
     assert "运动鞋" in _category_match_values("鞋子")
+    assert "T恤" in _category_match_values("衣服")
     assert "蓝牙耳机" in _category_match_values("耳机")
     assert "肉干肉脯" in _category_match_values("零食")
     assert "智能手表" in _category_match_values("手表")

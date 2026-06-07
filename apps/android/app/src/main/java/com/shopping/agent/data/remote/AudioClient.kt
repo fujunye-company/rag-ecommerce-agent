@@ -12,7 +12,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 
 /**
- * Local backend ASR client. Uploads recorded audio to /api/v1/audio/transcribe.
+ * Voice recognition client. Uploads recorded audio to /api/v1/voice/recognize.
  */
 class AudioClient(
     private val baseUrl: String = NetworkConfig.BASE_URL,
@@ -29,7 +29,7 @@ class AudioClient(
             .build()
 
         val request = Request.Builder()
-            .url("$baseUrl/api/v1/audio/transcribe")
+            .url("$baseUrl/api/v1/voice/recognize")
             .post(body)
             .build()
 

@@ -149,14 +149,14 @@ Body: `{ "session_id": "...", "address": "收货地址" }`
 
 ## 语音输入接口
 
-### POST /audio/transcribe
+### POST /voice/recognize
 
-本地语音识别。multipart/form-data: `file`  
-返回: `{ text, language, language_probability, duration }`
+语音转文字。multipart/form-data: `file`
+返回: `{ text, provider }`，优先使用 Doubao Chat API `input_audio`，失败时回退 `whisper-1`。
 
-### GET /audio/asr-status
+### POST /voice/chat
 
-本地 faster-whisper ASR readiness 检查。
+语音导购。multipart/form-data: `file`，先转写语音，再进入 RAG 检索管道并通过 SSE 流式返回推荐。
 
 ### POST /documents/upload
 

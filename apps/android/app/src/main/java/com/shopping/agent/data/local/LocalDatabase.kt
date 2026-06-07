@@ -96,6 +96,8 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
                 content         TEXT DEFAULT '',
                 product_cards   TEXT DEFAULT '[]',
                 web_search_results TEXT DEFAULT '[]',
+                audio_uri      TEXT DEFAULT '',
+                audio_duration_sec INTEGER DEFAULT 0,
                 status          TEXT DEFAULT 'sent',
                 audio_uri       TEXT DEFAULT NULL,
                 created_at      INTEGER NOT NULL,
@@ -509,6 +511,17 @@ class LocalDatabase(context: Context) : SQLiteOpenHelper(
                 )
             """.trimIndent())
             db.execSQL("CREATE INDEX IF NOT EXISTS idx_fp_user ON $TABLE_FOOTPRINTS(user_id, browse_date DESC)")
+        }
+
+        if (oldVersion < 12) {
+            try {
+                db.execSQL("ALTER TABLE $TABLE_MESSAGES ADD COLUMN audio_uri TEXT DEFAULT ''")
+            } catch (_: Exception) {
+            }
+            try {
+                db.execSQL("ALTER TABLE $TABLE_MESSAGES ADD COLUMN audio_duration_sec INTEGER DEFAULT 0")
+            } catch (_: Exception) {
+            }
         }
 
         // v11: 订单记录表增加 backend_order_no（绑定后端订单号）和 updated_at（更新时间）列

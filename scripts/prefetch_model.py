@@ -1,20 +1,17 @@
-"""预下载本地模型到 data/models/ 目录，避免 deploy 时在线下载。
+"""Prefetch local embedding/reranker models into apps/backend/data/models/.
 
-用法:
-  python scripts/prefetch_model.py               # 下载 bge-large-zh-v1.5 (embedding)
-  python scripts/prefetch_model.py --reranker     # 下载 bge-reranker-v2-m3
-  python scripts/prefetch_model.py --asr          # 下载 faster-whisper-small
-  python scripts/prefetch_model.py --all          # 下载全部
-  python scripts/prefetch_model.py --check        # 仅检查已有模型状态
-
-下载支持断点续传 (hub 镜像: hf-mirror.com)
+Usage:
+  python scripts/prefetch_model.py               # download bge-large-zh-v1.5
+  python scripts/prefetch_model.py --reranker    # download bge-reranker-v2-m3
+  python scripts/prefetch_model.py --all         # download embedding and reranker
+  python scripts/prefetch_model.py --check       # check cached models only
 """
 import argparse
 import os
 import sys
 from pathlib import Path
 
-# Ensure backend is importable
+# Ensure backend is importable.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "apps" / "backend"))
 
 from app.core.config import settings
@@ -31,19 +28,11 @@ MODELS = {
         "repo": "BAAI/bge-reranker-v2-m3",
         "dir": MODEL_DIR / "bge-reranker-v2-m3",
     },
-    "asr": {
-        "repo": "Systran/faster-whisper-small",
-        "dir": MODEL_DIR / "faster-whisper-small",
-    },
 }
 
 
 def check_model(model_dir: Path) -> dict:
-    """Inspect a local model directory and return status.
-
-    Valid model must have config.json AND a model weight file (bin or safetensors),
-    consistent with startup.py's _check_local_model().
-    """
+    """Inspect a local model directory and return status."""
     info = {"exists": model_dir.is_dir(), "size_mb": 0, "files": 0, "valid": False}
     if not info["exists"]:
         return info
@@ -57,7 +46,8 @@ def check_model(model_dir: Path) -> dict:
     weights = any(
         f.name.startswith(("pytorch_model", "model"))
         and f.name.endswith((".bin", ".safetensors"))
-        for f in model_dir.iterdir() if f.is_file()
+        for f in model_dir.iterdir()
+        if f.is_file()
     )
     subdir_weights = any(
         d.is_dir() and (d / "config.json").is_file()
@@ -96,16 +86,15 @@ def download_model(repo_id: str, dest_dir: Path) -> bool:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Prefetch embedding/reranker/ASR models")
+    parser = argparse.ArgumentParser(description="Prefetch embedding/reranker models")
     parser.add_argument("--reranker", action="store_true")
-    parser.add_argument("--asr", action="store_true")
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--check", action="store_true", help="Only check status, no download")
     args = parser.parse_args()
 
     if args.check:
         all_ok = True
-        for name, cfg in MODELS.items():
+        for cfg in MODELS.values():
             info = check_model(cfg["dir"])
             status = "READY" if info["valid"] else "MISSING"
             if not info["valid"]:
@@ -115,11 +104,8 @@ def main():
                 print(f"       {info['size_mb']:.1f} MB, {info['files']} files @ {cfg['dir']}")
         sys.exit(0 if all_ok else 1)
 
-    targets = []
     if args.all:
-        targets = ["embedding", "reranker", "asr"]
-    elif args.asr:
-        targets = ["asr"]
+        targets = ["embedding", "reranker"]
     elif args.reranker:
         targets = ["reranker"]
     else:
@@ -130,10 +116,10 @@ def main():
         cfg = MODELS[name]
         info = check_model(cfg["dir"])
         if info["valid"]:
-            print(f"[SKIP] {cfg['repo']} — already cached ({info['size_mb']:.1f} MB)")
+            print(f"[SKIP] {cfg['repo']} already cached ({info['size_mb']:.1f} MB)")
             continue
         if info["exists"]:
-            print(f"[RESUME] {cfg['repo']} — partial download ({info['size_mb']:.1f} MB), resuming...")
+            print(f"[RESUME] {cfg['repo']} partial download ({info['size_mb']:.1f} MB), resuming...")
         if not download_model(cfg["repo"], cfg["dir"]):
             ok = False
     sys.exit(0 if ok else 1)

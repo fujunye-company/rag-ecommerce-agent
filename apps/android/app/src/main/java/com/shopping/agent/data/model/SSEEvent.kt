@@ -29,6 +29,7 @@ sealed class SSEEvent {
     ) : SSEEvent()
     
     data class Progress(val message: String) : SSEEvent()
+    data class VoiceRecognized(val text: String, val provider: String = "") : SSEEvent()
     
     data class Done(
         val sessionId: String = "",

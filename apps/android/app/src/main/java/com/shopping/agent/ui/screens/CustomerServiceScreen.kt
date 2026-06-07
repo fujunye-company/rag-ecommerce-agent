@@ -2,16 +2,16 @@ package com.shopping.agent.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.media.MediaRecorder
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,7 +23,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -31,17 +30,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import com.shopping.agent.core.network.NetworkConfig
 import com.shopping.agent.data.local.UserRepository
 import com.shopping.agent.data.remote.AudioClient
 import com.shopping.agent.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -151,46 +146,92 @@ fun CustomerServiceScreen(
         }
     }
 
-    // 语音录音器 + 豆包 API 转录
-    val voiceRecorder = remember { com.shopping.agent.data.local.VoiceRecorder(context) }
-    var isRecording by remember { mutableStateOf(false) }
-    var voiceVolume by remember { mutableStateOf(0f) }
-    var csRecordStartTime by remember { mutableLongStateOf(0L) }
-    var csElapsedSeconds by remember { mutableIntStateOf(0) }
-    val voicePermLauncherRef = remember { mutableStateOf<androidx.activity.result.ActivityResultLauncher<String>?>(null) }
-
-    if (isRecording) {
-        LaunchedEffect(csRecordStartTime) { while (isRecording) { csElapsedSeconds = ((System.currentTimeMillis() - csRecordStartTime) / 1000).toInt(); kotlinx.coroutines.delay(500) } }
-    }
-
-    fun transcribeAudio(audioFile: java.io.File) {
-        scope.launch(Dispatchers.IO) {
+    fun stopAndTranscribe() {
+        val activeRecorder = recorder ?: return
+        val audioFile = recordingFile ?: return
+        try {
+            activeRecorder.stop()
+            activeRecorder.release()
+        } catch (e: Exception) {
+            android.util.Log.e("CustomerServiceScreen", "Audio recorder stop failed", e)
+            try { activeRecorder.release() } catch (_: Exception) {}
+            android.widget.Toast.makeText(context, "录音时间太短，请重试", android.widget.Toast.LENGTH_SHORT).show()
+            recorder = null
+            recordingFile = null
+            isRecording = false
+            return
+        }
+        recorder = null
+        recordingFile = null
+        isRecording = false
+        android.widget.Toast.makeText(context, "正在识别语音…", android.widget.Toast.LENGTH_SHORT).show()
+        scope.launch {
             try {
-                val client = NetworkConfig.httpClient; val baseUrl = NetworkConfig.BASE_URL; val bytes = audioFile.readBytes()
-                val mimeType = com.shopping.agent.data.local.VoiceRecorder.MIME_TYPE
-                val multipart = MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("audio", audioFile.name, bytes.toRequestBody(mimeType.toMediaType())).build()
-                val resp = client.newCall(okhttp3.Request.Builder().url("$baseUrl/api/v1/voice/recognize").post(multipart).build()).execute()
-                if (resp.isSuccessful) {
-                    val json = JSONObject(resp.body?.string() ?: ""); val text = json.optString("text", "")
-                    withContext(Dispatchers.Main) { if (json.optBoolean("success") && text.isNotBlank()) inputText = text else android.widget.Toast.makeText(context, json.optString("error", "未识别到语音内容"), android.widget.Toast.LENGTH_LONG).show(); audioFile.delete() }
-                } else { withContext(Dispatchers.Main) { android.widget.Toast.makeText(context, "语音识别失败 (HTTP ${resp.code})", android.widget.Toast.LENGTH_SHORT).show(); audioFile.delete() } }
-            } catch (e: Exception) { withContext(Dispatchers.Main) { android.widget.Toast.makeText(context, "语音识别失败: ${e.localizedMessage?.take(40) ?: "网络异常"}", android.widget.Toast.LENGTH_SHORT).show(); try { audioFile.delete() } catch (_: Exception) {} } }
+                val text = audioClient.transcribe(audioFile)
+                if (text.isBlank()) {
+                    android.widget.Toast.makeText(context, "没有识别到语音内容", android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    inputText = text
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("CustomerServiceScreen", "Doubao voice recognition failed", e)
+                android.widget.Toast.makeText(context, "语音识别失败，请检查后端服务", android.widget.Toast.LENGTH_SHORT).show()
+            } finally {
+                audioFile.delete()
+            }
         }
     }
 
     fun startRecording() {
-        voiceRecorder.start(object : com.shopping.agent.data.local.VoiceRecorder.RecordCallback {
-            override fun onStart() { isRecording = true; csRecordStartTime = System.currentTimeMillis() }
-            override fun onVolume(volume: Float) { voiceVolume = volume }
-            override fun onResult(audioFile: java.io.File) { isRecording = false; transcribeAudio(audioFile) }
-            override fun onError(message: String) { isRecording = false; android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show() }
-        })
+        try {
+            val audioFile = File(context.cacheDir, "cs_voice_${System.currentTimeMillis()}.m4a")
+            val newRecorder = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                MediaRecorder(context)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaRecorder()
+            }).apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioSamplingRate(16000)
+                setAudioEncodingBitRate(64000)
+                setOutputFile(audioFile.absolutePath)
+                prepare()
+                start()
+            }
+            recordingFile = audioFile
+            recorder = newRecorder
+            isRecording = true
+            android.widget.Toast.makeText(context, "正在录音，再点一次结束", android.widget.Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            android.util.Log.e("CustomerServiceScreen", "Audio recorder start failed", e)
+            android.widget.Toast.makeText(context, "录音启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 
-    val voicePermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) startRecording() else android.widget.Toast.makeText(context, "需要麦克风权限", android.widget.Toast.LENGTH_SHORT).show()
+    val voicePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            startRecording()
+        } else {
+            android.widget.Toast.makeText(context, "需要麦克风权限才能使用语音输入", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
-    SideEffect { voicePermLauncherRef.value = voicePermissionLauncher }
+
+    fun onVoiceClick() {
+        if (isRecording) {
+            stopAndTranscribe()
+            return
+        }
+        val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        if (hasPermission) {
+            startRecording()
+        } else {
+            voicePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
 
     LaunchedEffect(Unit) {
         try {
@@ -289,22 +330,15 @@ fun CustomerServiceScreen(
             onInputChange = { inputText = it },
             onSend = {
                 if (inputText.isNotBlank()) {
-                    val text = inputText.trim(); inputText = ""
-                    onSendMessage(text) { newMessages -> messages = newMessages }
+                    val text = inputText.trim()
+                    inputText = ""
+                    onSendMessage(text) { newMessages ->
+                        messages = newMessages
+                    }
                 }
             },
+            onVoiceClick = { onVoiceClick() },
             isRecording = isRecording,
-            voiceVolume = voiceVolume,
-            elapsedSeconds = csElapsedSeconds,
-            onVoiceClick = {
-                if (isRecording) {
-                    val f = voiceRecorder.stop(); isRecording = false
-                    if (f != null && f.length() > 0) transcribeAudio(f)
-                } else {
-                    val hasPerm = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-                    if (hasPerm) startRecording() else voicePermLauncherRef.value?.launch(Manifest.permission.RECORD_AUDIO)
-                }
-            },
         )
     }
 }
@@ -487,9 +521,7 @@ private fun CsInputBar(
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
     onVoiceClick: () -> Unit,
-    isRecording: Boolean = false,
-    voiceVolume: Float = 0f,
-    elapsedSeconds: Int = 0,
+    isRecording: Boolean,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -497,22 +529,6 @@ private fun CsInputBar(
         shadowElevation = 4.dp,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // 录音状态条
-            if (isRecording) {
-                val animatedVolume by animateFloatAsState(voiceVolume, label = "csVol")
-                Surface(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), shape = RoundedCornerShape(8.dp), color = Primary.copy(alpha = 0.08f)) {
-                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🔴 正在录音 ${elapsedSeconds}s / 60s", style = MaterialTheme.typography.bodySmall, color = Primary, modifier = Modifier.weight(1f))
-                            Text("轻触麦克风停止", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Box(Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))) {
-                            Box(Modifier.fillMaxWidth(animatedVolume / 10f).height(3.dp).clip(RoundedCornerShape(2.dp)).background(Primary))
-                        }
-                    }
-                }
-            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()

@@ -3,7 +3,7 @@
 """
 import uuid
 from datetime import datetime
-from sqlalchemy import String, Text, DateTime, LargeBinary, func, ForeignKey
+from sqlalchemy import LargeBinary, String, Text, DateTime, func, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base

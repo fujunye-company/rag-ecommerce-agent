@@ -1,73 +1,51 @@
-"""语音 API 端点 — 录音上传 + 豆包音频理解 + RAG 检索 SSE"""
+"""Voice input APIs: audio recognition and voice-to-RAG SSE chat."""
 import json
 import logging
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from pathlib import Path
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from sse_starlette.sse import EventSourceResponse
-from app.services import voice_service
+
+from app.schemas.common import ApiResponse
+from app.schemas.sse_events import DoneEvent, ErrorEvent, ProgressEvent
 from app.services.agent import generate_response
 from app.services.state_manager import get_or_create_session, increment_message_count, save_message
-from app.schemas.sse_events import ErrorEvent, DoneEvent
+from app.services.voice_recognition import recognize_voice
 
 logger = logging.getLogger("voice_api")
 router = APIRouter()
-MAX_AUDIO_SIZE = 5 * 1024 * 1024
 
-SUPPORTED_EXTENSIONS = {".wav": "wav", ".mp3": "mp3", ".m4a": "m4a", ".aac": "aac", ".mp4": "m4a", ".amr": "amr", ".pcm": "pcm", ".3gp": "aac"}
+MAX_AUDIO_BYTES = 25 * 1024 * 1024
 
 
-def detect_audio_format(filename: str) -> str:
-    if not filename:
-        return "m4a"
-    lower = filename.lower()
-    for ext, fmt in SUPPORTED_EXTENSIONS.items():
-        if lower.endswith(ext):
-            return fmt
-    return "m4a"
+async def _read_audio(file: UploadFile) -> tuple[bytes, str]:
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Audio file is empty")
+    if len(contents) > MAX_AUDIO_BYTES:
+        raise HTTPException(status_code=413, detail="Audio size exceeds 25MB")
+    return contents, file.filename or "voice.m4a"
 
 
 @router.post("/voice/recognize")
-async def recognize_voice(audio: UploadFile = File(..., description="录音文件")):
-    if not audio.filename:
-        raise HTTPException(status_code=400, detail="音频文件名为空")
-    audio_bytes = await audio.read()
-    if not audio_bytes or len(audio_bytes) < 100:
-        raise HTTPException(status_code=400, detail="音频文件过小")
-    if len(audio_bytes) > MAX_AUDIO_SIZE:
-        raise HTTPException(status_code=400, detail="音频文件过大")
-    audio_format = detect_audio_format(audio.filename)
-    success, text = await voice_service.recognize_audio(audio_bytes, audio_format)
-    if success:
-        return {"success": True, "text": text}
-    return {"success": False, "text": "", "error": text}
+async def recognize(file: UploadFile = File(...)):
+    audio_bytes, filename = await _read_audio(file)
+    try:
+        result = await recognize_voice(audio_bytes, filename)
+    except Exception as exc:
+        logger.error("Voice recognition failed: %s", exc)
+        raise HTTPException(status_code=503, detail=f"Voice recognition failed: {str(exc)[:120]}") from exc
+    return ApiResponse(data=result, message="Voice recognized").model_dump()
 
 
 @router.post("/voice/chat")
 async def voice_chat(
-    audio: UploadFile = File(..., description="录音文件"),
-    conversation_id: str = Form(""),
-    cart_session_id: str = Form(""),
-    user_id: str = Form(""),
+    file: UploadFile = File(...),
+    conversation_id: str | None = Form(default=None),
+    cart_session_id: str | None = Form(default=None),
+    user_id: str = Form(default=""),
 ):
-    if not audio.filename:
-        raise HTTPException(status_code=400, detail="音频文件名为空")
-    audio_bytes = await audio.read()
-    if not audio_bytes or len(audio_bytes) < 100:
-        raise HTTPException(status_code=400, detail="音频文件过小")
-    if len(audio_bytes) > MAX_AUDIO_SIZE:
-        raise HTTPException(status_code=400, detail="音频文件过大")
-
-    audio_format = detect_audio_format(audio.filename)
-    success, text = await voice_service.recognize_audio(audio_bytes, audio_format)
-
-    if not success or not text.strip():
-        async def error_gen():
-            yield {"event": "error", "data": ErrorEvent(message=text or "未识别到语音内容", code="VOICE_RECOGNIZE_FAILED").model_dump_json()}
-            yield {"event": "done", "data": DoneEvent().model_dump_json()}
-        return EventSourceResponse(error_gen())
-
-    transcribed_text = text.strip()
-    logger.info("语音转写成功，送入 RAG: %s", transcribed_text[:80])
-
+    audio_bytes, filename = await _read_audio(file)
     session_id, state = await get_or_create_session(conversation_id)
     runtime_state = dict(state or {})
     if cart_session_id:
@@ -75,13 +53,33 @@ async def voice_chat(
     if user_id:
         runtime_state["user_id"] = user_id
 
-    display_message = f"🎤 {transcribed_text}"
-    await save_message(session_id, "user", display_message, audio_data=audio_bytes)
-
     async def event_generator():
-        response_text_parts = []
+        response_text_parts: list[str] = []
         try:
-            async for event in generate_response(message=transcribed_text, conversation_id=session_id, state=runtime_state):
+            yield {"event": "progress", "data": ProgressEvent(message="正在理解语音...").model_dump_json()}
+            recognized = await recognize_voice(audio_bytes, filename)
+            text = recognized["text"].strip()
+            if not text:
+                raise RuntimeError("No speech recognized")
+
+            yield {
+                "event": "voice_recognized",
+                "data": json.dumps(
+                    {
+                        "type": "voice_recognized",
+                        "text": text,
+                        "provider": recognized.get("provider", ""),
+                    },
+                    ensure_ascii=False,
+                ),
+            }
+            await save_message(session_id, "user", text, audio_data=audio_bytes)
+
+            async for event in generate_response(
+                message=text,
+                conversation_id=session_id,
+                state=runtime_state,
+            ):
                 try:
                     data = json.loads(event.get("data", "{}"))
                     if data.get("type") == "text_delta":
@@ -89,12 +87,13 @@ async def voice_chat(
                 except (json.JSONDecodeError, TypeError):
                     pass
                 yield event
-            full_response = "".join(response_text_parts)
-            await save_message(session_id, "assistant", full_response)
+
+            await save_message(session_id, "assistant", "".join(response_text_parts))
             await increment_message_count(session_id)
         except Exception as exc:
-            logger.exception("Voice chat error")
-            yield {"event": "error", "data": ErrorEvent(message="语音对话处理失败", code="VOICE_CHAT_ERROR").model_dump_json()}
+            logger.exception("Voice chat endpoint error")
+            error = ErrorEvent(message=f"语音导购失败: {str(exc)[:80]}", code="VOICE_CHAT_ERROR")
+            yield {"event": "error", "data": error.model_dump_json()}
             yield {"event": "done", "data": DoneEvent().model_dump_json()}
 
     return EventSourceResponse(event_generator())

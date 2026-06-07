@@ -55,7 +55,6 @@ infrastructure/env/.env.docker
 # Downloaded ML models (large files, download via SETUP.md)
 /apps/backend/data/models/bge-large-zh-v1.5
 /apps/backend/data/models/bge-reranker-v2-m3
-/apps/backend/data/models/faster-whisper-small
 /apps/android/AGENTS.md
 /.agents/skills
 /skills-lock.json

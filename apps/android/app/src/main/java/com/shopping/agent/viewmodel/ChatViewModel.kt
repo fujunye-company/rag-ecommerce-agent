@@ -12,6 +12,7 @@ import com.shopping.agent.data.model.*
 import com.shopping.agent.data.remote.SseClient
 import com.shopping.agent.data.repository.ChatRepository
 import com.shopping.agent.data.tts.TtsManager
+import com.shopping.agent.data.voice.AudioCompressor
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -608,6 +609,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                     )
                                 }
                             }
+                            is SSEEvent.VoiceRecognized -> Unit
                         }
                     }
                 } catch (e: java.io.IOException) {
@@ -714,6 +716,153 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(selectedImageUri = null) }
     }
 
+    fun sendVoice(audioFile: File, durationSec: Int) {
+        if (_uiState.value.isStreaming) return
+        val uploadFile = try {
+            AudioCompressor.prepareForUpload(audioFile)
+        } catch (e: Exception) {
+            _uiState.update { it.copy(screenState = ScreenState.Error(e.message ?: "录音文件不可用")) }
+            return
+        }
+
+        val userMessage = ChatMessage(
+            id = UUID.randomUUID().toString(),
+            role = MessageRole.User,
+            content = "语音输入",
+            audioUri = uploadFile.absolutePath,
+            audioDurationSec = durationSec,
+            status = MessageStatus.Sent,
+        )
+
+        _uiState.update {
+            it.copy(
+                messages = it.messages + userMessage,
+                screenState = ScreenState.Streaming(""),
+                isStreaming = true,
+                streamingText = "",
+                streamingCards = emptyList(),
+                clarifyChips = emptyList(),
+                clarifyQuestion = "",
+                searchStatus = "正在理解语音...",
+            )
+        }
+        ttsManager.resetForNewMessage()
+
+        viewModelScope.launch {
+            val convId = _uiState.value.currentConversationId
+            val accText = StringBuilder()
+            val accCards = mutableListOf<Product>()
+            var recognizedText = ""
+            userRepo.saveMessage(userMessage, convId)
+
+            try {
+                chatRepository.sendVoice(
+                    audioFile = uploadFile,
+                    conversationId = convId,
+                    cartSessionId = cartSessionId,
+                    userId = userRepo.getUserId(),
+                ).collect { event ->
+                    when (event) {
+                        is SSEEvent.Progress -> {
+                            _uiState.update { it.copy(searchStatus = event.message) }
+                        }
+                        is SSEEvent.VoiceRecognized -> {
+                            recognizedText = event.text
+                            _uiState.update {
+                                it.copy(
+                                    searchStatus = if (event.text.isNotBlank()) "已识别：${event.text}" else "正在检索商品...",
+                                    messages = it.messages.map { msg ->
+                                        if (msg.id == userMessage.id && event.text.isNotBlank()) {
+                                            msg.copy(content = event.text)
+                                        } else {
+                                            msg
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                        is SSEEvent.TextDelta -> {
+                            accText.append(event.content)
+                            val fullText = accText.toString()
+                            _uiState.update { it.copy(streamingText = fullText) }
+                            ttsManager.speakIncremental(fullText)
+                        }
+                        is SSEEvent.ProductCard -> {
+                            val product = Product(
+                                productId = event.productId,
+                                title = event.title,
+                                price = event.price,
+                                rating = event.rating.toFloat(),
+                                highlights = event.highlights,
+                                imageUrl = event.imageUrl,
+                                imageUrls = event.imageUrls,
+                                brand = event.brand,
+                                category = event.category,
+                                matchScore = event.matchScore,
+                            )
+                            accCards.add(product)
+                            _uiState.update { it.copy(streamingCards = accCards.toList()) }
+                        }
+                        is SSEEvent.Done -> {
+                            val finalText = accText.toString().trim()
+                            val finalCards = accCards.toList()
+                            if (finalText.isNotEmpty() || finalCards.isNotEmpty()) {
+                                val assistantMessage = ChatMessage(
+                                    id = UUID.randomUUID().toString(),
+                                    role = MessageRole.Assistant,
+                                    content = finalText,
+                                    productCards = finalCards,
+                                    status = MessageStatus.Sent,
+                                )
+                                userRepo.saveMessage(assistantMessage, convId)
+                                _uiState.update { it.copy(messages = it.messages + assistantMessage) }
+                            }
+                            _uiState.update {
+                                it.copy(
+                                    isStreaming = false,
+                                    streamingText = "",
+                                    streamingCards = emptyList(),
+                                    searchStatus = "",
+                                    screenState = ScreenState.Content(finalCards.isNotEmpty()),
+                                )
+                            }
+                            val titleText = recognizedText.ifBlank { "语音导购" }
+                            val currentTitle = userRepo.getConversationMetas().find { it.id == convId }?.title ?: ""
+                            if (currentTitle.isEmpty() || currentTitle == "每日推荐") {
+                                userRepo.updateConversationTitle(convId, titleText.take(30))
+                            }
+                            syncCartAfterChatIfNeeded(recognizedText)
+                            refreshConversationList()
+                        }
+                        is SSEEvent.Error -> {
+                            _uiState.update {
+                                it.copy(
+                                    searchStatus = "",
+                                    screenState = ScreenState.Error(event.message),
+                                    isStreaming = false,
+                                    streamingText = "",
+                                    streamingCards = emptyList(),
+                                )
+                            }
+                        }
+                        is SSEEvent.WebSearchResult, is SSEEvent.Compare, is SSEEvent.Clarify -> Unit
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ChatViewModel", "Voice SSE exception: ${e.message}", e)
+                _uiState.update {
+                    it.copy(
+                        searchStatus = "",
+                        screenState = ScreenState.Error("语音导购失败，请重试"),
+                        isStreaming = false,
+                        streamingText = "",
+                        streamingCards = emptyList(),
+                    )
+                }
+            }
+        }
+    }
+
     fun retryLastMessage() {
         val lastUserMsg = _uiState.value.messages.lastOrNull { it.role == MessageRole.User }
         if (lastUserMsg != null) {
@@ -755,6 +904,21 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 voiceClient.connectVoice(audioFile = uploadFile, conversationId = convId, cartSessionId = cartSessionId, userId = userRepo.getUserId())
                     .collect { event -> when (event) {
                         is SSEEvent.Progress -> { _uiState.update { it.copy(searchStatus = event.message) } }
+                        is SSEEvent.VoiceRecognized -> {
+                            val recognizedContent = if (event.text.isBlank()) voiceMessage.content else "🎤 ${event.text}"
+                            _uiState.update { state ->
+                                state.copy(
+                                    messages = state.messages.map { message ->
+                                        if (message.id == voiceMessage.id) {
+                                            message.copy(content = recognizedContent)
+                                        } else {
+                                            message
+                                        }
+                                    },
+                                    searchStatus = "正在生成推荐..."
+                                )
+                            }
+                        }
                         is SSEEvent.WebSearchResult -> { accWebResults.add(WebSearchItem(title = event.title, url = event.url, snippet = event.snippet, index = event.index, total = event.total)) }
                         is SSEEvent.Compare -> { accCompareDims = event.dimensions }
                         is SSEEvent.Clarify -> { _uiState.update { it.copy(clarifyQuestion = event.question, clarifyChips = event.options.ifEmpty { event.missingSlots.map { s -> "补充$s" } }, isStreaming = false, streamingText = "", searchStatus = "") }; ttsManager.speakFull(event.question) }

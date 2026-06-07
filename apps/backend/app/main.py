@@ -56,6 +56,9 @@ async def lifespan(app: FastAPI):
                     await conn.execute(text(
                         "CREATE INDEX IF NOT EXISTS ix_cart_items_user_id ON cart_items(user_id)"
                     ))
+                    await conn.execute(text(
+                        "ALTER TABLE messages ADD COLUMN IF NOT EXISTS audio_data BYTEA"
+                    ))
                 except Exception:
                     pass  # 列/索引已存在或数据库不支持 IF NOT EXISTS
             logger.info("数据库表创建/验证完成")
@@ -104,7 +107,7 @@ app = FastAPI(
 - **智能导购**: 9 种意图识别（推荐/对比/详情/场景/反选/购物车/拍照找货/售后/闲聊）
 - **多轮对话**: 上下文继承、澄清反问、槽位填充
 - **拍照找货**: Doubao 视觉 API 图片解析 → 向量检索 → 商品匹配
-- **语音输入**: 本地 faster-whisper ASR → 文本导购
+- **语音输入**: Doubao Chat API input_audio → RAG 导购
 - **流式响应**: SSE (Server-Sent Events) 实时推送
 
 ## 技术栈

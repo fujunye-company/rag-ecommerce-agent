@@ -94,30 +94,32 @@ class SseClient(
         }
     }.flowOn(Dispatchers.IO)
 
-    // ── 语音对话 ──────────────────────────────────────────
-
     fun connectVoice(
         audioFile: File,
         conversationId: String? = null,
         cartSessionId: String? = null,
         userId: String = "",
     ): Flow<SSEEvent> = flow {
-        val mimeType = com.shopping.agent.data.local.VoiceRecorder.MIME_TYPE
-        val requestBody = MultipartBody.Builder()
+        val builder = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
-            .addFormDataPart("audio", audioFile.name, audioFile.asRequestBody(mimeType.toMediaType()))
-            .addFormDataPart("conversation_id", conversationId ?: "")
-            .addFormDataPart("cart_session_id", cartSessionId ?: "")
-            .addFormDataPart("user_id", userId)
-            .build()
+            .addFormDataPart(
+                "file",
+                audioFile.name,
+                audioFile.asRequestBody("audio/mp4".toMediaType()),
+            )
+        conversationId?.let { builder.addFormDataPart("conversation_id", it) }
+        cartSessionId?.takeIf { it.isNotBlank() }?.let { builder.addFormDataPart("cart_session_id", it) }
+        if (userId.isNotBlank()) builder.addFormDataPart("user_id", userId)
+
         val request = Request.Builder()
             .url("$baseUrl/api/v1/voice/chat")
-            .post(requestBody)
+            .post(builder.build())
             .header("Accept", "text/event-stream")
             .build()
+
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) {
-                emit(SSEEvent.Error("语音识别失败 (HTTP ${response.code})"))
+                emit(SSEEvent.Error("HTTP ${response.code}: ${response.message}"))
                 return@flow
             }
             parseStream(response = response, convId = conversationId)
@@ -224,6 +226,13 @@ class SseClient(
                         node.get("message")?.asString ?: ""
                     }
                     SSEEvent.Progress(msg)
+                }
+                "voice_recognized" -> {
+                    val node = gson.fromJson(json, com.google.gson.JsonObject::class.java)
+                    SSEEvent.VoiceRecognized(
+                        text = node.get("text")?.asString ?: "",
+                        provider = node.get("provider")?.asString ?: "",
+                    )
                 }
                 "done" -> {
                     val d = gson.fromJson(json, DonePayload::class.java)

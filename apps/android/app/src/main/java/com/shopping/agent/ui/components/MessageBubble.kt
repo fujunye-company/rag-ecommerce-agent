@@ -28,7 +28,15 @@ fun MessageBubble(
     modifier: Modifier = Modifier,
 ) {
     val isUser = message.role == MessageRole.User
-    val hasAudio = message.audioUri != null
+    var isPlaying by remember(message.audioUri) { mutableStateOf(false) }
+    var player by remember(message.audioUri) { mutableStateOf<MediaPlayer?>(null) }
+
+    DisposableEffect(message.audioUri) {
+        onDispose {
+            player?.release()
+            player = null
+        }
+    }
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -44,9 +52,49 @@ fun MessageBubble(
                 shadowElevation = if (isUser) 0.dp else 2.dp,
             ) {
                 Column(modifier = Modifier.padding(Dimens.space3)) {
-                    if (hasAudio) {
-                        VoiceMessageContent(message = message)
-                    } else {
+                    if (!message.audioUri.isNullOrBlank()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = {
+                                    if (isPlaying) {
+                                        player?.stop()
+                                        player?.release()
+                                        player = null
+                                        isPlaying = false
+                                    } else {
+                                        val newPlayer = MediaPlayer().apply {
+                                            setDataSource(message.audioUri)
+                                            setOnCompletionListener {
+                                                it.release()
+                                                if (player === it) player = null
+                                                isPlaying = false
+                                            }
+                                            prepare()
+                                            start()
+                                        }
+                                        player = newPlayer
+                                        isPlaying = true
+                                    }
+                                },
+                                modifier = Modifier.size(32.dp),
+                            ) {
+                                Icon(
+                                    if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
+                                    contentDescription = if (isPlaying) "停止播放" else "播放语音",
+                                    tint = if (isUser) MaterialTheme.colorScheme.onSurface else Primary,
+                                )
+                            }
+                            Text(
+                                text = "语音 ${message.audioDurationSec.coerceAtLeast(1)}s",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        if (message.content.isNotBlank()) {
+                            Spacer(Modifier.height(Dimens.space1))
+                        }
+                    }
+                    if (message.content.isNotBlank()) {
                         Text(
                             text = message.content,
                             style = MaterialTheme.typography.bodyLarge,
@@ -76,47 +124,6 @@ fun MessageBubble(
 }
 
 @Composable
-private fun VoiceMessageContent(message: ChatMessage) {
-    var isPlaying by remember { mutableStateOf(false) }
-    val mediaPlayer = remember { mutableStateOf<MediaPlayer?>(null) }
-    val context = androidx.compose.ui.platform.LocalContext.current
-    DisposableEffect(Unit) { onDispose { try { mediaPlayer.value?.release() } catch (_: Exception) {} } }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        FilledIconButton(onClick = {
-            if (isPlaying) {
-                try { mediaPlayer.value?.stop() } catch (_: Exception) {}
-                try { mediaPlayer.value?.reset() } catch (_: Exception) {}
-                isPlaying = false
-            } else {
-                try { mediaPlayer.value?.release() } catch (_: Exception) {}
-                val mp = MediaPlayer().apply {
-                    try {
-                        setDataSource(message.audioUri)
-                        prepare()
-                        setOnCompletionListener { isPlaying = false; try { release() } catch (_: Exception) {} }
-                        start()
-                    } catch (e: Exception) {
-                        try { release() } catch (_: Exception) {}
-                        android.widget.Toast.makeText(context, "音频播放失败", android.widget.Toast.LENGTH_SHORT).show()
-                        return@FilledIconButton
-                    }
-                }
-                mediaPlayer.value = mp
-                isPlaying = true
-            }
-        }, modifier = Modifier.size(36.dp),
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = if (isPlaying) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-            )
-        ) {
-            Icon(if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow, contentDescription = if (isPlaying) "停止" else "播放", modifier = Modifier.size(20.dp))
-        }
-        Spacer(Modifier.width(10.dp))
-        Text(text = message.content, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
-    }
-}
-
-@Composable
 fun CompareDimensionsCard(dimensions: List<Map<String, Any?>>) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
@@ -131,19 +138,33 @@ fun CompareDimensionsCard(dimensions: List<Map<String, Any?>>) {
                 val winner = dim["winner"] as? String
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = name, style = MaterialTheme.typography.labelMedium,
-                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text(
+                        text = name,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
                     if (winner != null) {
                         Spacer(Modifier.width(6.dp))
-                        Surface(shape = MaterialTheme.shapes.extraSmall, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text(text = "🏆 $winner", modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                        Surface(
+                            shape = MaterialTheme.shapes.extraSmall,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                        ) {
+                            Text(
+                                text = "🏆 $winner",
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.tertiary,
+                            )
                         }
                     }
                 }
                 values.forEach { (productId, value) ->
-                    Text(text = "$productId: ${value ?: ""}", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = "$productId: ${value ?: ""}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 if (dim != dimensions.last()) {
                     Spacer(Modifier.height(6.dp))

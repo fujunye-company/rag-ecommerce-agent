@@ -23,11 +23,10 @@ import okhttp3.RequestBody.Companion.toRequestBody
  *   微信 WCDB → 消息/联系人本地缓存
  *   豆包 Room → 对话历史/用户偏好持久化
  */
-class UserRepository(private val context: Context) {
+class UserRepository(context: Context) {
 
     private val db = LocalDatabase(context)
     private val gson = Gson()
-    private val appContext = context.applicationContext
 
     // ═══════════════════════════════════════════════════════
     // 用户画像
@@ -221,24 +220,10 @@ class UserRepository(private val context: Context) {
             put("content", message.content)
             put("product_cards", gson.toJson(message.productCards))
             put("web_search_results", gson.toJson(message.webSearchResults))
+            put("audio_uri", message.audioUri ?: "")
+            put("audio_duration_sec", message.audioDurationSec)
             put("status", message.status.name)
             put("created_at", System.currentTimeMillis())
-
-            // 语音消息：复制音频文件到 app 私有目录，SQLite 存储路径
-            message.audioUri?.let { uri ->
-                try {
-                    val audioDir = java.io.File(appContext.cacheDir, "audio")
-                    if (!audioDir.exists()) audioDir.mkdirs()
-                    val srcFile = java.io.File(uri)
-                    if (srcFile.exists() && srcFile.length() > 0) {
-                        val destFile = java.io.File(audioDir, "audio_${message.id}.m4a")
-                        srcFile.copyTo(destFile, overwrite = true)
-                        put("audio_uri", destFile.absolutePath)
-                    }
-                } catch (e: Exception) {
-                    Log.w("UserRepository", "音频文件复制失败: ${e.message}")
-                }
-            }
         }
         db.writableDatabase.insertWithOnConflict(
             LocalDatabase.TABLE_MESSAGES, null, cv,
@@ -280,18 +265,6 @@ class UserRepository(private val context: Context) {
                 emptyList()
             }
 
-            var audioUri: String? = null
-            try {
-                val uriColIdx = cursor.getColumnIndex("audio_uri")
-                if (uriColIdx >= 0) {
-                    val uri = cursor.getString(uriColIdx)
-                    if (!uri.isNullOrBlank()) {
-                        val f = java.io.File(uri)
-                        if (f.exists() && f.length() > 0) audioUri = uri
-                    }
-                }
-            } catch (_: Exception) {}
-
             list.add(ChatMessage(
                 id = cursor.getString(cursor.getColumnIndexOrThrow("id")),
                 role = MessageRole.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("role"))),
@@ -301,7 +274,14 @@ class UserRepository(private val context: Context) {
                 status = com.shopping.agent.data.model.MessageStatus.valueOf(
                     cursor.getString(cursor.getColumnIndexOrThrow("status")) ?: "Sent"
                 ),
-                audioUri = audioUri,
+                audioUri = cursor.getColumnIndex("audio_uri")
+                    .takeIf { it >= 0 }
+                    ?.let { cursor.getString(it) }
+                    ?.takeIf { it.isNotBlank() },
+                audioDurationSec = cursor.getColumnIndex("audio_duration_sec")
+                    .takeIf { it >= 0 }
+                    ?.let { cursor.getInt(it) }
+                    ?: 0,
             ))
         }
         cursor.close()

@@ -2,15 +2,11 @@ package com.shopping.agent.ui.components
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.media.MediaRecorder
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CameraAlt
@@ -18,43 +14,28 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
-import com.shopping.agent.data.remote.AudioClient
+import com.shopping.agent.data.voice.VoiceRecorder
 import com.shopping.agent.ui.theme.*
 import com.shopping.agent.viewmodel.ChatViewModel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.io.File
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
-/**
- * 可复用聊天输入栏 — 主页/比价/探索页共用。
- *
- * 支持: 文本输入 + 拍照找货 + 语音(预留)
- */
 @Composable
 fun ChatInputBar(
     chatViewModel: ChatViewModel,
     onSendRequested: (() -> Unit)? = null,
-    placeholder: String = "输入商品需求…",
+    placeholder: String = "输入商品需求...",
     showIcons: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
@@ -63,20 +44,77 @@ fun ChatInputBar(
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var showChooser by remember { mutableStateOf(false) }
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
+    var cameraUriToLaunch by remember { mutableStateOf<Uri?>(null) }
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val audioClient = remember { AudioClient() }
+    val voiceRecorder = remember { VoiceRecorder() }
+    var isRecording by remember { mutableStateOf(false) }
+    var recordingSeconds by remember { mutableStateOf(0) }
+    var amplitude by remember { mutableStateOf(0) }
 
-    // 相册选择器
+    fun stopRecordingAndSend() {
+        try {
+            val result = voiceRecorder.stop()
+            isRecording = false
+            recordingSeconds = 0
+            amplitude = 0
+            chatViewModel.sendVoice(result.file, result.durationSec)
+        } catch (e: Exception) {
+            android.util.Log.e("ChatInputBar", "Audio recorder stop failed", e)
+            voiceRecorder.cancel()
+            isRecording = false
+            android.widget.Toast.makeText(context, "录音时间太短，请重试", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(isRecording) {
+        while (isRecording) {
+            recordingSeconds = (voiceRecorder.durationMs / 1000L).toInt()
+            amplitude = voiceRecorder.amplitude()
+            if (recordingSeconds >= 60) {
+                stopRecordingAndSend()
+                break
+            }
+            delay(250)
+        }
+    }
+
+    fun startRecording() {
+        try {
+            voiceRecorder.start(context)
+            recordingSeconds = 0
+            amplitude = 0
+            isRecording = true
+        } catch (e: Exception) {
+            android.util.Log.e("ChatInputBar", "Audio recorder start failed", e)
+            android.widget.Toast.makeText(context, "录音启动失败，请稍后重试", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val voicePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) startRecording()
+        else android.widget.Toast.makeText(context, "需要麦克风权限才能使用语音输入", android.widget.Toast.LENGTH_SHORT).show()
+    }
+
+    fun onVoiceClick() {
+        if (isRecording) {
+            stopRecordingAndSend()
+            return
+        }
+        val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        if (hasPermission) startRecording()
+        else voicePermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+    }
+
     val galleryPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
             selectedImageUri = it
             try {
-                val inputStream = context.contentResolver.openInputStream(it)
                 val tempFile = File(context.cacheDir, "gallery_${System.currentTimeMillis()}.jpg")
-                inputStream?.use { inp ->
+                context.contentResolver.openInputStream(it)?.use { inp ->
                     tempFile.outputStream().use { out -> inp.copyTo(out) }
                 }
                 chatViewModel.sendImage(tempFile)
@@ -86,9 +124,6 @@ fun ChatInputBar(
             }
         }
     }
-
-    // 拍照
-    var cameraUriToLaunch by remember { mutableStateOf<Uri?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
@@ -121,7 +156,6 @@ fun ChatInputBar(
         }
     }
 
-    /** 相机权限请求 launcher — 用户授权后自动打开相机 */
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -133,49 +167,11 @@ fun ChatInputBar(
         }
     }
 
-    // 语音识别
-    // 语音输入：录音 → 豆包 API 音频理解 → RAG
-    val voiceRecorder = remember { com.shopping.agent.data.local.VoiceRecorder(context) }
-    var isRecording by remember { mutableStateOf(false) }
-    var voiceVolume by remember { mutableStateOf(0f) }
-    var recordStartTime by remember { mutableLongStateOf(0L) }
-    var elapsedSeconds by remember { mutableIntStateOf(0) }
-    val voicePermLauncherRef = remember { mutableStateOf<androidx.activity.result.ActivityResultLauncher<String>?>(null) }
-
-    if (isRecording) {
-        LaunchedEffect(recordStartTime) {
-            while (isRecording) {
-                elapsedSeconds = ((System.currentTimeMillis() - recordStartTime) / 1000).toInt()
-                kotlinx.coroutines.delay(500)
-            }
-        }
-    }
-
-    fun resetVoiceState() { isRecording = false; voiceVolume = 0f; elapsedSeconds = 0 }
-
-    fun launchVoice() {
-        val hasPerm = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-        if (!hasPerm) { voicePermLauncherRef.value?.launch(Manifest.permission.RECORD_AUDIO); return }
-        voiceRecorder.start(object : com.shopping.agent.data.local.VoiceRecorder.RecordCallback {
-            override fun onStart() { isRecording = true; recordStartTime = System.currentTimeMillis() }
-            override fun onVolume(volume: Float) { voiceVolume = volume }
-            override fun onResult(audioFile: java.io.File) { resetVoiceState(); chatViewModel.sendVoice(audioFile) }
-            override fun onError(message: String) { resetVoiceState(); android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show() }
-        })
-    }
-
-    val voicePermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) launchVoice() else android.widget.Toast.makeText(context, "需要麦克风权限", android.widget.Toast.LENGTH_SHORT).show()
-    }
-    SideEffect { voicePermLauncherRef.value = voicePermissionLauncher }
-
-    // 同步外部状态到本地
     if (uiState.inputText.isEmpty() && inputText.isNotEmpty()) {
         inputText = ""
     }
 
     Column {
-        // 已选图片预览（拍照找货中）
         if (selectedImageUri != null && uiState.isStreaming) {
             Surface(
                 modifier = Modifier.fillMaxWidth().height(80.dp),
@@ -193,22 +189,41 @@ fun ChatInputBar(
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        uiState.searchStatus.ifBlank { "📷 正在拍照找货…" },
+                        uiState.searchStatus.ifBlank { "正在拍照找货..." },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f)
                     )
-                    IconButton(
-                        onClick = { selectedImageUri = null },
-                        modifier = Modifier.size(32.dp)
-                    ) {
+                    IconButton(onClick = { selectedImageUri = null }, modifier = Modifier.size(32.dp)) {
                         Icon(Icons.Default.Close, "取消", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                     }
                 }
             }
         }
 
-        // 输入栏
+        if (isRecording) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.errorContainer,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "● 正在录音 ${recordingSeconds.coerceAtLeast(0)}s / 60s",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    LinearProgressIndicator(
+                        progress = { (amplitude / 32767f).coerceIn(0f, 1f) },
+                        modifier = Modifier.weight(1f).height(4.dp),
+                    )
+                }
+            }
+        }
+
         Surface(shadowElevation = 3.dp, color = MaterialTheme.colorScheme.surface, modifier = modifier) {
             Row(
                 Modifier
@@ -218,10 +233,7 @@ fun ChatInputBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (showIcons) {
-                    IconButton(
-                        onClick = { showChooser = true },
-                        modifier = Modifier.size(44.dp)
-                    ) {
+                    IconButton(onClick = { showChooser = true }, modifier = Modifier.size(44.dp)) {
                         Icon(Icons.Default.CameraAlt, "拍照找货", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -231,7 +243,7 @@ fun ChatInputBar(
                         inputText = newText
                         chatViewModel.onInputChange(newText)
                     },
-                    enabled = !uiState.isStreaming,
+                    enabled = !uiState.isStreaming && !isRecording,
                     placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                     textStyle = MaterialTheme.typography.bodyLarge,
                     shape = RadiusFull,
@@ -244,18 +256,13 @@ fun ChatInputBar(
                     modifier = Modifier.weight(1f),
                     maxLines = 4
                 )
-                // 语音输入按钮
                 if (showIcons) {
-                    IconButton(
-                        onClick = {
-                            if (isRecording) {
-                                val f = voiceRecorder.stop(); isRecording = false
-                                if (f != null && f.length() > 0) chatViewModel.sendVoice(f) else resetVoiceState()
-                            } else { launchVoice() }
-                        },
-                        modifier = Modifier.size(44.dp)
-                    ) {
-                        Icon(Icons.Default.Mic, "语音输入", tint = if (isRecording) Primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                    IconButton(onClick = { onVoiceClick() }, modifier = Modifier.size(44.dp)) {
+                        Icon(
+                            Icons.Default.Mic,
+                            if (isRecording) "结束录音" else "语音输入",
+                            tint = if (isRecording) Primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
                 FilledIconButton(
@@ -263,7 +270,7 @@ fun ChatInputBar(
                         chatViewModel.sendMessage()
                         onSendRequested?.invoke()
                     },
-                    enabled = inputText.isNotBlank() && !uiState.isStreaming,
+                    enabled = inputText.isNotBlank() && !uiState.isStreaming && !isRecording,
                     shape = CircleShape,
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = Primary,
@@ -276,24 +283,6 @@ fun ChatInputBar(
             }
         }
 
-        // 语音状态指示条（录音时显示）
-        if (isRecording) {
-            val animatedVolume by animateFloatAsState(voiceVolume, label = "voiceVol")
-            Surface(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp), shape = RoundedCornerShape(12.dp), color = Primary.copy(alpha = 0.08f)) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("🔴 正在录音 ${elapsedSeconds}s / 60s", style = MaterialTheme.typography.bodyMedium, color = Primary, modifier = Modifier.weight(1f))
-                        Text("轻触麦克风停止", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Box(Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))) {
-                        Box(Modifier.fillMaxWidth(animatedVolume / 10f).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Primary))
-                    }
-                }
-            }
-        }
-
-        // 拍照/相册选择弹窗
         if (showChooser) {
             AlertDialog(
                 onDismissRequest = { showChooser = false },
@@ -302,7 +291,6 @@ fun ChatInputBar(
                 text = { Text("选择获取图片的方式") },
                 confirmButton = {
                     Column {
-                        // 拍照
                         OutlinedButton(
                             onClick = {
                                 showChooser = false
@@ -329,7 +317,6 @@ fun ChatInputBar(
                             Text("拍照")
                         }
                         Spacer(Modifier.height(8.dp))
-                        // 从相册选择
                         OutlinedButton(
                             onClick = {
                                 showChooser = false

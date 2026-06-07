@@ -5,6 +5,7 @@ import com.shopping.agent.data.model.MessageRole
 import com.shopping.agent.data.model.SSEEvent
 import com.shopping.agent.data.remote.SseClient
 import kotlinx.coroutines.flow.Flow
+import java.io.File
 import java.util.UUID
 
 class ChatRepository {
@@ -34,6 +35,13 @@ class ChatRepository {
             productCards = products,
         ))
     }
+
+    fun sendVoice(
+        audioFile: File,
+        conversationId: String? = null,
+        cartSessionId: String? = null,
+        userId: String = "",
+    ): Flow<SSEEvent> = sseClient.connectVoice(audioFile, conversationId, cartSessionId, userId)
 
     fun clearMessages() {
         _messages.clear()

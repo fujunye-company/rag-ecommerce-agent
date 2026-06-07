@@ -11,6 +11,7 @@ data class ChatMessage(
     val status: MessageStatus = MessageStatus.Sent,
     val errorMessage: String? = null,
     val audioUri: String? = null,
+    val audioDurationSec: Int = 0,
 )
 
 data class WebSearchItem(

@@ -224,7 +224,11 @@ fun ChatInputBar(
             }
         }
 
-        Surface(shadowElevation = 3.dp, color = MaterialTheme.colorScheme.surface, modifier = modifier) {
+        Surface(
+            shadowElevation = 3.dp,
+            color = MaterialTheme.colorScheme.surface,
+            modifier = modifier.imePadding()
+        ) {
             Row(
                 Modifier
                     .padding(horizontal = Dimens.space3, vertical = Dimens.space2)

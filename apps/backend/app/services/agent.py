@@ -110,7 +110,7 @@ async def node_classify_intent(state: AgentState) -> AgentState:
         state["slots"] = merged
 
         # 否定语义：任何含否定关键词的查询都提取排除条件（不只 anti_selection）
-        neg_keywords = ["不要", "除了", "非", "不含", "排除", "拒绝", "去掉", "避开", "别"]
+        neg_keywords = ["不要", "除了", "非", "不含", "排除", "拒绝", "去掉", "避开", "别", "讨厌", "不喜欢", "反感"]
         has_negation = any(kw in query for kw in neg_keywords)
         if state["intent"] == "anti_selection" or has_negation:
             negation = await extract_negation_slots(query)
@@ -144,6 +144,7 @@ async def node_classify_intent(state: AgentState) -> AgentState:
 
         # 品类隔离：排除品牌只影响当前品类，不越界到其他品类
         _normalize_exclusions(state["slots"])
+        _sanitize_slots_for_category(state["slots"])
 
         # 改写查询：排除类多轮请求使用继承后的品类召回，避免被排除品牌词牵引向量检索。
         base = _build_rewrite_base(query, expanded, state["slots"], has_negation, negation if has_negation else {})
@@ -661,7 +662,42 @@ def _build_rewrite_base(query: str, expanded: str, slots: dict, has_negation: bo
     if has_negation and slots.get("category"):
         return f"{slots['category']} 热门推荐 同类商品"
     positive_q = (negation or {}).get("positive_query", "") if has_negation else ""
-    return positive_q or expanded or query
+    return _strip_cross_category_noise(positive_q or expanded or query, slots)
+
+
+_DIGITAL_CATEGORIES = {
+    "手机", "智能手机", "手表", "智能手表", "耳机", "蓝牙耳机", "平板", "平板电脑",
+    "电脑", "笔记本", "相机", "音箱", "键盘", "鼠标",
+}
+_FOOD_ONLY_TERMS = {"好吃", "美味", "口味", "味道", "香", "不难吃", "难吃", "甜", "辣", "咸"}
+
+
+def _strip_cross_category_noise(text: str, slots: dict) -> str:
+    """Remove food-only adjectives from digital product queries such as "好吃的华为手表"."""
+    category = str((slots or {}).get("category") or "").strip()
+    if category not in _DIGITAL_CATEGORIES:
+        return text
+    cleaned = text
+    for term in _FOOD_ONLY_TERMS:
+        cleaned = cleaned.replace(term, "")
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned or text
+
+
+def _sanitize_slots_for_category(slots: dict) -> None:
+    category = str((slots or {}).get("category") or "").strip()
+    if category not in _DIGITAL_CATEGORIES:
+        return
+    attrs = slots.get("attributes")
+    if isinstance(attrs, dict):
+        for key in list(attrs.keys()):
+            joined = f"{key}{attrs.get(key)}"
+            if any(term in joined for term in _FOOD_ONLY_TERMS):
+                attrs.pop(key, None)
+    for key in ("exclude_text_terms",):
+        terms = slots.get(key)
+        if isinstance(terms, list):
+            slots[key] = [term for term in terms if not any(food in str(term) for food in _FOOD_ONLY_TERMS)]
 
 
 def _previous_slots_from_state(state: dict) -> dict:
@@ -723,6 +759,8 @@ def _category_matches_request(product_category: str, requested_category: str) ->
         "零食": {"零食", "食品", "休闲零食", "肉干肉脯", "坚果炒货", "饼干糕点", "糖果巧克力"},
         "食品": {"食品", "零食", "休闲零食", "肉干肉脯", "坚果炒货", "饼干糕点", "糖果巧克力"},
         "手机": {"手机", "智能手机"},
+        "手表": {"手表", "智能手表", "运动手表"},
+        "智能手表": {"智能手表", "手表", "运动手表"},
     }
     return product_category in aliases.get(requested_category, {requested_category})
 
@@ -735,6 +773,7 @@ def _needs_strict_category_guard(requested_category: str) -> bool:
         "图书", "书", "书籍",
         "零食", "食品",
         "手机",
+        "手表", "智能手表",
     }
 
 
@@ -1105,6 +1144,7 @@ def _extract_cart_action(query: str) -> str:
         r"(?:改成|改为|设为|设置为|调整为|调为|调到|改到|变成)\s*[0-9一二两三四五六七八九十]",
         r"(?:买|要|来)\s*[0-9一二两三四五六七八九十]+\s*(?:件|个|台|本|双|套|份)",
         r"(?:加|增加|再加|多买|减|减少|少买|去掉)\s*[0-9一二两三四五六七八九十]+\s*(?:件|个|台|本|双|套|份)",
+        r"(?:加|增加|再加|多买|减|减少|少买|去掉).{0,6}?(?:到|为|成)\s*[0-9一二两三四五六七八九十]+\s*(?:件|个|台|本|双|套|份)",
     ]
     if any(re.search(pattern, q) for pattern in quantity_patterns):
         return "quantity"
@@ -1134,6 +1174,7 @@ def _parse_quantity(query: str) -> int | None:
     patterns = [
         r"(?:数量|数目|件数|个数).{0,8}?(?:改成|改为|设为|设置为|调整为|调为|调到|改到|变成|到|为)?\s*([0-9]+|[一二两三四五六七八九十]+)",
         r"(?:改成|改为|设为|设置为|调整为|调为|调到|改到|变成)\s*([0-9]+|[一二两三四五六七八九十]+)",
+        r"(?:减|减少|少买|加|增加|多买).{0,6}?(?:到|为|成)\s*([0-9]+|[一二两三四五六七八九十]+)\s*(?:件|个|台|本|双|套|份)",
         r"(?:买|要|来)\s*([0-9]+|[一二两三四五六七八九十]+)\s*(?:件|个|台|本|双|套|份)",
     ]
     for pattern in patterns:
@@ -1319,6 +1360,49 @@ def _extract_cart_item_index(query: str, item_count: int) -> tuple[int | None, s
     return idx - 1, None
 
 
+def _extract_cart_item_indices(query: str, item_count: int) -> tuple[list[int], str | None]:
+    normalized = re.sub(r"\s+", "", query)
+    if any(marker in normalized for marker in ("全部", "所有", "全都", "整车")):
+        return list(range(item_count)), None
+
+    if re.search(r"(?:前|头)(?:2|二|两)(?:个|件|款|项)?", normalized):
+        if item_count < 2:
+            return [], f"购物车只有 {item_count} 件商品，没有前 2 个。"
+        return list(range(2)), None
+    if re.search(r"(?:前|头)(?:3|三)(?:个|件|款|项)?", normalized):
+        if item_count < 3:
+            return [], f"购物车只有 {item_count} 件商品，没有前 3 个。"
+        return list(range(3)), None
+
+    ordinal_map = {
+        "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5,
+        "1": 1, "2": 2, "3": 3, "4": 4, "5": 5,
+    }
+    found: list[int] = []
+    for token, number in ordinal_map.items():
+        patterns = (
+            rf"第{re.escape(token)}(?:个|件|项|款|样|种)?",
+            rf"{re.escape(token)}号",
+        )
+        if any(re.search(pattern, normalized) for pattern in patterns):
+            if number > item_count:
+                return [], f"购物车只有 {item_count} 件商品，没有第 {number} 个。"
+            found.append(number - 1)
+
+    compact_ordinals = re.findall(r"第([一二两三四五12345]{2,})(?:个|件|项|款|样|种)?", normalized)
+    for group in compact_ordinals:
+        for char in group:
+            number = ordinal_map.get(char)
+            if number is None:
+                continue
+            if number > item_count:
+                return [], f"购物车只有 {item_count} 件商品，没有第 {number} 个。"
+            found.append(number - 1)
+
+    deduped = sorted(set(found))
+    return deduped, None
+
+
 async def _find_product_for_cart(query: str, state: "AgentState") -> dict | None:
     """从查询中识别用户要加购的商品。
     优先级：1. 序号匹配 product_cards  2. 商品名匹配 product_cards  3. Qdrant 搜索
@@ -1413,31 +1497,40 @@ async def _update_cart_quantity(query: str, session_id: str, db, user_id: str = 
     if not items:
         return "购物车是空的，暂时没有可修改数量的商品。"
 
-    target = None
-    item_index, index_error = _extract_cart_item_index(query, len(items))
-    if index_error:
-        return index_error
-    if item_index is not None:
-        target = items[item_index]
+    target_indices, indices_error = _extract_cart_item_indices(query, len(items))
+    if indices_error:
+        return indices_error
+    targets = [items[idx] for idx in target_indices]
 
-    if target is None:
+    if not targets:
         for item in items:
             if _cart_item_matches_query(item, query):
-                target = item
+                targets = [item]
                 break
 
-    if target is None:
+    if not targets:
         return "没有找到要修改数量的商品，请指定序号或商品名。"
 
-    if quantity is None and quantity_delta is not None:
-        quantity = max(0, target.quantity + quantity_delta)
+    changed: list[str] = []
+    removed: list[str] = []
+    for target in targets:
+        new_quantity = quantity
+        if new_quantity is None and quantity_delta is not None:
+            new_quantity = max(0, target.quantity + quantity_delta)
 
-    if quantity == 0:
-        await cart_service.remove_from_cart(db, session_id, str(target.product_id), user_id=user_id)
-        return f"已将「{target.title}」数量改为 0，并从购物车移除。"
+        if new_quantity == 0:
+            await cart_service.remove_from_cart(db, session_id, str(target.product_id), user_id=user_id)
+            removed.append(target.title)
+        else:
+            await cart_service.update_quantity(db, session_id, str(target.product_id), new_quantity, user_id=user_id)
+            changed.append(f"「{target.title}」数量改为 {new_quantity} 件")
 
-    await cart_service.update_quantity(db, session_id, str(target.product_id), quantity, user_id=user_id)
-    return f"已将「{target.title}」数量改为 {quantity} 件。"
+    messages = []
+    if changed:
+        messages.append("已将" + "，".join(changed))
+    if removed:
+        messages.append("已将" + "、".join(f"「{title}」" for title in removed) + "从购物车移除")
+    return "；".join(messages) + "。"
 
 
 # ── Cart Node ──

@@ -17,6 +17,12 @@ def test_chinese_brand_alias_goes_to_exclude_brands():
     assert "brand" not in result["exclude_attributes"]
 
 
+def test_dislike_marker_goes_to_exclude_brands():
+    result = _keyword_extract_negation("我不喜欢苹果手机")
+
+    assert "Apple" in result["exclude_brands"]
+
+
 def test_japanese_brand_family_expands_to_specific_brands():
     result = _keyword_extract_negation("推荐防晒霜，不要日系品牌")
 

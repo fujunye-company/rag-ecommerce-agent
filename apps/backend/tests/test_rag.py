@@ -60,6 +60,16 @@ def test_category_aliases_expand_common_user_terms():
     assert "运动鞋" in _category_match_values("鞋子")
     assert "蓝牙耳机" in _category_match_values("耳机")
     assert "肉干肉脯" in _category_match_values("零食")
+    assert "智能手表" in _category_match_values("手表")
+
+
+def test_strip_food_noise_from_digital_query():
+    from app.services.agent import _strip_cross_category_noise
+
+    cleaned = _strip_cross_category_noise("好吃又便宜的华为手表", {"category": "手表"})
+
+    assert "好吃" not in cleaned
+    assert "华为手表" in cleaned
 
 
 @pytest.mark.asyncio

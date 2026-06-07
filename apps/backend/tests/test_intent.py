@@ -72,6 +72,8 @@ class TestKeywordClassify:
     def test_anti_selection_intent(self):
         assert _keyword_classify("不要入耳式的")["intent"] == "anti_selection"
         assert _keyword_classify("除了小米还有什么")["intent"] == "anti_selection"
+        assert _keyword_classify("我讨厌苹果手机")["intent"] == "anti_selection"
+        assert _keyword_classify("不喜欢入耳式耳机")["intent"] == "anti_selection"
 
     def test_cart_intent(self):
         assert _keyword_classify("加入购物车")["intent"] == "cart_operation"
@@ -93,6 +95,10 @@ class TestKeywordExtractNegation:
         result = _keyword_extract_negation("不要小米的耳机")
         exclude_brands = result.get("exclude_brands", [])
         assert "Xiaomi" in exclude_brands or "小米" in exclude_brands or result.get("exclude_text_terms") is not None
+
+    def test_dislike_excludes_brand(self):
+        result = _keyword_extract_negation("我讨厌苹果手机")
+        assert "Apple" in result.get("exclude_brands", [])
 
     def test_exclude_attribute_type(self):
         result = _keyword_extract_negation("不要入耳式的")

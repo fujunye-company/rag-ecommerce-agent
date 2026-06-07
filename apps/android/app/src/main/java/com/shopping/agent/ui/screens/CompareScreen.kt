@@ -380,7 +380,11 @@ private fun CompareSearchBar(
     placeholder: String,
     onCameraClick: () -> Unit = {},
 ) {
-    Surface(shadowElevation = 3.dp, color = MaterialTheme.colorScheme.surface) {
+    Surface(
+        shadowElevation = 3.dp,
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.imePadding()
+    ) {
         Row(
             Modifier
                 .padding(horizontal = Dimens.space3, vertical = Dimens.space2)

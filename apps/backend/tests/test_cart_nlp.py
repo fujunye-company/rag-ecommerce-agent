@@ -8,6 +8,7 @@ from app.services.agent import (
     _cart_item_matches_query,
     _extract_cart_item_index,
     _extract_cart_action,
+    _extract_cart_item_indices,
     _find_product_for_cart,
     _find_products_for_multi_cart,
     _parse_quantity,
@@ -39,6 +40,14 @@ def test_cart_quantity_natural_phrases():
     assert _parse_quantity_delta("第一个加一件") == 1
     assert _extract_cart_action("第一个减一件") == "quantity"
     assert _parse_quantity_delta("第一个减一件") == -1
+    assert _extract_cart_action("购物车里的商品全部减少为一件") == "quantity"
+    assert _parse_quantity("购物车里的商品全部减少为一件") == 1
+
+
+def test_cart_quantity_multi_item_indices():
+    assert _extract_cart_item_indices("第二第三个减少两件", 3) == ([1, 2], None)
+    assert _extract_cart_item_indices("购物车里的商品全部减少为一件", 3) == ([0, 1, 2], None)
+    assert _extract_cart_item_indices("前两个都改成一件", 3) == ([0, 1], None)
 
 
 def test_cart_item_matches_category_keyword():

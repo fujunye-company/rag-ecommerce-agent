@@ -29,8 +29,14 @@ clean: ## Clean Python cache
 deploy: ## One-click deploy (Linux/WSL/macOS)
 	bash deploy.sh
 
+deploy-build: ## Deploy + force rebuild backend image
+	bash deploy.sh --build
+
 deploy-win: ## One-click deploy (Windows PowerShell)
 	powershell -ExecutionPolicy Bypass -File deploy.ps1
+
+deploy-win-build: ## Deploy-win + force rebuild backend image
+	powershell -ExecutionPolicy Bypass -File deploy.ps1 -Build
 
 deploy-stop: ## Stop all deployed services
 	bash deploy.sh --stop

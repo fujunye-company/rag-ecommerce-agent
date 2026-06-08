@@ -1,8 +1,9 @@
 # RAG E-Commerce Agent — 一键部署脚本 (Windows PowerShell)
-# 用法: .\deploy.ps1           # 启动全部服务
-#       .\deploy.ps1 -Stop     # 停止全部服务
+# 用法: .\deploy.ps1              # 启动全部服务（检测已运行时跳过）
+#       .\deploy.ps1 -Build        # 启动 + 强制重建 backend 镜像
+#       .\deploy.ps1 -Stop         # 停止全部服务
 
-param([switch]$Stop)
+param([switch]$Stop, [switch]$Build)
 
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -72,9 +73,28 @@ if (Test-Path "scripts/secret_scan.py") {
     python scripts/secret_scan.py 2>&1 | Out-Host
 }
 
+# ── Phase 0.5: Check if already running healthy ───────────
+$runningCount = (docker compose -f $ComposeFile ps --format json 2>$null | ForEach-Object {
+    if ($_ -match '"Health":"healthy"') { 1 }
+}).Count
+$totalSvcs = 3
+if ($runningCount -ge $totalSvcs) {
+    Write-Step "All $totalSvcs services already running and healthy."
+    if ($Build) {
+        Write-Warn "-Build flag set: recreating backend image..."
+        docker compose -f $ComposeFile build backend
+        docker compose -f $ComposeFile up -d backend
+    }
+    # Skip to Phase 3
+} else {
+
 # ── Phase 1: Start infrastructure ────────────────────────
 Write-Step "Phase 1: Starting infrastructure"
-docker compose -f $ComposeFile up -d --build
+if ($Build) {
+    docker compose -f $ComposeFile up -d --build
+} else {
+    docker compose -f $ComposeFile up -d
+}
 
 # ── Phase 2: Wait for ready ──────────────────────────────
 Write-Step "Phase 2: Waiting for backend to be ready..."
@@ -127,6 +147,8 @@ if ($elapsed -ge $maxWait) {
     Write-Err "  docker compose -f $ComposeFile logs backend"
     exit 1
 }
+
+}  # end of "services not already running" block
 
 # ── Phase 3: Readiness report ────────────────────────────
 Write-Step "Phase 3: Readiness report"

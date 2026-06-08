@@ -1,7 +1,8 @@
 #!/bin/bash
 # RAG E-Commerce Agent — 一键部署脚本 (Linux / WSL / macOS)
-# 用法: ./deploy.sh          # 启动全部服务
-#       ./deploy.sh --stop   # 停止全部服务
+# 用法: ./deploy.sh              # 启动全部服务（检测已运行时跳过）
+#       ./deploy.sh --build      # 启动 + 强制重建 backend 镜像
+#       ./deploy.sh --stop       # 停止全部服务
 
 set -euo pipefail
 
@@ -32,6 +33,12 @@ if [ "${1:-}" = "--stop" ]; then
     docker compose -f "$COMPOSE_FILE" down
     log "All services stopped."
     exit 0
+fi
+
+# ── Usage ─────────────────────────────────────────────────
+DO_BUILD="false"
+if [ "${1:-}" = "--build" ]; then
+    DO_BUILD="true"
 fi
 
 # ── Phase 0: Preflight checks ─────────────────────────────
@@ -97,9 +104,26 @@ if [ -f "scripts/secret_scan.py" ]; then
     python scripts/secret_scan.py || true
 fi
 
+# ── Phase 0.5: Check if already running healthy ───────────
+RUNNING_COUNT=$(docker compose -f "$COMPOSE_FILE" ps --format json 2>/dev/null | grep -c '"Health":"healthy"' || echo 0)
+TOTAL_SVCS=3
+if [ "$RUNNING_COUNT" -ge "$TOTAL_SVCS" ]; then
+    log "All $TOTAL_SVCS services already running and healthy."
+    if [ "$DO_BUILD" = "true" ]; then
+        warn "--build flag set: recreating backend image..."
+        docker compose -f "$COMPOSE_FILE" build backend
+        docker compose -f "$COMPOSE_FILE" up -d backend
+    fi
+    # Skip to Phase 3
+else
+
 # ── Phase 1: Start infrastructure ────────────────────────
 log "Phase 1: Starting infrastructure"
-docker compose -f "$COMPOSE_FILE" up -d --build
+if [ "$DO_BUILD" = "true" ]; then
+    docker compose -f "$COMPOSE_FILE" up -d --build
+else
+    docker compose -f "$COMPOSE_FILE" up -d
+fi
 
 # ── Phase 2: Wait for ready ──────────────────────────────
 log "Phase 2: Waiting for backend to be ready..."
@@ -156,6 +180,8 @@ if [ $ELAPSED -ge $MAX_WAIT ]; then
     err "  docker compose -f $COMPOSE_FILE logs backend"
     exit 1
 fi
+
+fi  # end of "services not already running" block
 
 # ── Phase 3: Readiness report ────────────────────────────
 log "Phase 3: Readiness report"

@@ -4,21 +4,19 @@
 
 **Linux/WSL/macOS:**
 ```bash
-./deploy.sh
+./deploy.sh              # 启动全部服务（已运行时跳过）
+./deploy.sh --build      # 启动 + 强制重建 backend 镜像
+./deploy.sh --stop       # 停止全部服务
 ```
 
 **Windows PowerShell:**
 ```powershell
-.\deploy.ps1
+.\deploy.ps1              # 启动全部服务（已运行时跳过）
+.\deploy.ps1 -Build       # 启动 + 强制重建 backend 镜像
+.\deploy.ps1 -Stop        # 停止全部服务
 ```
 
-脚本自动完成：环境检查 → Docker 启动 → 等待后端就绪 → 数据自动入库 → 打印就绪报告。
-
-**停止：**
-```bash
-./deploy.sh --stop    # Linux
-.\deploy.ps1 -Stop    # Windows
-```
+脚本自动完成：环境检查 → 已运行检测(3容器healthy则跳过) → Docker 启动 → 等待后端就绪 → 数据自动入库 → 打印就绪报告。
 
 ## 手动启动（备选）
 

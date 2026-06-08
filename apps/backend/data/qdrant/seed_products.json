@@ -311,19 +311,19 @@
   },
   {
     "product_id": "JD100225615118",
-    "title": "iPhone 17 256GB 苹果手机 A19芯片 4800万像素",
+    "title": "iPhone 16 256GB 苹果手机 A18芯片 4800万像素",
     "brand": "Apple",
     "category": "手机",
     "price": 5999.0,
-    "rating": 4.9,
-    "rating_count": 200000,
+    "rating": 4.8,
+    "rating_count": 180000,
     "highlights": [
-      "A19芯片",
+      "A18芯片",
       "iOS生态",
       "4800万主摄"
     ],
     "attributes": {
-      "芯片": "苹果A19",
+      "芯片": "苹果A18",
       "屏幕": "6.1英寸OLED",
       "存储": "256GB",
       "运行内存": "8GB",
@@ -342,19 +342,19 @@
   },
   {
     "product_id": "JD2718739",
-    "title": "iPhone 17 Pro 256GB 苹果旗舰手机 A19 Pro 钛金属",
+    "title": "iPhone 16 Pro 256GB 苹果旗舰手机 A18 Pro 钛金属",
     "brand": "Apple",
     "category": "手机",
-    "price": 8699.0,
-    "rating": 4.9,
-    "rating_count": 200000,
+    "price": 7999.0,
+    "rating": 4.8,
+    "rating_count": 150000,
     "highlights": [
-      "A19 Pro芯片",
+      "A18 Pro芯片",
       "钛金属边框",
-      "8倍光学变焦"
+      "5倍光学变焦"
     ],
     "attributes": {
-      "芯片": "苹果A19 Pro",
+      "芯片": "苹果A18 Pro",
       "屏幕": "6.3英寸OLED 3000nit",
       "存储": "256GB",
       "运行内存": "12GB",
@@ -373,19 +373,19 @@
   },
   {
     "product_id": "JD2718819",
-    "title": "iPhone 17 Pro Max 256GB 苹果旗舰手机",
+    "title": "iPhone 16 Pro Max 256GB 苹果旗舰手机",
     "brand": "Apple",
     "category": "手机",
-    "price": 9699.0,
-    "rating": 4.9,
-    "rating_count": 500000,
+    "price": 9499.0,
+    "rating": 4.8,
+    "rating_count": 300000,
     "highlights": [
-      "A19 Pro芯片",
+      "A18 Pro芯片",
       "6.9英寸大屏",
-      "4800万8倍长焦"
+      "4800万5倍长焦"
     ],
     "attributes": {
-      "芯片": "苹果A19 Pro",
+      "芯片": "苹果A18 Pro",
       "屏幕": "6.9英寸OLED",
       "存储": "256GB",
       "运行内存": "12GB",

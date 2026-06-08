@@ -328,7 +328,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                         searchStatus = "AI 正在思考…",
                     )
                 }
-                ttsManager.resetForNewMessage()
+                ttsManager.stop()
                 viewModelScope.launch {
                     streamWithRetry(text)
                 }
@@ -367,7 +367,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
 
-        ttsManager.resetForNewMessage()
+        ttsManager.stop()
 
         viewModelScope.launch {
             userRepo.saveMessage(userMessage, _uiState.value.currentConversationId)
@@ -415,6 +415,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun performStream(text: String) {
         val accText = StringBuilder()
+        var ttsLastLength = 0
         val accCards = mutableListOf<Product>()
         val accWebResults = mutableListOf<WebSearchItem>()
         var accCompareDims: List<Map<String, Any?>> = emptyList()
@@ -465,7 +466,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                 accText.append(event.content)
                                 val fullText = accText.toString()
                                 _uiState.update { it.copy(streamingText = fullText) }
-                                ttsManager.speakIncremental(fullText)
+                                val delta = fullText.substring(ttsLastLength)
+                                if (delta.isNotBlank()) ttsManager.speak(delta)
+                                ttsLastLength = fullText.length
                             }
                             is SSEEvent.ProductCard -> {
                                 val product = Product(
@@ -524,6 +527,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                     }
                                     userRepo.saveMessage(partialMsg, convId)
                                     accText.clear()
+                                    ttsLastLength = 0
                                 } else {
                                     // 无前置文本：卡片也要落成独立消息，兼容后端“先流文本、后发卡片”的真流式模式。
                                     val cardOnlyMsg = ChatMessage(
@@ -759,11 +763,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 searchStatus = "正在理解语音...",
             )
         }
-        ttsManager.resetForNewMessage()
+        ttsManager.stop()
 
         viewModelScope.launch {
             val convId = _uiState.value.currentConversationId
             val accText = StringBuilder()
+            var ttsLastLength = 0
             val accCards = mutableListOf<Product>()
             val accWebResults = mutableListOf<WebSearchItem>()
             var accCompareDims: List<Map<String, Any?>> = emptyList()
@@ -806,7 +811,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                             accText.append(event.content)
                             val fullText = accText.toString()
                             _uiState.update { it.copy(streamingText = fullText) }
-                            ttsManager.speakIncremental(fullText)
+                            val delta = fullText.substring(ttsLastLength)
+                            if (delta.isNotBlank()) ttsManager.speak(delta)
+                            ttsLastLength = fullText.length
                         }
                         is SSEEvent.ProductCard -> {
                             val product = Product(
@@ -967,10 +974,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
 
-        ttsManager.resetForNewMessage()
+        ttsManager.stop()
 
         viewModelScope.launch {
             val accText = StringBuilder()
+            var ttsLastLength = 0
             val accCards = mutableListOf<Product>()
             val convId = _uiState.value.currentConversationId
 
@@ -990,7 +998,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                                         streamingText = fullText
                                     )
                                 }
-                                ttsManager.speakIncremental(fullText)
+                                val delta = fullText.substring(ttsLastLength)
+                                if (delta.isNotBlank()) ttsManager.speak(delta)
+                                ttsLastLength = fullText.length
                             }
                             is SSEEvent.ProductCard -> {
                                 val product = Product(

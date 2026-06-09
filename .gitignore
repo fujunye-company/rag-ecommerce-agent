@@ -93,3 +93,11 @@ docs/optimization/ttft_benchmark_*.json
 
 # Reference papers (cite by DOI, not stored as binary in repo)
 docs/background/papers/*.pdf
+
+# Temp / debug artifacts (keep repo clean for competition)
+/tmp_*
+/tmp_frames/
+/script_*.png
+/script_*.pdf
+/scripts/
+/hermes-demo.apk

@@ -12,7 +12,11 @@ import javax.crypto.spec.SecretKeySpec
  * 密码加密工具 — 使用 AES-256-CBC + PBKDF2 密钥派生，安全存储登录密码和支付密码。
  *
  * 加密流程：PBKDF2(SHA-256, salt, 10000 迭代) → AES/CBC/PKCS5Padding → Base64(salt + iv + ciphertext)
- * 注：此方案仅用于本地演示，生产环境应使用 Android Keystore。
+ *
+ * ⚠️ 竞赛演示说明：此实现使用硬编码密钥种子和盐值，仅用于AI全栈挑战赛Demo演示。
+ * 生产环境必须使用 Android Keystore (TEE/StrongBox) 存储密钥材料，并使用
+ * EncryptedSharedPreferences 替代自定义加密方案。以下 SECRET_SEED 和 salt 为演示
+ * 用途的公开占位值，不具有任何安全强度。
  */
 object CryptoUtil {
 
@@ -24,10 +28,10 @@ object CryptoUtil {
     private const val IV_LENGTH = 16
     /** 随机盐长度（字节） */
     private const val SALT_LENGTH = 16
-    /** 固定口令种子（用于派生 AES 密钥，生产环境应使用 Keystore） */
+    /** 竞赛演示用固定口令种子 — 非安全密钥，生产环境需替换为 Android Keystore */
     private const val SECRET_SEED = "hermes-shopping-agent-2025-v1.0-secure-key"
 
-    /** 懒加载：从固定种子 + 硬编码盐派生出 AES 密钥 */
+    /** 懒加载：从固定种子 + 硬编码盐派生出 AES 密钥（仅演示用途） */
     private val keySpec: SecretKeySpec by lazy {
         val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
         val spec = PBEKeySpec(SECRET_SEED.toCharArray(), "hermes-fixed-salt".toByteArray(), PBKDF2_ITERATIONS, KEY_LENGTH)

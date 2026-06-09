@@ -36,7 +36,7 @@ class Settings(BaseSettings):
 
     DOUBAO_API_KEY: str = ""
     DOUBAO_BASE_URL: str = "https://ark.cn-beijing.volces.com/api/v3/"
-    LLM_MODEL: str = "ep-20260514111645-lmgt2"
+    LLM_MODEL: str = ""
 
     DEEPSEEK_API_KEY: str = ""
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com/v1"

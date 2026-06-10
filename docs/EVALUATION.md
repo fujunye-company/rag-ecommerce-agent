@@ -50,7 +50,7 @@
 
 > 注：ckpt_20 退化原因为 DeepSeek Key 缺失 + fast path 降级。
 > P@3 = 0 原因为 ground_truth IDs 与 Qdrant point IDs 不一致（已随 UUID5 修复解决）。
-> p3_direct: 使用 BGE-large-zh-v1.5 直连 Qdrant（无 reranker），评测时使用 190 条种子商品
+> p3_direct: 使用 BGE-large-zh-v1.5 直连 Qdrant（无 reranker），评测时使用 287 条种子商品（products_expanded_100.jsonl）
 > P@3=0.146 反映直连检索精度（自动标注 ground truth）。商品推荐类独立 P@3=0.213。
 > Keyword intent accuracy=61.89%（286用例 keyword fallback），LLM 分类路径准确率 90%（10用例）。
 > 注：直连检索不含 reranker。Agent 全链路含 reranker 后预期 P@3 可达 0.25-0.35。

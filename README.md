@@ -68,10 +68,30 @@ M0 ✅  M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ✅  M6 ✅  M7 ✅  M8 ✅  M9 ✅  
 > **新人从零搭建** → 完整指南：`docs/standards/SETUP.md`
 
 ```bash
-# 已配置好环境？三步跑起来：
-docker compose -f infrastructure/docker-compose.yml up -d postgres qdrant   # 启动基础设施
-cd apps/backend && python -c "from app.startup import ensure_qdrant_data; import asyncio; asyncio.run(ensure_qdrant_data())"  # 数据入库
-cd apps/backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8080  # 启动后端
+# 1. 克隆仓库
+git clone https://github.com/fujunye-company/rag-ecommerce-agent.git
+cd rag-ecommerce-agent
+
+# 2. 配置环境变量（API Key 由比赛主办方提供，请联系主办方获取）
+cp apps/backend/.env.example apps/backend/.env
+# 编辑 apps/backend/.env，将 DOUBAO_API_KEY 替换为主办方提供的 Key
+
+# 3. 安装 Python 依赖
+python3 -m venv .venv && source .venv/bin/activate
+cd apps/backend && pip install -r requirements.txt
+
+# 4. 下载 Embedding 模型（首次约 1.3GB，需 5-15 分钟）
+python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-large-zh-v1.5')"
+
+# 5. 启动基础设施
+cd ../..
+docker compose -f infrastructure/docker-compose.yml up -d postgres qdrant
+
+# 6. 数据入库
+cd apps/backend && python -c "from app.startup import ensure_qdrant_data; import asyncio; asyncio.run(ensure_qdrant_data())"
+
+# 7. 启动后端
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 ```
 
 ## 相关文档

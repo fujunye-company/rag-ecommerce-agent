@@ -57,7 +57,7 @@ if [ -d "$MODEL_DIR" ] && [ -f "$MODEL_DIR/config.json" ]; then
     info "Model: pre-downloaded (local), first boot will be fast"
 else
     warn "Model not pre-downloaded. First boot will download ~1.3GB."
-    info "  Tip: python scripts/prefetch_model.py --all  to pre-download now"
+    info "  Tip: see docs/standards/SETUP.md Section 5 to pre-download models"
 fi
 
 # docker compose plugin
@@ -96,12 +96,7 @@ DOUBAO_KEY=$(grep -E '^DOUBAO_API_KEY=' "$ENV_FILE" | sed 's/DOUBAO_API_KEY=//')
 if [ -z "$DOUBAO_KEY" ] || [ "$DOUBAO_KEY" = "your_doubao_key_here" ]; then
     warn "DOUBAO_API_KEY is not configured in $ENV_FILE"
     warn "LLM calls will fail until you set a valid API key."
-fi
-
-# Secret scan
-if [ -f "scripts/secret_scan.py" ]; then
-    log "Running secret scan..."
-    python scripts/secret_scan.py || true
+    warn "请联系比赛主办方获取 Doubao API Key，然后编辑 $ENV_FILE 填入。"
 fi
 
 # ── Phase 0.5: Check if already running healthy ───────────

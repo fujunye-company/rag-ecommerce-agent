@@ -45,7 +45,7 @@ if ((Test-Path $modelDir) -and (Test-Path "$modelDir\config.json")) {
     Write-Host "       Model: pre-downloaded (local), first boot will be fast"
 } else {
     Write-Warn "Model not pre-downloaded. First boot will download ~1.3GB."
-    Write-Host "       Tip: python scripts\prefetch_model.py --all  to pre-download now"
+    Write-Host "       Tip: see docs/standards/SETUP.md Section 5 to pre-download models"
 }
 
 # Env file — auto-copy from example if missing
@@ -65,12 +65,7 @@ $envContent = Get-Content $EnvFile -Raw
 if ($envContent -notmatch 'DOUBAO_API_KEY=(?!your_doubao_key_here|$)\S+') {
     Write-Warn "DOUBAO_API_KEY is not configured in $EnvFile"
     Write-Warn "LLM calls will fail until you set a valid API key."
-}
-
-# Secret scan
-if (Test-Path "scripts/secret_scan.py") {
-    Write-Step "Running secret scan..."
-    python scripts/secret_scan.py 2>&1 | Out-Host
+    Write-Warn "请联系比赛主办方获取 Doubao API Key，然后编辑 $EnvFile 填入。"
 }
 
 # ── Phase 0.5: Check if already running healthy ───────────

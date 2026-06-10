@@ -8,7 +8,7 @@
 - **多商品批量操作**：购物车支持索引提取（"前两个"、"第1和第3个"），多商品加购互斥去重
 
 ### Changed
-- `agent.py` 从 2780 行增长至 3024 行（+244 行品类守卫 + 多商品批量逻辑）
+- `agent.py` 从 2780 行增长至 3054 行（+274 行品类守卫 + 多商品批量逻辑）
 - 测试覆盖扩充：新增 `test_state_slots.py`、`test_category_guard.py`，测试 98→ 预计 105+
 
 ## [0.4.1] - 2026-06-07
@@ -37,11 +37,11 @@
 - **clarify SSE 事件类型**：后端 ClarifyEvent + agent.py 反问专用事件，Android SSEEvent.Clarify + HomeScreen 反问气泡 + 选项 chips
 - **商品详情页**：ProductDetailScreen（9 组件：HeroGallery/InfoCard/CouponCard/LogisticsCard/SpecGrid/ReviewSection/ShopCard/BottomActionBar），ProductDetailData 数据模型，ProductDetailViewModel（收藏/关注/加购/下单），NavGraph 导航集成 + HomeScreen 商品卡片点击跳转
 - **CompareScreen 真实数据联调**：CompareRepository.fetchProducts() 从后端 API 拉取真实商品，mock fallback
-- **E2E 测试脚本**：tests/e2e_scenarios.sh 覆盖 9 场景 + 加分项（购物车/反馈/缓存）
+- **E2E 测试脚本**：apps/backend/tests/e2e_scenarios.sh 覆盖 9 场景 + 加分项（购物车/反馈/缓存）
 - **性能基准文档**：docs/notes/PERFORMANCE.md（延迟分解/场景实测/缓存指标/优化记录）
-- **3-5 分钟演示脚本**：docs/notes/DEMO-SCRIPT.md（5 幕演示 + 技术讲解）
+- **3-5 分钟演示脚本**：docs/DEMO_SCRIPT.md（5 幕演示 + 技术讲解）
 - **答辩 PPT 大纲**：docs/notes/PPT-OUTLINE.md（18 页结构化大纲）
-- **final_delivery 打包**：MANIFEST.md + 目录结构（apk/source/docs）
+- **final_delivery 打包**：APK 预编译提交 + 目录结构整理（apk/source/docs 就绪，MANIFEST.md 待补充）
 - **P@3 检索精度重测**：scripts/run_p3_test.py（直连 Qdrant + BGE 嵌入），eval_cases.json ground truth 更新为真实 product_id，286 用例实测 P@3=0.146（商品推荐类 0.213），消除了 UUID5 修复前的 P@3=0 误报
 - **S7 场景化购物增强**：intent.py 关键词扩展（6→18），agent.py `_SCENARIO_FALLBACK_MAP`（11 场景），LLM 失败时规则兜底
 

@@ -50,9 +50,9 @@
 
 > 注：ckpt_20 退化原因为 DeepSeek Key 缺失 + fast path 降级。
 > P@3 = 0 原因为 ground_truth IDs 与 Qdrant point IDs 不一致（已随 UUID5 修复解决）。
-> p3_direct: 使用 BGE-large-zh-v1.5 直连 Qdrant（无 reranker），评测时 290 商品（当前种子数据为 190 条）
-> P@3=0.146 反映评测时检索精度（290 商品小数据集 + 自动标注 ground truth）。商品推荐类独立 P@3=0.213。
-> Keyword intent accuracy=61.89%，LLM 路径预期 ≥90%。
+> p3_direct: 使用 BGE-large-zh-v1.5 直连 Qdrant（无 reranker），评测时使用 190 条种子商品
+> P@3=0.146 反映直连检索精度（自动标注 ground truth）。商品推荐类独立 P@3=0.213。
+> Keyword intent accuracy=61.89%（286用例 keyword fallback），LLM 分类路径准确率 90%（10用例）。
 > 注：直连检索不含 reranker。Agent 全链路含 reranker 后预期 P@3 可达 0.25-0.35。
 
 ### 2.2 P@3 直测详细结果 (2026-05-28)
@@ -99,7 +99,7 @@
 
 ## 三、评测方法（已用直接 Qdrant 评测完成）
 
-> RAGAS 0.4.x 安装阻塞（Python 3.14 + Windows Cython），已用直接 Qdrant 检索评测替代。
+> RAGAS 0.4.x 安装阻塞（Python 3.12 + Windows Cython），已用直接 Qdrant 检索评测替代。
 > 286 用例 P@3 实测完成，结果见 2.2 节。
 
 ### 预期指标
@@ -118,7 +118,7 @@
 ```bash
 # 完整 RAGAS 评测（需后端 + Docker 运行中）
 cd apps/backend
-python data/test_cases/run_eval.py
+python scripts/run_eval.py
 
 # 快速冒烟测试
 python scripts/run_eval_quick.py

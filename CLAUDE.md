@@ -13,7 +13,7 @@
 | 数据库 | PostgreSQL + pgvector (async SQLAlchemy) |
 | LLM | **Doubao-Seed-2.0-lite** ✅ (Key 已验证通过，DeepSeek 保留降级) |
 | Embedding | BGE-large-zh-v1.5 |
-| 前端 | Kotlin + Jetpack Compose (Android 原生, 36+ kt) |
+| 前端 | Kotlin + Jetpack Compose (Android 原生, 73 .kt) |
 | Python | 3.11 @ ~/.hermes-venv |
 
 ### Doubao API
@@ -34,7 +34,7 @@ cd apps/backend && python -c "from app.startup import ensure_qdrant_data; import
 ## 当前里程碑
 
 ```
-M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ✅  M6 ✅  M7 ✅  M8 ✅  M9 ✅  M10 ✅
+M0 ✅  M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ✅  M6 ✅  M7 ✅  M8 ✅  M9 ✅  M10 ✅
 ```
 
 **M10 完成项**：

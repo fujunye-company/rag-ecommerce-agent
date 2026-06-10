@@ -27,16 +27,16 @@
 | 数据库 | PostgreSQL + pgvector |
 | LLM | Doubao-Seed-2.0-lite |
 | Embedding | BGE-large-zh-v1.5 |
-| 前端 | Kotlin + Jetpack Compose (72 .kt) |
+| 前端 | Kotlin + Jetpack Compose (73 .kt) |
 
 ## 项目结构
 
 ```
 rag-ecommerce-agent/
 ├── apps/
-│   ├── backend/          FastAPI 后端 (62 .py, 29 modules)
-│   └── android/          Kotlin Compose Android (72 .kt)
-├── docs/                 项目文档 (26 .md)
+│   ├── backend/          FastAPI 后端 (73 .py, 29 modules)
+│   └── android/          Kotlin Compose Android (73 .kt)
+├── docs/                 项目文档 (28 .md)
 ├── infrastructure/       docker-compose + env
 └── README.md
 ```

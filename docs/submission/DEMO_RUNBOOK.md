@@ -37,4 +37,4 @@
 
 ## 提交前安全检查
 
-运行 `py -3 -m pytest apps/backend/tests/ -x -q`，确认 95 passed。
+运行 `py -3 -m pytest apps/backend/tests/ -x -q`，确认全部测试通过。

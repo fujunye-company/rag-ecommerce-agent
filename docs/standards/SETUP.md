@@ -21,7 +21,8 @@
 ## 二、克隆仓库
 
 ```bash
-git clone git@github.com:fujunye-company/rag-ecommerce-agent.git
+git clone https://github.com/fujunye-company/rag-ecommerce-agent.git
+# 或 SSH: git clone git@github.com:fujunye-company/rag-ecommerce-agent.git
 cd rag-ecommerce-agent
 ```
 
@@ -34,6 +35,7 @@ cd rag-ecommerce-agent
 cp apps/backend/.env.example apps/backend/.env
 
 # 2. 编辑 .env，填入真实 API Key（至少填一个 LLM Key）
+# API Key 由比赛主办方提供，请联系主办方获取。
 # 编辑器打开 apps/backend/.env，修改以下两行：
 #
 #   DOUBAO_API_KEY=ark-xxxxxx     ← 比赛提供的豆包 Key

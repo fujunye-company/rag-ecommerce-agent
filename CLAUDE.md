@@ -13,7 +13,7 @@
 | 数据库 | PostgreSQL + pgvector (async SQLAlchemy) |
 | LLM | **Doubao-Seed-2.0-lite** ✅ (Key 已验证通过，DeepSeek 保留降级) |
 | Embedding | BGE-large-zh-v1.5 |
-| 前端 | Kotlin + Jetpack Compose (Android 原生, 36+ kt) |
+| 前端 | Kotlin + Jetpack Compose (Android 原生, 73 .kt) |
 | Python | 3.11 @ ~/.hermes-venv |
 
 ### Doubao API
@@ -34,7 +34,7 @@ cd apps/backend && python -c "from app.startup import ensure_qdrant_data; import
 ## 当前里程碑
 
 ```
-M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ✅  M6 ✅  M7 ✅  M8 ✅  M9 ✅  M10 ✅
+M0 ✅  M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ✅  M6 ✅  M7 ✅  M8 ✅  M9 ✅  M10 ✅
 ```
 
 **M10 完成项**：
@@ -60,7 +60,7 @@ M1 ✅  M2 ✅  M3 ✅  M4 ✅  M5 ✅  M6 ✅  M7 ✅  M8 ✅  M9 ✅  M10 ✅
 | 加分项深度 | 20% | ~17% |
 | **合计** | **100%** | **~90%** |
 
-> APK 编译成功(24.1MB) / 全部 P0 清零 / 9/9 场景全栈代码就绪 / 190条商品94品类
+> APK 编译成功(24.1MB) / 全部 P0 清零 / 9/9 场景全栈代码就绪 / 287条商品94品类
 > 演示脚本+PPT大纲+评测报告 / 交付包就绪 / 剩余: 真机联调 → 演示视频录制
 
 ## 严禁项

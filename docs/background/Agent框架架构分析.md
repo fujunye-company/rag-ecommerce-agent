@@ -1,7 +1,7 @@
 # Agent 框架架构分析
 
 > 文档日期: 2026-05-19
-> 分析范围: LangGraph (开源) | OpenAI Agents SDK (闭源) | Dify (开源平台)
+> 分析范围: LangGraph (开源) | OpenAI Agents SDK (开源, Apache 2.0) | Dify (开源平台)
 > 聚焦维度: 核心架构图、技术栈、独特亮点、适用性评分
 
 ---

@@ -10,7 +10,7 @@
 > "推荐一款降噪耳机，预算2000以内"
 
 **实际效果**（curl 验证通过）：
-- Agent 识别意图 → Qdrant 检索 → SSE: text_delta + 5 product_cards + done
+- Agent 识别意图 → Qdrant 检索 → SSE: text_delta + 3 product_cards + done
 - 卡片含 image_urls、价格、评分、匹配度
 
 ---
